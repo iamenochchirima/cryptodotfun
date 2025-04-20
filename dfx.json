@@ -1,0 +1,24 @@
+{
+  "canisters": {
+    "main_backend": {
+      "candid": "src/cryptodotfun_backend/cryptodotfun_backend.did",
+      "package": "cryptodotfun_backend",
+      "type": "rust"
+    },
+    "frontend": {
+      "source": [
+        "src/cryptodotfun_frontend/dist"
+      ],
+      "type": "assets",
+      "workspace": "cryptodotfun_frontend"
+    }
+  },
+  "defaults": {
+    "build": {
+      "args": "",
+      "packtool": ""
+    }
+  },
+  "output_env_file": ".env",
+  "version": 1
+}

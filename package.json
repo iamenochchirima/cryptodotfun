@@ -1,0 +1,25 @@
+{
+  "engines": {
+    "node": ">=16.0.0",
+    "npm": ">=7.0.0"
+  },
+  "name": "cryptodotfun",
+  "scripts": {
+    "build": "pnpm --filter cryptodotfun_frontend build",
+    "prebuild": "pnpm --filter cryptodotfun_frontend prebuild",
+    "deploy": "dfx deploy timer && dfx deploy internet_identity && dfx deploy cryptodotfun_backend",
+    "pretest": "pnpm --filter cryptodotfun_frontend prebuild",
+    "start": "concurrently \"pnpm --filter cryptodotfun_frontend start\""
+  },
+  "type": "module",
+  "workspaces": [
+    "src/cryptodotfun_frontend"
+  ],
+  "dependencies": {
+    "@dfinity/agent": "^2.4.1",
+    "@dfinity/auth-client": "^2.4.1",
+    "@tailwindcss/vite": "^4.1.4",
+    "concurrently": "^9.1.2",
+    "tailwindcss": "^4.1.4"
+  }
+}
