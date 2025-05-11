@@ -8,16 +8,15 @@ import { Button } from "@/components/ui/button"
 import { ModeToggle } from "@/components/mode-toggle"
 import { cn } from "@/lib/utils"
 import AuthButton from "@/components/auth-button"
+import { NotificationDropdown } from "@/components/notification-dropdown"
+import { useAppSelector } from "@/lib/redux/hooks"
 
+// Simplified navigation links
 const navLinks = [
   { name: "Home", href: "/" },
   { name: "Explore", href: "/explore" },
-  { name: "Learn", href: "/learn" },
-  { name: "Earn", href: "/earn" },
-  { name: "Secure", href: "/secure" },
-  { name: "Connect", href: "/connect" },
-  { name: "NFT", href: "/nft" },
-  { name: "Tokens", href: "/tokens" },
+  { name: "Blog", href: "/blog" },
+  { name: "Pulse", href: "/pulse" },
 ]
 
 export default function Navbar() {
@@ -25,6 +24,9 @@ export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false)
   const [mounted, setMounted] = useState(false)
   const pathname = usePathname()
+
+  // Get auth state from Redux
+  const { isAuthenticated } = useAppSelector((state) => state.auth)
 
   useEffect(() => {
     setMounted(true)
@@ -78,9 +80,10 @@ export default function Navbar() {
             <span className="sr-only">Search</span>
           </Button>
 
-          <ModeToggle />
-
           <AuthButton />
+          {isAuthenticated && <NotificationDropdown />}
+
+          <ModeToggle />
 
           {/* Mobile menu button */}
           <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setIsOpen(!isOpen)}>

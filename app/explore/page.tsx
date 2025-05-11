@@ -1,7 +1,7 @@
 import Link from "next/link"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
-import { ArrowRight, BookOpen, Coins, Shield, Users, ImageIcon, Rocket, BarChart3, Zap } from "lucide-react"
+import { ArrowRight, BookOpen, Coins, Shield, Users, ImageIcon, Rocket, BarChart3, Zap, Gamepad2 } from "lucide-react"
 
 const features = [
   {
@@ -65,6 +65,22 @@ const features = [
     ],
   },
   {
+    title: "Play",
+    description:
+      "Dive into blockchain gaming where your skills are rewarded with real crypto tokens and exclusive NFTs.",
+    icon: Gamepad2,
+    color: "text-crypto-purple",
+    bgColor: "bg-crypto-purple/10",
+    image: "/play-hero-banner.png",
+    link: "/play",
+    highlights: [
+      "Play-to-earn blockchain games",
+      "Competitive tournaments",
+      "Daily rewards and challenges",
+      "Exclusive gaming NFTs",
+    ],
+  },
+  {
     title: "NFT Marketplace",
     description: "Discover, buy, and sell NFTs across multiple blockchains with low fees and seamless transactions.",
     icon: ImageIcon,
@@ -115,7 +131,7 @@ const features = [
     icon: Zap,
     color: "text-crypto-green",
     bgColor: "bg-crypto-green/10",
-    image: "/placeholder.svg?height=300&width=500&query=crypto webinar and virtual event platform",
+    image: "/crypto-webinar-platform.png",
     link: "/events",
     highlights: ["Live webinars with experts", "Recorded sessions library", "Q&A opportunities", "Networking events"],
   },

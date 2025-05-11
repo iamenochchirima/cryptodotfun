@@ -5,6 +5,8 @@ import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import Navbar from "@/components/navbar"
 import Footer from "@/components/footer"
+import { AuthProvider } from "@/lib/auth"
+import { ReduxProvider } from "@/lib/redux/provider"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -26,13 +28,17 @@ export default function RootLayout({
         <meta name="darkreader-lock" />
       </head>
       <body className={inter.className} suppressHydrationWarning>
-        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false} disableTransitionOnChange>
-          <div className="flex min-h-screen flex-col">
-            <Navbar />
-            <main className="flex-1">{children}</main>
-            <Footer />
-          </div>
-        </ThemeProvider>
+        <ReduxProvider>
+          <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false} disableTransitionOnChange>
+            <AuthProvider>
+              <div className="flex min-h-screen flex-col">
+                <Navbar />
+                <main className="flex-1">{children}</main>
+                <Footer />
+              </div>
+            </AuthProvider>
+          </ThemeProvider>
+        </ReduxProvider>
       </body>
     </html>
   )

@@ -1,29 +1,22 @@
 "use client"
-
-import { useEffect, useState } from "react"
-import { Moon, Sun } from 'lucide-react'
+import { Moon, Sun } from "lucide-react"
 import { useTheme } from "next-themes"
-
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks"
+import { setTheme } from "@/lib/redux/features/theme/themeSlice"
 
 export function ModeToggle() {
-  const { setTheme } = useTheme()
-  const [mounted, setMounted] = useState(false)
+  const { setTheme: setNextTheme } = useTheme()
+  const dispatch = useAppDispatch()
+  const { mode } = useAppSelector((state) => state.theme)
 
-  // Only show the toggle after mounting to avoid hydration mismatch
-  useEffect(() => {
-    setMounted(true)
-  }, [])
+  const handleThemeChange = (newTheme: "light" | "dark" | "system") => {
+    // Update Redux state
+    dispatch(setTheme(newTheme))
 
-  if (!mounted) {
-    // Return a placeholder with the same dimensions to avoid layout shift
-    return (
-      <Button variant="ghost" size="icon" aria-hidden="true" className="opacity-0">
-        <div className="h-[1.2rem] w-[1.2rem]" />
-        <span className="sr-only">Toggle theme</span>
-      </Button>
-    )
+    // Also update next-themes
+    setNextTheme(newTheme)
   }
 
   return (
@@ -36,9 +29,9 @@ export function ModeToggle() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={() => setTheme("light")}>Light</DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme("dark")}>Dark</DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme("system")}>System</DropdownMenuItem>
+        <DropdownMenuItem onClick={() => handleThemeChange("light")}>Light</DropdownMenuItem>
+        <DropdownMenuItem onClick={() => handleThemeChange("dark")}>Dark</DropdownMenuItem>
+        <DropdownMenuItem onClick={() => handleThemeChange("system")}>System</DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   )
