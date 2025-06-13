@@ -17,6 +17,9 @@ import {
   ImageIcon,
 } from "lucide-react"
 import { AnimatedHeroText } from "@/components/animated-hero-text"
+import { useEffect } from "react"
+import { dburl } from "./actions/db-actions"
+
 
 export default function Home() {
   return (
@@ -24,6 +27,7 @@ export default function Home() {
       {/* Hero Section */}
       <section className="relative pt-24 pb-16 md:pt-32 md:pb-24">
         <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-crypto-purple/20 via-background to-background" />
+        <h1>Let me put this here</h1>
         <div className="container mx-auto px-4 text-center">
           <h1 className="mb-6 text-5xl font-bold tracking-tight md:text-7xl">
             Your Crypto Hub: <AnimatedHeroText />
