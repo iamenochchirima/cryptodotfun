@@ -7,4 +7,3 @@ export const getDatabaseUrl = () => {
     }
     return url
   }
-  
