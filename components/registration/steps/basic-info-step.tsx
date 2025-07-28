@@ -24,6 +24,9 @@ export default function BasicInfoStep() {
   const [emailError, setEmailError] = useState("")
   const [usernameError, setUsernameError] = useState("")
   const [localUsername, setLocalUsername] = useState(username)
+  const [isEmailValid, setIsEmailValid] = useState(false)
+  const [isUsernameValid, setIsUsernameValid] = useState(false)
+
   const debouncedUsername = useDebounce(localUsername, 500)
 
   // Validate email format
@@ -32,51 +35,73 @@ export default function BasicInfoStep() {
     return re.test(email)
   }
 
+  // Check email validity whenever email changes
+  useEffect(() => {
+    if (email) {
+      const valid = validateEmail(email)
+      setIsEmailValid(valid)
+      if (!valid) {
+        setEmailError("Please enter a valid email address")
+      } else {
+        setEmailError("")
+      }
+    } else {
+      setIsEmailValid(false)
+      setEmailError("")
+    }
+  }, [email])
+
+  // Check username validity
+  useEffect(() => {
+    if (localUsername) {
+      if (localUsername.length < 3) {
+        setUsernameError("Username must be at least 3 characters")
+        setIsUsernameValid(false)
+      } else if (!/^[a-zA-Z0-9_]+$/.test(localUsername)) {
+        setUsernameError("Username can only contain letters, numbers, and underscores")
+        setIsUsernameValid(false)
+      } else {
+        setUsernameError("")
+        setIsUsernameValid(true)
+      }
+    } else {
+      setIsUsernameValid(false)
+      setUsernameError("")
+    }
+  }, [localUsername])
+
   // Check username availability when debounced username changes
   useEffect(() => {
-    if (debouncedUsername && debouncedUsername.length >= 3 && debouncedUsername !== username) {
+    if (debouncedUsername && debouncedUsername.length >= 3 && debouncedUsername !== username && isUsernameValid) {
       dispatch(checkUsernameAvailability(debouncedUsername))
     }
-  }, [debouncedUsername, dispatch, username])
+  }, [debouncedUsername, dispatch, username, isUsernameValid])
 
   // Update username in redux when availability is confirmed
   useEffect(() => {
-    if (usernameAvailable === true && debouncedUsername) {
+    if (usernameAvailable === true && debouncedUsername && isUsernameValid) {
       dispatch(setUsername(debouncedUsername))
     }
-  }, [usernameAvailable, debouncedUsername, dispatch])
+  }, [usernameAvailable, debouncedUsername, dispatch, isUsernameValid])
 
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newEmail = e.target.value
     dispatch(setEmail(newEmail))
-
-    if (newEmail && !validateEmail(newEmail)) {
-      setEmailError("Please enter a valid email address")
-    } else {
-      setEmailError("")
-    }
   }
 
   const handleUsernameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newUsername = e.target.value
     setLocalUsername(newUsername)
-
-    if (newUsername.length < 3) {
-      setUsernameError("Username must be at least 3 characters")
-    } else if (!/^[a-zA-Z0-9_]+$/.test(newUsername)) {
-      setUsernameError("Username can only contain letters, numbers, and underscores")
-    } else {
-      setUsernameError("")
-    }
   }
 
   const handleContinue = () => {
+    // Final validation before proceeding
     if (!email || !validateEmail(email)) {
       setEmailError("Please enter a valid email address")
       return
     }
 
-    if (!username || username.length < 3) {
+    if (!localUsername || localUsername.length < 3) {
       setUsernameError("Please enter a valid username")
       return
     }
@@ -92,6 +117,10 @@ export default function BasicInfoStep() {
   const handleBack = () => {
     dispatch(prevStep())
   }
+
+  // Check if form is valid for continue button
+  const isFormValid =
+    isEmailValid && isUsernameValid && localUsername.length >= 3 && usernameAvailable === true && !loading
 
   return (
     <div className="space-y-6">
@@ -109,9 +138,10 @@ export default function BasicInfoStep() {
             placeholder="your@email.com"
             value={email}
             onChange={handleEmailChange}
-            className={emailError ? "border-red-500" : ""}
+            className={emailError ? "border-red-500" : isEmailValid ? "border-green-500" : ""}
           />
           {emailError && <p className="text-sm text-red-500">{emailError}</p>}
+          {isEmailValid && !emailError && <p className="text-sm text-green-500">Valid email address</p>}
           <p className="text-xs text-muted-foreground">We'll only use your email for important account notifications</p>
         </div>
 
@@ -123,7 +153,7 @@ export default function BasicInfoStep() {
               placeholder="coolcryptouser"
               value={localUsername}
               onChange={handleUsernameChange}
-              className={usernameError ? "border-red-500 pr-10" : "pr-10"}
+              className={usernameError ? "border-red-500 pr-10" : isUsernameValid ? "border-green-500 pr-10" : "pr-10"}
             />
             <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
               {loading && localUsername.length >= 3 && (
@@ -154,10 +184,7 @@ export default function BasicInfoStep() {
         <Button variant="outline" onClick={handleBack}>
           Back
         </Button>
-        <Button
-          onClick={handleContinue}
-          disabled={!email || !username || !!emailError || !!usernameError || usernameAvailable !== true}
-        >
+        <Button onClick={handleContinue} disabled={!isFormValid}>
           Continue
         </Button>
       </div>
