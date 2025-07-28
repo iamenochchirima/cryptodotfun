@@ -13,7 +13,6 @@ const inter = Inter({ subsets: ["latin"] })
 export const metadata: Metadata = {
   title: "CryptoDotFun - Learn, Earn, Secure, Connect",
   description: "Your blockchain education and engagement platform",
-    generator: 'v0.dev'
 }
 
 export default function RootLayout({

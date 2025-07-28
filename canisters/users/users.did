@@ -1,0 +1,13 @@
+type AddUserArgs = record { username : text };
+type Result = variant { Ok; Err : text };
+type Result_1 = variant { Ok : User; Err : text };
+type User = record {
+  "principal" : principal;
+  username : text;
+  created_at : nat64;
+};
+service : {
+  add_user : (AddUserArgs) -> (Result);
+  get_user : () -> (Result_1) query;
+  get_users : () -> (vec User) query;
+}
