@@ -34,11 +34,13 @@ const initialState: RegistrationState = {
 
 // Mock async thunk to check username availability
 export const checkUsernameAvailability = createAsyncThunk("registration/checkUsername", async (username: string) => {
+  console.log("Checking username availability for:", username)
   // Simulate API call
   await new Promise((resolve) => setTimeout(resolve, 800))
 
   // Mock check - usernames containing "taken" are considered unavailable
   const isAvailable = !username.toLowerCase().includes("taken")
+  console.log("Username availability result:", isAvailable)
   return isAvailable
 })
 
@@ -61,6 +63,7 @@ export const registrationSlice = createSlice({
   initialState,
   reducers: {
     nextStep: (state) => {
+      console.log("Moving to next step from:", state.currentStep)
       state.currentStep += 1
     },
     prevStep: (state) => {
@@ -78,7 +81,9 @@ export const registrationSlice = createSlice({
     setUsername: (state, action: PayloadAction<string>) => {
       state.username = action.payload
       // Reset availability when username changes
-      state.usernameAvailable = null
+      if (state.username !== action.payload) {
+        state.usernameAvailable = null
+      }
     },
     setReferralSource: (state, action: PayloadAction<string>) => {
       state.referralSource = action.payload
@@ -97,15 +102,20 @@ export const registrationSlice = createSlice({
   extraReducers: (builder) => {
     builder
       .addCase(checkUsernameAvailability.pending, (state) => {
+        console.log("Username check pending")
         state.loading = true
+        state.usernameAvailable = null
       })
       .addCase(checkUsernameAvailability.fulfilled, (state, action) => {
+        console.log("Username check fulfilled:", action.payload)
         state.loading = false
         state.usernameAvailable = action.payload
       })
       .addCase(checkUsernameAvailability.rejected, (state) => {
+        console.log("Username check rejected")
         state.loading = false
         state.error = "Failed to check username availability"
+        state.usernameAvailable = null
       })
       .addCase(completeRegistration.pending, (state) => {
         state.loading = true

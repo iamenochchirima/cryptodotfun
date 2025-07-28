@@ -23,9 +23,7 @@ export default function BasicInfoStep() {
 
   const [emailError, setEmailError] = useState("")
   const [usernameError, setUsernameError] = useState("")
-  const [localUsername, setLocalUsername] = useState(username)
-  const [isEmailValid, setIsEmailValid] = useState(false)
-  const [isUsernameValid, setIsUsernameValid] = useState(false)
+  const [localUsername, setLocalUsername] = useState(username || "")
 
   const debouncedUsername = useDebounce(localUsername, 500)
 
@@ -35,67 +33,47 @@ export default function BasicInfoStep() {
     return re.test(email)
   }
 
-  // Check email validity whenever email changes
-  useEffect(() => {
-    if (email) {
-      const valid = validateEmail(email)
-      setIsEmailValid(valid)
-      if (!valid) {
-        setEmailError("Please enter a valid email address")
-      } else {
-        setEmailError("")
-      }
-    } else {
-      setIsEmailValid(false)
-      setEmailError("")
-    }
-  }, [email])
-
-  // Check username validity
-  useEffect(() => {
-    if (localUsername) {
-      if (localUsername.length < 3) {
-        setUsernameError("Username must be at least 3 characters")
-        setIsUsernameValid(false)
-      } else if (!/^[a-zA-Z0-9_]+$/.test(localUsername)) {
-        setUsernameError("Username can only contain letters, numbers, and underscores")
-        setIsUsernameValid(false)
-      } else {
-        setUsernameError("")
-        setIsUsernameValid(true)
-      }
-    } else {
-      setIsUsernameValid(false)
-      setUsernameError("")
-    }
-  }, [localUsername])
-
   // Check username availability when debounced username changes
   useEffect(() => {
-    if (debouncedUsername && debouncedUsername.length >= 3 && debouncedUsername !== username && isUsernameValid) {
+    if (debouncedUsername && debouncedUsername.length >= 3) {
       dispatch(checkUsernameAvailability(debouncedUsername))
     }
-  }, [debouncedUsername, dispatch, username, isUsernameValid])
+  }, [debouncedUsername, dispatch])
 
-  // Update username in redux when availability is confirmed
+  // Update username in redux when local username changes and is valid
   useEffect(() => {
-    if (usernameAvailable === true && debouncedUsername && isUsernameValid) {
-      dispatch(setUsername(debouncedUsername))
+    if (localUsername && localUsername.length >= 3 && !/[^a-zA-Z0-9_]/.test(localUsername)) {
+      dispatch(setUsername(localUsername))
     }
-  }, [usernameAvailable, debouncedUsername, dispatch, isUsernameValid])
+  }, [localUsername, dispatch])
 
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newEmail = e.target.value
     dispatch(setEmail(newEmail))
+
+    if (newEmail && !validateEmail(newEmail)) {
+      setEmailError("Please enter a valid email address")
+    } else {
+      setEmailError("")
+    }
   }
 
   const handleUsernameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newUsername = e.target.value
     setLocalUsername(newUsername)
+
+    if (newUsername.length > 0 && newUsername.length < 3) {
+      setUsernameError("Username must be at least 3 characters")
+    } else if (newUsername && !/^[a-zA-Z0-9_]+$/.test(newUsername)) {
+      setUsernameError("Username can only contain letters, numbers, and underscores")
+    } else {
+      setUsernameError("")
+    }
   }
 
   const handleContinue = () => {
-    // Final validation before proceeding
+    console.log("Continue clicked", { email, username: localUsername, usernameAvailable })
+
     if (!email || !validateEmail(email)) {
       setEmailError("Please enter a valid email address")
       return
@@ -106,7 +84,7 @@ export default function BasicInfoStep() {
       return
     }
 
-    if (usernameAvailable !== true) {
+    if (usernameAvailable === false) {
       setUsernameError("Please choose an available username")
       return
     }
@@ -118,9 +96,23 @@ export default function BasicInfoStep() {
     dispatch(prevStep())
   }
 
-  // Check if form is valid for continue button
-  const isFormValid =
-    isEmailValid && isUsernameValid && localUsername.length >= 3 && usernameAvailable === true && !loading
+  // Simplified validation check
+  const isEmailValid = email && validateEmail(email) && !emailError
+  const isUsernameValid = localUsername && localUsername.length >= 3 && !usernameError
+  const isUsernameAvailable = usernameAvailable === true || usernameAvailable === null
+
+  const canContinue = isEmailValid && isUsernameValid && isUsernameAvailable && !loading
+
+  console.log("Validation state:", {
+    email,
+    localUsername,
+    isEmailValid,
+    isUsernameValid,
+    isUsernameAvailable,
+    usernameAvailable,
+    canContinue,
+    loading,
+  })
 
   return (
     <div className="space-y-6">
@@ -141,7 +133,7 @@ export default function BasicInfoStep() {
             className={emailError ? "border-red-500" : isEmailValid ? "border-green-500" : ""}
           />
           {emailError && <p className="text-sm text-red-500">{emailError}</p>}
-          {isEmailValid && !emailError && <p className="text-sm text-green-500">Valid email address</p>}
+          {isEmailValid && <p className="text-sm text-green-500">Valid email address</p>}
           <p className="text-xs text-muted-foreground">We'll only use your email for important account notifications</p>
         </div>
 
@@ -184,9 +176,19 @@ export default function BasicInfoStep() {
         <Button variant="outline" onClick={handleBack}>
           Back
         </Button>
-        <Button onClick={handleContinue} disabled={!isFormValid}>
+        <Button
+          onClick={handleContinue}
+          disabled={!canContinue}
+          className={canContinue ? "bg-blue-600 hover:bg-blue-700" : ""}
+        >
           Continue
         </Button>
+      </div>
+
+      {/* Debug info - remove in production */}
+      <div className="text-xs text-gray-500 mt-2">
+        Debug: Email valid: {isEmailValid ? "✓" : "✗"}, Username valid: {isUsernameValid ? "✓" : "✗"}, Available:{" "}
+        {usernameAvailable?.toString() || "null"}, Can continue: {canContinue ? "✓" : "✗"}
       </div>
     </div>
   )
