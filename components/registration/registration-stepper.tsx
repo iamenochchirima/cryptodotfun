@@ -1,7 +1,6 @@
 "use client"
 
 import { useAppSelector } from "@/lib/redux/hooks"
-import { CheckIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const steps = [
@@ -16,71 +15,43 @@ export default function RegistrationStepper() {
   const { currentStep } = useAppSelector((state) => state.registration)
 
   return (
-    <div className="hidden sm:block">
-      <nav aria-label="Progress">
-        <ol role="list" className="flex items-center">
-          {steps.map((step, stepIdx) => (
-            <li key={step.name} className={cn(stepIdx !== steps.length - 1 ? "pr-8 sm:pr-20" : "", "relative flex-1")}>
-              {step.id < currentStep ? (
-                <div className="flex flex-col items-start">
-                  <div className="flex items-center">
-                    <div className="relative flex h-8 w-8 items-center justify-center rounded-full bg-primary">
-                      <CheckIcon className="h-5 w-5 text-primary-foreground" aria-hidden="true" />
-                      <span className="sr-only">{step.name}</span>
-                    </div>
-                  </div>
-                  <div className="mt-2">
-                    <span className="text-sm font-medium">{step.name}</span>
-                  </div>
-                </div>
-              ) : step.id === currentStep ? (
-                <div className="flex flex-col items-start">
-                  <div className="flex items-center" aria-current="step">
-                    <div className="relative flex h-8 w-8 items-center justify-center rounded-full border-2 border-primary">
-                      <span className="h-2.5 w-2.5 rounded-full bg-primary" aria-hidden="true" />
-                      <span className="sr-only">{step.name}</span>
-                    </div>
-                  </div>
-                  <div className="mt-2">
-                    <span className="text-sm font-medium text-primary">{step.name}</span>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex flex-col items-start">
-                  <div className="flex items-center">
-                    <div className="relative flex h-8 w-8 items-center justify-center rounded-full border-2 border-muted">
-                      <span className="text-sm text-muted-foreground">{step.id + 1}</span>
-                    </div>
-                  </div>
-                  <div className="mt-2">
-                    <span className="text-sm font-medium text-muted-foreground">{step.name}</span>
-                  </div>
-                </div>
+    <div className="w-full mb-8">
+      {/* Step indicator dots */}
+      <div className="flex items-center justify-center space-x-2 mb-4">
+        {steps.map((step, index) => (
+          <div key={step.id} className="flex items-center">
+            <div
+              className={cn(
+                "w-3 h-3 rounded-full transition-all duration-200",
+                step.id < currentStep ? "bg-green-500" : step.id === currentStep ? "bg-blue-500" : "bg-gray-300",
               )}
-              {stepIdx !== steps.length - 1 ? (
-                <div
-                  className={cn(
-                    step.id < currentStep ? "bg-primary" : "bg-muted",
-                    "absolute right-0 top-4 hidden h-0.5 w-5/6 sm:block",
-                  )}
-                />
-              ) : null}
-            </li>
-          ))}
-        </ol>
-      </nav>
+            />
+            {index < steps.length - 1 && (
+              <div
+                className={cn(
+                  "w-8 h-0.5 mx-1 transition-all duration-200",
+                  step.id < currentStep ? "bg-green-500" : "bg-gray-300",
+                )}
+              />
+            )}
+          </div>
+        ))}
+      </div>
 
-      {/* Mobile stepper */}
-      <div className="sm:hidden">
-        <p className="text-sm font-medium">
+      {/* Current step info */}
+      <div className="text-center">
+        <div className="text-sm text-gray-500 mb-1">
           Step {currentStep + 1} of {steps.length}
-        </p>
-        <div className="mt-2 h-2 w-full rounded-full bg-muted">
-          <div
-            className="h-2 rounded-full bg-primary transition-all"
-            style={{ width: `${((currentStep + 1) / steps.length) * 100}%` }}
-          />
         </div>
+        <div className="text-lg font-semibold text-gray-900 dark:text-gray-100">{steps[currentStep]?.name}</div>
+      </div>
+
+      {/* Progress bar */}
+      <div className="mt-4 w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+        <div
+          className="bg-blue-500 h-2 rounded-full transition-all duration-300 ease-out"
+          style={{ width: `${((currentStep + 1) / steps.length) * 100}%` }}
+        />
       </div>
     </div>
   )

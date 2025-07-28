@@ -25,17 +25,20 @@ export default function WalletConnectionStep() {
       // Mock wallet address based on wallet type
       let address = ""
       switch (walletType) {
-        case "metamask":
+        case "internet-identity":
+          address = "rdmx6-jaaaa-aaaah-qdrya-cai"
+          break
+        case "ethereum":
           address = "0x71C7656EC7ab88b098defB751B7401B5f6d8976F"
           break
-        case "phantom":
+        case "solana":
           address = "5FHwkrdxkRXnQsZC3Qo369ULSBpMJXqYhpJ6GKvdKmr5"
           break
-        case "walletconnect":
-          address = "0x8626f6940E2eb28930eFb4CeF49B2d1F2C9C1199"
+        case "nfid":
+          address = "nfid-user-12345-abcdef"
           break
-        case "coinbase":
-          address = "0xdD2FD4581271e230360230F9337D5c0430Bf44C0"
+        case "bitcoin":
+          address = "bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh"
           break
         default:
           address = "0x1234567890abcdef1234567890abcdef12345678"
@@ -67,50 +70,70 @@ export default function WalletConnectionStep() {
         </Alert>
       )}
 
-      <div className="grid grid-cols-2 gap-4 py-4">
+      <div className="grid grid-cols-1 gap-4 py-4">
         <Button
           variant="outline"
-          className="flex flex-col items-center justify-center h-24 hover:border-primary hover:text-primary"
-          onClick={() => connectWallet("metamask")}
+          className="flex items-center justify-start h-16 px-6 hover:border-primary hover:text-primary bg-transparent"
+          onClick={() => connectWallet("internet-identity")}
           disabled={connecting || walletConnected}
         >
-          <div className="w-10 h-10 mb-2 relative">
-            <Image src="/metamask-fox-logo.png" alt="MetaMask" fill className="object-contain" />
+          <div className="w-10 h-10 mr-4 relative">
+            <Image
+              src="/placeholder.svg?height=40&width=40&text=II"
+              alt="Internet Identity"
+              fill
+              className="object-contain"
+            />
           </div>
-          <span>MetaMask</span>
+          <span className="text-lg">Internet Identity</span>
         </Button>
+
         <Button
           variant="outline"
-          className="flex flex-col items-center justify-center h-24 hover:border-primary hover:text-primary"
-          onClick={() => connectWallet("phantom")}
+          className="flex items-center justify-start h-16 px-6 hover:border-primary hover:text-primary bg-transparent"
+          onClick={() => connectWallet("ethereum")}
           disabled={connecting || walletConnected}
         >
-          <div className="w-10 h-10 mb-2 relative">
-            <Image src="/phantom-wallet-logo.png" alt="Phantom" fill className="object-contain" />
+          <div className="w-10 h-10 mr-4 relative">
+            <Image src="/placeholder.svg?height=40&width=40&text=ETH" alt="Ethereum" fill className="object-contain" />
           </div>
-          <span>Phantom</span>
+          <span className="text-lg">Sign In with Ethereum</span>
         </Button>
+
         <Button
           variant="outline"
-          className="flex flex-col items-center justify-center h-24 hover:border-primary hover:text-primary"
-          onClick={() => connectWallet("walletconnect")}
+          className="flex items-center justify-start h-16 px-6 hover:border-primary hover:text-primary bg-transparent"
+          onClick={() => connectWallet("solana")}
           disabled={connecting || walletConnected}
         >
-          <div className="w-10 h-10 mb-2 relative">
-            <Image src="/walletconnect-icon.png" alt="WalletConnect" fill className="object-contain" />
+          <div className="w-10 h-10 mr-4 relative">
+            <Image src="/placeholder.svg?height=40&width=40&text=SOL" alt="Solana" fill className="object-contain" />
           </div>
-          <span>WalletConnect</span>
+          <span className="text-lg">Sign In With Solana</span>
         </Button>
+
         <Button
           variant="outline"
-          className="flex flex-col items-center justify-center h-24 hover:border-primary hover:text-primary"
-          onClick={() => connectWallet("coinbase")}
+          className="flex items-center justify-start h-16 px-6 hover:border-primary hover:text-primary bg-transparent"
+          onClick={() => connectWallet("nfid")}
           disabled={connecting || walletConnected}
         >
-          <div className="w-10 h-10 mb-2 relative">
-            <Image src="/abstract-crypto-wallet.png" alt="Coinbase" fill className="object-contain" />
+          <div className="w-10 h-10 mr-4 relative">
+            <Image src="/placeholder.svg?height=40&width=40&text=NFID" alt="NFID" fill className="object-contain" />
           </div>
-          <span>Coinbase</span>
+          <span className="text-lg">Sign in with NFID</span>
+        </Button>
+
+        <Button
+          variant="outline"
+          className="flex items-center justify-start h-16 px-6 hover:border-primary hover:text-primary bg-transparent"
+          onClick={() => connectWallet("bitcoin")}
+          disabled={connecting || walletConnected}
+        >
+          <div className="w-10 h-10 mr-4 relative">
+            <Image src="/placeholder.svg?height=40&width=40&text=BTC" alt="Bitcoin" fill className="object-contain" />
+          </div>
+          <span className="text-lg">Sign In with Bitcoin</span>
         </Button>
       </div>
 
@@ -126,7 +149,7 @@ export default function WalletConnectionStep() {
 
       <div className="flex justify-end">
         <Button onClick={handleContinue} disabled={!walletConnected || connecting}>
-          Continue
+          {connecting ? "Connecting..." : "Continue"}
         </Button>
       </div>
     </div>

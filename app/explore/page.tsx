@@ -1,7 +1,7 @@
 import Link from "next/link"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
-import { ArrowRight, BookOpen, Coins, Shield, Users, ImageIcon, Rocket, BarChart3, Zap, Gamepad2 } from "lucide-react"
+import { ArrowRight, BookOpen, Coins, Shield, Users, ImageIcon, BarChart3, Zap, Gamepad2 } from "lucide-react"
 
 const features = [
   {
@@ -81,33 +81,19 @@ const features = [
     ],
   },
   {
-    title: "NFT Marketplace",
-    description: "Discover, buy, and sell NFTs across multiple blockchains with low fees and seamless transactions.",
+    title: "NFT Platform",
+    description:
+      "Complete NFT ecosystem - discover, buy, sell, and launch your own NFT collections with advanced tools and low fees.",
     icon: ImageIcon,
     color: "text-crypto-purple",
     bgColor: "bg-crypto-purple/10",
     image: "/nft-marketplace-digital-art.png",
     link: "/nft/marketplace",
     highlights: [
-      "Multi-chain NFT support",
-      "Low marketplace fees",
-      "Creator royalties",
-      "Exclusive drops and collections",
-    ],
-  },
-  {
-    title: "NFT Launchpad",
-    description: "Create and launch your own NFT collections with customizable properties, royalties, and more.",
-    icon: Rocket,
-    color: "text-crypto-blue",
-    bgColor: "bg-crypto-blue/10",
-    image: "/nft-platform.png",
-    link: "/nft/launchpad",
-    highlights: [
-      "No-code NFT creation",
-      "Multiple blockchain support",
-      "Customizable royalties",
-      "Marketing and promotion tools",
+      "Multi-chain NFT marketplace",
+      "No-code NFT collection creation",
+      "Low marketplace fees & creator royalties",
+      "Launch tools with marketing support",
     ],
   },
   {
@@ -141,51 +127,53 @@ export default function ExplorePage() {
   return (
     <div className="container mx-auto px-4 py-24">
       <div className="text-center mb-16">
-        <h1 className="text-4xl font-bold mb-4 md:text-5xl">Explore Our Features</h1>
+        <h1 className="text-4xl font-bold mb-4 md:text-5xl">Explore Apps</h1>
         <p className="mx-auto max-w-2xl text-lg text-muted-foreground">
-          Discover all the tools and resources available in our crypto super app.
+          Discover all the powerful apps available in our comprehensive crypto ecosystem.
         </p>
       </div>
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
         {features.map((feature, index) => (
-          <div key={index} className="group overflow-hidden rounded-xl border bg-card transition-all hover:shadow-lg">
-            <div className="relative h-60 w-full overflow-hidden">
-              <Image
-                src={feature.image || "/placeholder.svg"}
-                alt={feature.title}
-                fill
-                className="object-cover transition-transform duration-300 group-hover:scale-105"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-background to-transparent" />
-              <div className="absolute bottom-4 left-4">
-                <div className={`inline-flex items-center rounded-full ${feature.bgColor} px-3 py-1`}>
-                  <feature.icon className={`mr-1 h-4 w-4 ${feature.color}`} />
-                  <span className={`text-sm font-medium ${feature.color}`}>{feature.title}</span>
+          <Link key={index} href={feature.link} className="block">
+            <div className="group overflow-hidden rounded-xl border bg-card transition-all hover:shadow-lg cursor-pointer">
+              <div className="relative h-60 w-full overflow-hidden">
+                <Image
+                  src={feature.image || "/placeholder.svg"}
+                  alt={feature.title}
+                  fill
+                  className="object-cover transition-transform duration-300 group-hover:scale-105"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-background to-transparent" />
+                <div className="absolute bottom-4 left-4">
+                  <div className={`inline-flex items-center rounded-full ${feature.bgColor} px-3 py-1`}>
+                    <feature.icon className={`mr-1 h-4 w-4 ${feature.color}`} />
+                    <span className={`text-sm font-medium ${feature.color}`}>{feature.title}</span>
+                  </div>
                 </div>
               </div>
-            </div>
-            <div className="p-6">
-              <h2 className="mb-2 text-2xl font-bold">{feature.title}</h2>
-              <p className="mb-4 text-muted-foreground">{feature.description}</p>
-              <div className="mb-6">
-                <h3 className="mb-2 text-sm font-medium">Highlights:</h3>
-                <ul className="space-y-1">
-                  {feature.highlights.map((highlight, i) => (
-                    <li key={i} className="flex items-start">
-                      <div className={`mr-2 mt-1 h-3 w-3 rounded-full ${feature.bgColor}`} />
-                      <span className="text-sm">{highlight}</span>
-                    </li>
-                  ))}
-                </ul>
+              <div className="p-6">
+                <h2 className="mb-2 text-2xl font-bold">{feature.title}</h2>
+                <p className="mb-4 text-muted-foreground">{feature.description}</p>
+                <div className="mb-6">
+                  <h3 className="mb-2 text-sm font-medium">Highlights:</h3>
+                  <ul className="space-y-1">
+                    {feature.highlights.map((highlight, i) => (
+                      <li key={i} className="flex items-start">
+                        <div className={`mr-2 mt-1 h-3 w-3 rounded-full ${feature.bgColor}`} />
+                        <span className="text-sm">{highlight}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <Button className="w-full" asChild>
+                  <span>
+                    Explore {feature.title} <ArrowRight className="ml-2 h-4 w-4" />
+                  </span>
+                </Button>
               </div>
-              <Button className="w-full" asChild>
-                <Link href={feature.link}>
-                  Explore {feature.title} <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
-              </Button>
             </div>
-          </div>
+          </Link>
         ))}
       </div>
     </div>

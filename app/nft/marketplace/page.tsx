@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Search, LayoutGrid, Heart, Filter, ArrowRight } from "lucide-react"
+import { Search, LayoutGrid, Heart, Filter, ArrowRight, Plus } from "lucide-react"
 
 // Mock NFT data
 const nfts = [
@@ -13,7 +13,7 @@ const nfts = [
     name: "Cosmic Voyager #42",
     creator: "ArtisticMind",
     price: "0.45 ETH",
-    image: "/placeholder.svg?height=300&width=300&query=cosmic space traveler digital art nft",
+    image: "/placeholder.svg?height=300&width=300",
     collection: "Cosmic Voyagers",
     chain: "Ethereum",
   },
@@ -22,7 +22,7 @@ const nfts = [
     name: "Neon Samurai",
     creator: "CyberArtist",
     price: "2.1 SOL",
-    image: "/placeholder.svg?height=300&width=300&query=neon cyberpunk samurai digital art nft",
+    image: "/placeholder.svg?height=300&width=300",
     collection: "Neo Tokyo",
     chain: "Solana",
   },
@@ -31,7 +31,7 @@ const nfts = [
     name: "Abstract Mindscape #7",
     creator: "DreamWeaver",
     price: "0.2 ETH",
-    image: "/placeholder.svg?height=300&width=300&query=abstract colorful mindscape digital art nft",
+    image: "/placeholder.svg?height=300&width=300",
     collection: "Mindscapes",
     chain: "Ethereum",
   },
@@ -40,7 +40,7 @@ const nfts = [
     name: "Pixel Punk #1337",
     creator: "PixelMaster",
     price: "0.8 ETH",
-    image: "/placeholder.svg?height=300&width=300&query=pixel art punk character digital nft",
+    image: "/placeholder.svg?height=300&width=300",
     collection: "Pixel Punks",
     chain: "Ethereum",
   },
@@ -49,7 +49,7 @@ const nfts = [
     name: "Ethereal Landscape",
     creator: "NatureMinter",
     price: "1.5 SOL",
-    image: "/placeholder.svg?height=300&width=300&query=ethereal fantasy landscape digital art nft",
+    image: "/placeholder.svg?height=300&width=300",
     collection: "Ethereal Worlds",
     chain: "Solana",
   },
@@ -58,7 +58,7 @@ const nfts = [
     name: "Golden Mech Warrior",
     creator: "MechCreator",
     price: "0.35 ETH",
-    image: "/placeholder.svg?height=300&width=300&query=golden mechanical warrior robot digital art nft",
+    image: "/placeholder.svg?height=300&width=300",
     collection: "Mech Warriors",
     chain: "Ethereum",
   },
@@ -67,7 +67,7 @@ const nfts = [
     name: "Mystic Owl #13",
     creator: "NightOwl",
     price: "0.6 ETH",
-    image: "/placeholder.svg?height=300&width=300&query=mystical owl with glowing eyes digital art nft",
+    image: "/placeholder.svg?height=300&width=300",
     collection: "Mystic Creatures",
     chain: "Ethereum",
   },
@@ -76,8 +76,7 @@ const nfts = [
     name: "Digital Dreamscape",
     creator: "VirtualArtist",
     price: "3.2 SOL",
-    image:
-      "/placeholder.svg?height=300&width=300&query=surreal digital dreamscape with floating islands digital art nft",
+    image: "/placeholder.svg?height=300&width=300",
     collection: "Digital Dreams",
     chain: "Solana",
   },
@@ -91,8 +90,8 @@ const collections = [
     creator: "ArtisticMind",
     items: 100,
     volume: "45.5 ETH",
-    image: "/placeholder.svg?height=300&width=300&query=cosmic space traveler collection banner",
-    banner: "/placeholder.svg?height=600&width=1200&query=cosmic space collection banner with multiple characters",
+    image: "/placeholder.svg?height=300&width=300",
+    banner: "/placeholder.svg?height=600&width=1200",
     chain: "Ethereum",
   },
   {
@@ -101,8 +100,8 @@ const collections = [
     creator: "CyberArtist",
     items: 250,
     volume: "520 SOL",
-    image: "/placeholder.svg?height=300&width=300&query=cyberpunk neon tokyo collection banner",
-    banner: "/placeholder.svg?height=600&width=1200&query=cyberpunk neon tokyo collection banner with city skyline",
+    image: "/placeholder.svg?height=300&width=300",
+    banner: "/placeholder.svg?height=600&width=1200",
     chain: "Solana",
   },
   {
@@ -111,8 +110,8 @@ const collections = [
     creator: "DreamWeaver",
     items: 75,
     volume: "12.8 ETH",
-    image: "/placeholder.svg?height=300&width=300&query=abstract mindscape collection banner",
-    banner: "/placeholder.svg?height=600&width=1200&query=abstract mindscape collection banner with colorful patterns",
+    image: "/placeholder.svg?height=300&width=300",
+    banner: "/placeholder.svg?height=600&width=1200",
     chain: "Ethereum",
   },
   {
@@ -121,37 +120,33 @@ const collections = [
     creator: "PixelMaster",
     items: 10000,
     volume: "8500 ETH",
-    image: "/placeholder.svg?height=300&width=300&query=pixel art punk collection banner",
-    banner: "/placeholder.svg?height=600&width=1200&query=pixel art punk collection banner with multiple characters",
+    image: "/placeholder.svg?height=300&width=300",
+    banner: "/placeholder.svg?height=600&width=1200",
     chain: "Ethereum",
   },
 ]
 
-export default function NFTMarketplacePage() {
+export default function NFTHubPage() {
   return (
     <div className="container mx-auto px-4 py-24">
+      {/* Header */}
       <div className="mb-8">
-        <h1 className="text-4xl font-bold mb-4">NFT Marketplace</h1>
+        <h1 className="text-4xl font-bold mb-4">NFT Hub</h1>
         <p className="text-lg text-muted-foreground">
-          Discover, collect, and sell extraordinary NFTs across multiple blockchains.
+          Discover, collect, create, and launch extraordinary NFTs across multiple blockchains.
         </p>
       </div>
 
       {/* Featured Collection */}
-      <div className="mb-12 rounded-xl overflow-hidden">
+      <div className="mb-8 rounded-xl overflow-hidden">
         <div className="relative h-64 md:h-80">
-          <Image
-            src="/placeholder.svg?height=600&width=1200&query=featured nft collection banner with digital art"
-            alt="Featured Collection"
-            fill
-            className="object-cover"
-          />
+          <Image src="/placeholder.svg?height=600&width=1200" alt="Featured Collection" fill className="object-cover" />
           <div className="absolute inset-0 bg-gradient-to-t from-background to-transparent" />
           <div className="absolute bottom-6 left-6 right-6">
             <div className="flex items-end gap-4">
               <div className="relative h-24 w-24 rounded-xl overflow-hidden border-4 border-background">
                 <Image
-                  src="/placeholder.svg?height=300&width=300&query=featured nft collection logo"
+                  src="/placeholder.svg?height=300&width=300"
                   alt="Collection Logo"
                   fill
                   className="object-cover"
@@ -164,6 +159,16 @@ export default function NFTMarketplacePage() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Create Collection CTA */}
+      <div className="mb-12 flex justify-center">
+        <Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-white" asChild>
+          <Link href="/nft/create-collection">
+            <Plus className="mr-2 h-4 w-4" />
+            Create Your Own Collection
+          </Link>
+        </Button>
       </div>
 
       {/* Search and Filters */}
@@ -315,13 +320,128 @@ export default function NFTMarketplacePage() {
           </div>
         </TabsContent>
 
-        {/* Other tabs would have similar content */}
+        {/* New Tab */}
         <TabsContent value="new" className="mt-6">
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-            {/* Similar NFT grid as in trending tab, but with different NFTs */}
             {nfts
               .slice(4, 8)
               .concat(nfts.slice(0, 4))
+              .map((nft) => (
+                <div
+                  key={nft.id}
+                  className="group overflow-hidden rounded-xl border bg-card transition-all hover:shadow-lg"
+                >
+                  <div className="relative aspect-square overflow-hidden">
+                    <Image
+                      src={nft.image || "/placeholder.svg"}
+                      alt={nft.name}
+                      fill
+                      className="object-cover transition-transform duration-300 group-hover:scale-105"
+                    />
+                    <div className="absolute top-2 right-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 rounded-full bg-background/50 backdrop-blur-sm"
+                      >
+                        <Heart className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <div className="absolute bottom-2 left-2">
+                      <div className="rounded-full bg-background/50 px-2 py-1 text-xs backdrop-blur-sm">
+                        {nft.chain}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="p-4">
+                    <div className="mb-1 text-sm text-muted-foreground">{nft.collection}</div>
+                    <h3 className="mb-2 text-lg font-bold">{nft.name}</h3>
+                    <div className="flex items-center justify-between">
+                      <div className="text-sm">
+                        <span className="text-muted-foreground">By </span>
+                        <span className="font-medium">{nft.creator}</span>
+                      </div>
+                      <div className="font-bold">{nft.price}</div>
+                    </div>
+                  </div>
+                  <div className="border-t p-4">
+                    <Button className="w-full" asChild>
+                      <Link href={`/nft/marketplace/${nft.id}`}>View Details</Link>
+                    </Button>
+                  </div>
+                </div>
+              ))}
+          </div>
+        </TabsContent>
+
+        {/* Art Tab */}
+        <TabsContent value="art" className="mt-6">
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+            {nfts
+              .filter(
+                (nft) =>
+                  nft.collection.includes("Art") ||
+                  nft.collection.includes("Abstract") ||
+                  nft.collection.includes("Digital"),
+              )
+              .map((nft) => (
+                <div
+                  key={nft.id}
+                  className="group overflow-hidden rounded-xl border bg-card transition-all hover:shadow-lg"
+                >
+                  <div className="relative aspect-square overflow-hidden">
+                    <Image
+                      src={nft.image || "/placeholder.svg"}
+                      alt={nft.name}
+                      fill
+                      className="object-cover transition-transform duration-300 group-hover:scale-105"
+                    />
+                    <div className="absolute top-2 right-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 rounded-full bg-background/50 backdrop-blur-sm"
+                      >
+                        <Heart className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <div className="absolute bottom-2 left-2">
+                      <div className="rounded-full bg-background/50 px-2 py-1 text-xs backdrop-blur-sm">
+                        {nft.chain}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="p-4">
+                    <div className="mb-1 text-sm text-muted-foreground">{nft.collection}</div>
+                    <h3 className="mb-2 text-lg font-bold">{nft.name}</h3>
+                    <div className="flex items-center justify-between">
+                      <div className="text-sm">
+                        <span className="text-muted-foreground">By </span>
+                        <span className="font-medium">{nft.creator}</span>
+                      </div>
+                      <div className="font-bold">{nft.price}</div>
+                    </div>
+                  </div>
+                  <div className="border-t p-4">
+                    <Button className="w-full" asChild>
+                      <Link href={`/nft/marketplace/${nft.id}`}>View Details</Link>
+                    </Button>
+                  </div>
+                </div>
+              ))}
+          </div>
+        </TabsContent>
+
+        {/* Collectibles Tab */}
+        <TabsContent value="collectibles" className="mt-6">
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+            {nfts
+              .filter(
+                (nft) =>
+                  nft.collection.includes("Punk") ||
+                  nft.collection.includes("Voyager") ||
+                  nft.collection.includes("Warrior"),
+              )
               .map((nft) => (
                 <div
                   key={nft.id}
@@ -375,24 +495,19 @@ export default function NFTMarketplacePage() {
       <div className="mt-16 rounded-xl bg-gradient-to-r from-crypto-purple/20 to-crypto-pink/20 p-8">
         <div className="grid grid-cols-1 gap-8 md:grid-cols-2 items-center">
           <div>
-            <h2 className="text-3xl font-bold mb-4">Create and Sell Your NFTs</h2>
+            <h2 className="text-3xl font-bold mb-4">Create and Launch Your NFTs</h2>
             <p className="mb-6 text-muted-foreground">
               Launch your own NFT collection with our easy-to-use tools. No coding required. Set royalties, properties,
               and more with just a few clicks.
             </p>
-            <Button size="lg" asChild>
-              <Link href="/nft/launchpad">
-                Create NFT Collection <ArrowRight className="ml-2 h-4 w-4" />
+            <Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-white" asChild>
+              <Link href="/nft/create-collection">
+                Create Collection <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>
           </div>
           <div className="relative h-64 rounded-lg overflow-hidden">
-            <Image
-              src="/placeholder.svg?height=400&width=600&query=artist creating digital nft art on computer"
-              alt="Create NFTs"
-              fill
-              className="object-cover"
-            />
+            <Image src="/placeholder.svg?height=400&width=600" alt="Create NFTs" fill className="object-cover" />
           </div>
         </div>
       </div>
