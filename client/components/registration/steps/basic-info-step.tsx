@@ -103,17 +103,6 @@ export default function BasicInfoStep() {
 
   const canContinue = isEmailValid && isUsernameValid && isUsernameAvailable && !loading
 
-  console.log("Validation state:", {
-    email,
-    localUsername,
-    isEmailValid,
-    isUsernameValid,
-    isUsernameAvailable,
-    usernameAvailable,
-    canContinue,
-    loading,
-  })
-
   return (
     <div className="space-y-6">
       <div className="text-center">

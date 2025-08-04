@@ -1,3 +1,7 @@
+export { idlFactory as icSiwsIDL } from "../../canisters/src/declarations/ic_siws_provider/ic_siws_provider.did.js";
+export { idlFactory as icSiweIDL } from "../../canisters/src/declarations/ic_siwe_provider/ic_siwe_provider.did.js";
+export { idlFactory as usersIDL } from "../../canisters/src/declarations/users/users.did.js";
+
 import prodConfig from '../../canisters/canister_ids.json';
 import localConfig from '../../canisters/.dfx/local/canister_ids.json';
 

@@ -7,10 +7,9 @@ import SolanaProviders from '@/providers/solana-providers'
 import SiwsProvider from '@/providers/siws-provider'
 import SiweProvider from '@/providers/siwe-provider'
 import { useState } from 'react'
-import { AuthProvider } from './context'
+import { AuthProvider } from './auth-context'
 
 export function Web3Providers({ children }: { children: React.ReactNode }) {
-  // Create QueryClient instance with useState to ensure it's only created once
   const [queryClient] = useState(() => new QueryClient({
     defaultOptions: {
       queries: {

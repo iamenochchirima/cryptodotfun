@@ -50,23 +50,21 @@ export default function RegistrationForm({ isModal = false, onComplete }: Regist
     }
   }, [isCompleted, dispatch, router, walletAddress, username, isModal, onComplete])
 
-  // Render the current step
+  // Render the current step (skipping wallet connection step)
   const renderStep = () => {
     switch (currentStep) {
       case 0:
-        return <WalletConnectionStep />
-      case 1:
         return <BasicInfoStep />
-      case 2:
+      case 1:
         return <ReferralStep />
-      case 3:
+      case 2:
         return <InterestsStep />
-      case 4:
+      case 3:
         return <ConfirmationStep />
-      case 5:
+      case 4:
         return <SuccessStep />
       default:
-        return <WalletConnectionStep />
+        return <BasicInfoStep />
     }
   }
 

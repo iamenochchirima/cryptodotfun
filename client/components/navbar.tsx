@@ -9,7 +9,7 @@ import { ModeToggle } from "@/components/mode-toggle"
 import { cn } from "@/lib/utils"
 import AuthButton from "@/components/auth-button"
 import { NotificationDropdown } from "@/components/notification-dropdown"
-import { useAppSelector } from "@/lib/redux/hooks"
+import { useAuth } from "@/providers/auth-context"
 
 // Simplified navigation links
 const navLinks = [
@@ -20,13 +20,13 @@ const navLinks = [
 ]
 
 export default function Navbar() {
+  const { isAuthenticated } = useAuth();
   const [isOpen, setIsOpen] = useState(false)
   const [isScrolled, setIsScrolled] = useState(false)
   const [mounted, setMounted] = useState(false)
   const pathname = usePathname()
 
   // Get auth state from Redux
-  const { isAuthenticated } = useAppSelector((state) => state.auth)
 
   useEffect(() => {
     setMounted(true)

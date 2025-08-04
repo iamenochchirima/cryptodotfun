@@ -1,11 +1,10 @@
 "use client";
-import { useState, useEffect } from "react";
+import React, { useState, useEffect, createContext, useContext, ReactNode } from "react";
 import { Actor, ActorSubclass, HttpAgent } from "@dfinity/agent";
 import {
   _SERVICE as BACKEND_SERVICE,
   User,
 } from "../../canisters/src/declarations/users/users.did";
-import { idlFactory } from "../../canisters/src/declarations/users";
 
 import { SessionData, useSessionData } from "./useSessionData";
 import { WalletType } from "./types";
@@ -17,7 +16,24 @@ import { useSiwe } from "ic-siwe-js/react";
 import { useAccount, useChainId, useDisconnect } from "wagmi";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { host, getIIURL, network } from "@/constants/urls";
-import { usersCanisterId } from "@/constants/canisters-config";
+import { usersCanisterId, usersIDL } from "@/constants/canisters-config";
+
+// Auth context type
+interface AuthContextType {
+  login: (walletType: WalletType) => Promise<void>;
+  logout: () => void;
+  autoLogin: () => void;
+  identity: any;
+  principalId: string | null;
+  sessionData: SessionData | null;
+  user: User | null;
+  isAuthenticated: boolean;
+  backendActor: ActorSubclass<BACKEND_SERVICE> | null;
+  setUser: (user: User | null) => void;
+}
+
+// Create the context
+const AuthContext = createContext<AuthContextType | null>(null);
 
 // Safe hooks that handle provider not being ready
 const useSafeSiws = () => {
@@ -36,7 +52,8 @@ const useSafeSiwe = () => {
   }
 };
 
-export const useAuth = () => {
+// AuthProvider component
+export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [authClient, setAuthClient] = useState<AuthClient | null>(null);
   const { identity: siwsIdentity, clear: siwsClear } = useSafeSiws();
   const { publicKey, disconnect: solanaDisconnect } = useWallet();
@@ -54,8 +71,7 @@ export const useAuth = () => {
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
-    const session = localStorage.getItem("session-data");
-    console.log({ session });
+    const session = localStorage.getItem("session-data")
     if (session) {
       const sessionData: SessionData = JSON.parse(session);
       switch (sessionData.connectedWalletType) {
@@ -186,7 +202,7 @@ export const useAuth = () => {
           });
         }
         setPrincipalId(identity.getPrincipal().toText());
-        const _backendActor = Actor.createActor<BACKEND_SERVICE>(idlFactory, {
+        const _backendActor = Actor.createActor<BACKEND_SERVICE>(usersIDL, {
           agent,
           canisterId: usersCanisterId,
         });
@@ -220,7 +236,7 @@ export const useAuth = () => {
         console.log("Error fetching root key: ", err);
       });
     }
-    const _backendActor = Actor.createActor<BACKEND_SERVICE>(idlFactory, {
+    const _backendActor = Actor.createActor<BACKEND_SERVICE>(usersIDL, {
       agent,
       canisterId: usersCanisterId,
     });
@@ -245,7 +261,7 @@ export const useAuth = () => {
         console.log("Error fetching root key: ", err);
       });
     }
-    const _backendActor = Actor.createActor<BACKEND_SERVICE>(idlFactory, {
+    const _backendActor = Actor.createActor<BACKEND_SERVICE>(usersIDL, {
       agent,
       canisterId: usersCanisterId,
     });
@@ -271,7 +287,7 @@ export const useAuth = () => {
           console.log("Error fetching root key: ", err);
         });
       }
-      const _backendActor = Actor.createActor<BACKEND_SERVICE>(idlFactory, {
+      const _backendActor = Actor.createActor<BACKEND_SERVICE>(usersIDL, {
         agent,
         canisterId: usersCanisterId,
       });
@@ -322,14 +338,6 @@ export const useAuth = () => {
     const principalAddress = siweIdentity.getPrincipal().toText();
     const aid = aidFromPrincipal(siweIdentity.getPrincipal());
     const chainAddress = ethAddress || principalAddress;
-    console.log(
-      "SIWE Principal Address:",
-      principalAddress,
-      "AID:",
-      aid,
-      "Chain Address:",
-      chainAddress
-    );
     return { principalAddress, aid, chainAddress };
   };
 
@@ -340,18 +348,10 @@ export const useAuth = () => {
     const principalAddress = siwsIdentity.getPrincipal().toText();
     const aid = aidFromPrincipal(siwsIdentity.getPrincipal());
     const chainAddress = publicKey.toString() || principalAddress;
-    console.log(
-      "SIWS Principal Address:",
-      principalAddress,
-      "AID:",
-      aid,
-      "Chain Address:",
-      chainAddress
-    );
     return { principalAddress, aid, chainAddress };
   };
 
-  return {
+  const value: AuthContextType = {
     login,
     logout,
     autoLogin,
@@ -363,4 +363,19 @@ export const useAuth = () => {
     backendActor,
     setUser,
   };
+
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+    </AuthContext.Provider>
+  );
+};
+
+// Hook to use the auth context
+export const useAuth = (): AuthContextType => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+  return context;
 };

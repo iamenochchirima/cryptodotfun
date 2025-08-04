@@ -1,10 +1,11 @@
 "use client"
 
 import { useEffect } from "react"
-import { X } from "lucide-react"
+import { Button } from "@/components/ui/button"
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks"
 import { resetRegistration } from "@/lib/redux/features/registration/registrationSlice"
 import RegistrationForm from "./registration-form"
+import { useAuth } from "@/providers/auth-context"
 
 interface RegistrationModalProps {
   isOpen: boolean
@@ -13,8 +14,10 @@ interface RegistrationModalProps {
 
 export default function RegistrationModal({ isOpen, onClose }: RegistrationModalProps) {
   const dispatch = useAppDispatch()
+  const { logout } = useAuth()
   const { isCompleted } = useAppSelector((state) => state.registration)
 
+  // Close modal after successful registration
   useEffect(() => {
     if (isCompleted) {
       const timer = setTimeout(() => {
@@ -24,8 +27,10 @@ export default function RegistrationModal({ isOpen, onClose }: RegistrationModal
     }
   }, [isCompleted, onClose])
 
-  const handleClose = () => {
+  // Handle cancel - logout and close modal
+  const handleCancel = () => {
     dispatch(resetRegistration())
+    logout()
     onClose()
   }
 
@@ -65,11 +70,8 @@ export default function RegistrationModal({ isOpen, onClose }: RegistrationModal
         zIndex: 9999
       }}
     >
-      {/* Backdrop */}
-      <div 
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm" 
-        onClick={handleClose}
-      />
+      {/* Backdrop - no click handler */}
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
 
       {/* Modal Container */}
       <div className="relative z-10 flex items-center justify-center min-h-full p-4">
@@ -80,20 +82,26 @@ export default function RegistrationModal({ isOpen, onClose }: RegistrationModal
           {/* Modal Content */}
           <div className="max-h-[80vh] overflow-y-auto">
             <div className="flex flex-col space-y-1.5 p-6 pb-3">
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold leading-none tracking-tight">Join CryptoDotFun</h2>
-                <button
-                  onClick={handleClose}
-                  className="rounded-full p-1.5 text-muted-foreground hover:bg-muted transition-colors"
-                >
-                  <X className="h-4 w-4" />
-                  <span className="sr-only">Close</span>
-                </button>
+              <div className="flex items-center justify-center">
+                <h2 className="text-lg font-semibold leading-none tracking-tight">Complete Your Registration</h2>
               </div>
-              <p className="text-sm text-muted-foreground">Create your account to get started</p>
+              <p className="text-sm text-muted-foreground text-center">Finish setting up your account to get started</p>
             </div>
             <div className="p-6 pt-0">
               <RegistrationForm isModal={true} onComplete={onClose} />
+              
+              {/* Cancel button - only show if not completed */}
+              {!isCompleted && (
+                <div className="mt-6 flex justify-center">
+                  <Button 
+                    variant="outline" 
+                    onClick={handleCancel}
+                    className="w-full"
+                  >
+                    Cancel Registration
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
         </div>

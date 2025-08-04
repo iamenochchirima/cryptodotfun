@@ -19,11 +19,13 @@ import {
   ImageIcon,
 } from "lucide-react"
 import { AnimatedHeroText } from "@/components/animated-hero-text"
-import { useAuth } from "@/providers/useAuth"
-
+import { useAuth } from "@/providers/auth-context";
 
 export default function Home() {
-  const { isAuthenticated, login, logout, backendActor } = useAuth();
+
+  const { isAuthenticated, user, backendActor } = useAuth()
+
+  console.log("Home - isAuthenticated:", { isAuthenticated , user, backendActor })
 
   return (
     <div className="flex flex-col">

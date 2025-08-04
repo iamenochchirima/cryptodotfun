@@ -4,11 +4,10 @@ import { useAppSelector } from "@/lib/redux/hooks"
 import { cn } from "@/lib/utils"
 
 const steps = [
-  { id: 0, name: "Connect Wallet" },
-  { id: 1, name: "Basic Info" },
-  { id: 2, name: "Referral" },
-  { id: 3, name: "Interests" },
-  { id: 4, name: "Confirmation" },
+  { id: 0, name: "Basic Info" },
+  { id: 1, name: "Referral" },
+  { id: 2, name: "Interests" },
+  { id: 3, name: "Confirmation" },
 ]
 
 export default function RegistrationStepper() {
