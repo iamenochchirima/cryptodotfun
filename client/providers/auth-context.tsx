@@ -18,7 +18,6 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import { host, getIIURL, network } from "@/constants/urls";
 import { usersCanisterId, usersIDL } from "@/constants/canisters-config";
 
-// Auth context type
 interface AuthContextType {
   login: (walletType: WalletType) => Promise<void>;
   logout: () => void;
@@ -32,7 +31,6 @@ interface AuthContextType {
   setUser: (user: User | null) => void;
 }
 
-// Create the context
 const AuthContext = createContext<AuthContextType | null>(null);
 
 // Safe hooks that handle provider not being ready

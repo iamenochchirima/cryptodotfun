@@ -9,6 +9,8 @@ import { WalletType } from "@/providers/types"
 import { connectInternetIdentityWallet } from "@/providers/internetidentity"
 import { connectNFIDWallet } from "@/providers/nfid"
 import { useAuth } from "@/providers/auth-context"
+import EthConnect from "./eth-connect"
+import SolConnect from "./sol-connect"
 
 interface WalletConnectionModalProps {
   isOpen: boolean
@@ -19,6 +21,7 @@ export default function WalletConnectionModal({ isOpen, onClose }: WalletConnect
   const { login } = useAuth()
   const [connecting, setConnecting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [selectedWallet, setSelectedWallet] = useState<string | null>(null);
 
   const walletConnectCallback = (success: boolean, walletType: WalletType) => {
     if (success) {
@@ -26,6 +29,15 @@ export default function WalletConnectionModal({ isOpen, onClose }: WalletConnect
       onClose()
     }
   }
+
+  const handleWalletSelect = async (walletId: string) => {
+    setSelectedWallet(walletId);
+    if (walletId === 'internet-identity') {
+      connectInternetIdentityWallet(walletConnectCallback);
+    } else if (walletId === 'nfid') {
+      connectNFIDWallet(walletConnectCallback);
+    }
+  };
 
   const connectWallet = async (walletType: string) => {
     setConnecting(true)
@@ -76,26 +88,26 @@ export default function WalletConnectionModal({ isOpen, onClose }: WalletConnect
   if (!isOpen) return null
 
   return (
-    <div 
+    <div
       className="fixed inset-0 z-50"
-      style={{ 
-        position: 'fixed', 
-        top: 0, 
-        left: 0, 
-        right: 0, 
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
         bottom: 0,
         zIndex: 9999
       }}
     >
       {/* Backdrop */}
-      <div 
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm" 
+      <div
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
         onClick={handleClose}
       />
 
       {/* Modal Container */}
       <div className="relative z-10 flex items-center justify-center min-h-full p-4">
-        <div 
+        <div
           className="w-full max-w-md bg-background border rounded-lg shadow-xl max-h-[90vh] overflow-hidden"
           onClick={(e) => e.stopPropagation()}
         >
@@ -124,11 +136,11 @@ export default function WalletConnectionModal({ isOpen, onClose }: WalletConnect
               </Alert>
             )}
 
-            <div className="space-y-3">
+            {!selectedWallet && <div className="space-y-3">
               <Button
                 variant="outline"
                 className="w-full flex items-center justify-start h-14 px-4 hover:border-primary hover:text-primary bg-transparent"
-                onClick={() => connectInternetIdentityWallet(walletConnectCallback)}
+                onClick={() => handleWalletSelect("internet-identity")}
                 disabled={connecting}
               >
                 <div className="w-8 h-8 mr-3 relative">
@@ -145,15 +157,15 @@ export default function WalletConnectionModal({ isOpen, onClose }: WalletConnect
               <Button
                 variant="outline"
                 className="w-full flex items-center justify-start h-14 px-4 hover:border-primary hover:text-primary bg-transparent"
-                onClick={() => connectWallet("ethereum")}
+                onClick={() => handleWalletSelect("ethereum")}
                 disabled={connecting}
               >
                 <div className="w-8 h-8 mr-3 relative">
-                  <Image 
-                    src="/placeholder.svg?height=32&width=32&text=ETH" 
-                    alt="Ethereum" 
-                    fill 
-                    className="object-contain" 
+                  <Image
+                    src="/placeholder.svg?height=32&width=32&text=ETH"
+                    alt="Ethereum"
+                    fill
+                    className="object-contain"
                   />
                 </div>
                 <span>Sign In with Ethereum</span>
@@ -162,15 +174,15 @@ export default function WalletConnectionModal({ isOpen, onClose }: WalletConnect
               <Button
                 variant="outline"
                 className="w-full flex items-center justify-start h-14 px-4 hover:border-primary hover:text-primary bg-transparent"
-                onClick={() => connectWallet("solana")}
+                onClick={() => handleWalletSelect("solana")}
                 disabled={connecting}
               >
                 <div className="w-8 h-8 mr-3 relative">
-                  <Image 
-                    src="/placeholder.svg?height=32&width=32&text=SOL" 
-                    alt="Solana" 
-                    fill 
-                    className="object-contain" 
+                  <Image
+                    src="/placeholder.svg?height=32&width=32&text=SOL"
+                    alt="Solana"
+                    fill
+                    className="object-contain"
                   />
                 </div>
                 <span>Sign In With Solana</span>
@@ -179,15 +191,15 @@ export default function WalletConnectionModal({ isOpen, onClose }: WalletConnect
               <Button
                 variant="outline"
                 className="w-full flex items-center justify-start h-14 px-4 hover:border-primary hover:text-primary bg-transparent"
-                onClick={() => connectNFIDWallet(walletConnectCallback)}
+                onClick={() => handleWalletSelect("nfid")}
                 disabled={connecting}
               >
                 <div className="w-8 h-8 mr-3 relative">
-                  <Image 
-                    src="/placeholder.svg?height=32&width=32&text=NFID" 
-                    alt="NFID" 
-                    fill 
-                    className="object-contain" 
+                  <Image
+                    src="/placeholder.svg?height=32&width=32&text=NFID"
+                    alt="NFID"
+                    fill
+                    className="object-contain"
                   />
                 </div>
                 <span>Sign in with NFID</span>
@@ -196,20 +208,24 @@ export default function WalletConnectionModal({ isOpen, onClose }: WalletConnect
               <Button
                 variant="outline"
                 className="w-full flex items-center justify-start h-14 px-4 hover:border-primary hover:text-primary bg-transparent"
-                onClick={() => connectWallet("bitcoin")}
+                onClick={() => handleWalletSelect("bitcoin")}
                 disabled={connecting}
               >
                 <div className="w-8 h-8 mr-3 relative">
-                  <Image 
-                    src="/placeholder.svg?height=32&width=32&text=BTC" 
-                    alt="Bitcoin" 
-                    fill 
-                    className="object-contain" 
+                  <Image
+                    src="/placeholder.svg?height=32&width=32&text=BTC"
+                    alt="Bitcoin"
+                    fill
+                    className="object-contain"
                   />
                 </div>
                 <span>Sign In with Bitcoin</span>
               </Button>
             </div>
+            }
+
+            {selectedWallet && selectedWallet === "ethereum" && <EthConnect />}
+            {selectedWallet && selectedWallet === "solana" && <SolConnect />}
 
             {connecting && (
               <div className="mt-4 flex items-center justify-center">
