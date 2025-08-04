@@ -7,6 +7,7 @@ import Navbar from "@/components/navbar"
 import Footer from "@/components/footer"
 import { AuthProvider } from "@/lib/auth"
 import { ReduxProvider } from "@/lib/redux/provider"
+import { Web3Providers } from "@/providers/web3Provider"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -29,13 +30,15 @@ export default function RootLayout({
       <body className={inter.className} suppressHydrationWarning>
         <ReduxProvider>
           <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false} disableTransitionOnChange>
-            <AuthProvider>
-              <div className="flex min-h-screen flex-col">
-                <Navbar />
-                <main className="flex-1">{children}</main>
-                <Footer />
-              </div>
-            </AuthProvider>
+            <Web3Providers>
+              <AuthProvider>
+                <div className="flex min-h-screen flex-col">
+                  <Navbar />
+                  <main className="flex-1">{children}</main>
+                  <Footer />
+                </div>
+              </AuthProvider>
+            </Web3Providers>
           </ThemeProvider>
         </ReduxProvider>
       </body>

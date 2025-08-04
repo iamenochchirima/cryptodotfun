@@ -7,12 +7,25 @@ import { Button } from "@/components/ui/button"
 import { Wallet, AlertCircle } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import Image from "next/image"
+import { WalletType } from "@/providers/types"
+import { useAuth } from "@/providers/useAuth"
+import { connectInternetIdentityWallet } from "@/providers/internetidentity"
+import { connectNFIDWallet } from "@/providers/nfid"
 
 export default function WalletConnectionStep() {
   const dispatch = useAppDispatch()
+  const { login, logout, identity, backendActor, isAuthenticated, sessionData } = useAuth();
   const { walletConnected, walletAddress } = useAppSelector((state) => state.registration)
   const [connecting, setConnecting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+
+  const walletConnectCallback = (success: boolean, walletType: WalletType) => {
+    if (success) {
+      login(walletType);
+    }
+  };
+
 
   const connectWallet = async (walletType: string) => {
     setConnecting(true)
@@ -74,7 +87,7 @@ export default function WalletConnectionStep() {
         <Button
           variant="outline"
           className="flex items-center justify-start h-16 px-6 hover:border-primary hover:text-primary bg-transparent"
-          onClick={() => connectWallet("internet-identity")}
+          onClick={() => connectInternetIdentityWallet(walletConnectCallback)}
           disabled={connecting || walletConnected}
         >
           <div className="w-10 h-10 mr-4 relative">
@@ -115,7 +128,7 @@ export default function WalletConnectionStep() {
         <Button
           variant="outline"
           className="flex items-center justify-start h-16 px-6 hover:border-primary hover:text-primary bg-transparent"
-          onClick={() => connectWallet("nfid")}
+          onClick={() => connectNFIDWallet(walletConnectCallback)}
           disabled={connecting || walletConnected}
         >
           <div className="w-10 h-10 mr-4 relative">
@@ -137,21 +150,23 @@ export default function WalletConnectionStep() {
         </Button>
       </div>
 
-      {walletConnected && (
-        <div className="bg-muted p-4 rounded-md flex items-center">
-          <Wallet className="h-5 w-5 mr-2 text-green-500" />
-          <div>
-            <p className="font-medium">Wallet Connected</p>
-            <p className="text-sm text-muted-foreground truncate">{walletAddress}</p>
+      {
+        walletConnected && (
+          <div className="bg-muted p-4 rounded-md flex items-center">
+            <Wallet className="h-5 w-5 mr-2 text-green-500" />
+            <div>
+              <p className="font-medium">Wallet Connected</p>
+              <p className="text-sm text-muted-foreground truncate">{walletAddress}</p>
+            </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
       <div className="flex justify-end">
         <Button onClick={handleContinue} disabled={!walletConnected || connecting}>
           {connecting ? "Connecting..." : "Continue"}
         </Button>
       </div>
-    </div>
+    </div >
   )
 }

@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
@@ -17,11 +19,12 @@ import {
   ImageIcon,
 } from "lucide-react"
 import { AnimatedHeroText } from "@/components/animated-hero-text"
-import { useEffect } from "react"
-import { dburl } from "./actions/db-actions"
+import { useAuth } from "@/providers/useAuth"
 
 
 export default function Home() {
+  const { isAuthenticated, login, logout, backendActor } = useAuth();
+
   return (
     <div className="flex flex-col">
       {/* Hero Section */}

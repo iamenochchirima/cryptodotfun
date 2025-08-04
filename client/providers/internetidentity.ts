@@ -1,10 +1,11 @@
+"use client";
 import { AuthClient } from "@dfinity/auth-client";
-import { iiURL } from "../constants/urls";
 import { WalletType } from "./types";
+import { getIIURL } from "@/constants/urls";
 
 
 const loginOptions = {
-  identityProvider: iiURL
+  identityProvider: getIIURL()
 };
 
 const connectInternetIdentityWallet = async (callback : any) => {

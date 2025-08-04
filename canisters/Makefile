@@ -58,7 +58,6 @@ upgrade-provider:
 	dfx generate ic_siws_provider
 
 deploy-frontend:
-	pnpm install
 	dfx deploy internet_identity
 
 deploy-backend:

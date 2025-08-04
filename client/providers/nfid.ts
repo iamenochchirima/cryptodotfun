@@ -1,3 +1,4 @@
+"use client";
 import { HttpAgent, Identity } from "@dfinity/agent";
 import { AuthClient } from "@dfinity/auth-client";
 import fetch from "cross-fetch";

@@ -15,10 +15,8 @@ export default function RegistrationModal({ isOpen, onClose }: RegistrationModal
   const dispatch = useAppDispatch()
   const { isCompleted } = useAppSelector((state) => state.registration)
 
-  // Close modal after successful registration
   useEffect(() => {
     if (isCompleted) {
-      // Wait for success animation before closing
       const timer = setTimeout(() => {
         onClose()
       }, 3000)
@@ -26,36 +24,59 @@ export default function RegistrationModal({ isOpen, onClose }: RegistrationModal
     }
   }, [isCompleted, onClose])
 
-  // Handle modal close
   const handleClose = () => {
     dispatch(resetRegistration())
     onClose()
   }
 
-  // Prevent body scroll when modal is open
   useEffect(() => {
     if (isOpen) {
-      document.body.style.overflow = "hidden"
-    } else {
-      document.body.style.overflow = "unset"
-    }
-
-    // Cleanup on unmount
-    return () => {
-      document.body.style.overflow = "unset"
+      const scrollY = window.scrollY
+      
+      requestAnimationFrame(() => {
+        document.body.style.position = "fixed"
+        document.body.style.top = `-${scrollY}px`
+        document.body.style.width = "100%"
+        document.body.style.overflow = "hidden"
+      })
+      
+      return () => {
+        // Restore scroll position when modal closes
+        document.body.style.position = ""
+        document.body.style.top = ""
+        document.body.style.width = ""
+        document.body.style.overflow = ""
+        window.scrollTo(0, scrollY)
+      }
     }
   }, [isOpen])
 
   if (!isOpen) return null
 
   return (
-    <>
+    <div 
+      className="fixed inset-0 z-50"
+      style={{ 
+        position: 'fixed', 
+        top: 0, 
+        left: 0, 
+        right: 0, 
+        bottom: 0,
+        zIndex: 9999
+      }}
+    >
       {/* Backdrop */}
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50" onClick={handleClose} />
+      <div 
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm" 
+        onClick={handleClose}
+      />
 
       {/* Modal Container */}
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div className="w-full max-w-lg bg-background border rounded-lg shadow-xl max-h-[90vh] overflow-hidden">
+      <div className="relative z-10 flex items-center justify-center min-h-full p-4">
+        <div 
+          className="w-full max-w-lg bg-background border rounded-lg shadow-xl max-h-[90vh] overflow-hidden"
+          onClick={(e) => e.stopPropagation()}
+        >
           {/* Modal Content */}
           <div className="max-h-[80vh] overflow-y-auto">
             <div className="flex flex-col space-y-1.5 p-6 pb-3">
@@ -77,6 +98,6 @@ export default function RegistrationModal({ isOpen, onClose }: RegistrationModal
           </div>
         </div>
       </div>
-    </>
+    </div>
   )
 }

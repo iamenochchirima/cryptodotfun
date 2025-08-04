@@ -4,10 +4,10 @@ import React, {
     FC,
 } from "react";
 import { ActorSubclass } from "@dfinity/agent";
-import { _SERVICE as BACKEND_SERVICE } from '../../../../src/declarations/users/users.did';
+import { _SERVICE as BACKEND_SERVICE } from '../../canisters/src/declarations/users/users.did';
 import { useAuth } from "./useAuth";
 import { SessionData } from "./useSessionData";
-import { User } from "../../../../src/declarations/users/users.did";
+import { User } from "../../canisters/src/declarations/users/users.did";
 import { WalletType } from "./types";
 
 export type AuthContextType = {

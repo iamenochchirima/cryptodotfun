@@ -1,16 +1,20 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 # dependencies
-/node_modules
+**/node_modules
 
 **/declarations
 
 **/target
 
-.dfx/
+./client/node_modules
+
+**/.dfx/
+
+**/.next/
 
 # next.js
-/.next/
+/client/.next/
 /out/
 
 # production

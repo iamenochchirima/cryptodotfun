@@ -1,43 +1,50 @@
+"use client";
 import { useState, useEffect } from "react";
 import { Actor, ActorSubclass, HttpAgent } from "@dfinity/agent";
 import {
   _SERVICE as BACKEND_SERVICE,
   User,
-} from "../../../../src/declarations/users/users.did";
-import { idlFactory } from "../../../../src/declarations/users";
+} from "../../canisters/src/declarations/users/users.did";
+import { idlFactory } from "../../canisters/src/declarations/users";
 
 import { SessionData, useSessionData } from "./useSessionData";
 import { WalletType } from "./types";
 import { AuthClient } from "@dfinity/auth-client";
 import { getAuthClient } from "./nfid";
-import { host, iiURL, network } from "../constants/urls";
 import { aidFromPrincipal } from "./util";
-import { canisterId } from "../../../../src/declarations/users";
 import { useSiws } from "ic-siws-js/react";
 import { useSiwe } from "ic-siwe-js/react";
 import { useAccount, useChainId, useDisconnect } from "wagmi";
 import { useWallet } from "@solana/wallet-adapter-react";
+import { host, getIIURL, network } from "@/constants/urls";
+import { usersCanisterId } from "@/constants/canisters-config";
 
-const defaultOptions = {
-  createOptions: {
-    idleOptions: {
-      disableIdle: true,
-    },
-  },
-  loginOptions: {
-    identityProvider: iiURL,
-  },
+// Safe hooks that handle provider not being ready
+const useSafeSiws = () => {
+  try {
+    return useSiws();
+  } catch (error) {
+    return { identity: null, clear: () => {} };
+  }
+};
+
+const useSafeSiwe = () => {
+  try {
+    return useSiwe();
+  } catch (error) {
+    return { identity: null, clear: () => {} };
+  }
 };
 
 export const useAuth = () => {
   const [authClient, setAuthClient] = useState<AuthClient | null>(null);
-  const { identity: siwsIdentity, clear: siwsClear } = useSiws();
+  const { identity: siwsIdentity, clear: siwsClear } = useSafeSiws();
   const { publicKey, disconnect: solanaDisconnect } = useWallet();
   const { disconnect: wagmiDisconnect } = useDisconnect();
   const { isConnected, address: ethAddress } = useAccount();
   const [identity, setIdentity] = useState<any>(null);
   const chainId = useChainId();
-  const { clear: siweClear, identity: siweIdentity } = useSiwe();
+  const { clear: siweClear, identity: siweIdentity } = useSafeSiwe();
   const { sessionData, updateSessionData, deleteSessionData, syncSessionData } =
     useSessionData();
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
@@ -46,19 +53,9 @@ export const useAuth = () => {
     useState<ActorSubclass<BACKEND_SERVICE> | null>(null);
   const [user, setUser] = useState<User | null>(null);
 
-  // useEffect(() => {
-  //   try {
-  //     if (sessionData && sessionData.connected == true) {
-  //       setIsAuthenticated(true);
-  //       updateClient(sessionData.connectedWalletType);
-  //     }
-  //   } catch (error) {
-  //     console.log("Error in sessionData useEffect: ", error);
-  //   }
-  // }, [sessionData]);
-
   useEffect(() => {
     const session = localStorage.getItem("session-data");
+    console.log({ session });
     if (session) {
       const sessionData: SessionData = JSON.parse(session);
       switch (sessionData.connectedWalletType) {
@@ -191,7 +188,7 @@ export const useAuth = () => {
         setPrincipalId(identity.getPrincipal().toText());
         const _backendActor = Actor.createActor<BACKEND_SERVICE>(idlFactory, {
           agent,
-          canisterId: canisterId,
+          canisterId: usersCanisterId,
         });
         setBackendActor(_backendActor);
         setIdentity(identity);
@@ -225,7 +222,7 @@ export const useAuth = () => {
     }
     const _backendActor = Actor.createActor<BACKEND_SERVICE>(idlFactory, {
       agent,
-      canisterId: canisterId,
+      canisterId: usersCanisterId,
     });
     setBackendActor(_backendActor);
     setIsAuthenticated(true);
@@ -250,7 +247,7 @@ export const useAuth = () => {
     }
     const _backendActor = Actor.createActor<BACKEND_SERVICE>(idlFactory, {
       agent,
-      canisterId: canisterId,
+      canisterId: usersCanisterId,
     });
     setBackendActor(_backendActor);
     setIsAuthenticated(true);
@@ -276,7 +273,7 @@ export const useAuth = () => {
       }
       const _backendActor = Actor.createActor<BACKEND_SERVICE>(idlFactory, {
         agent,
-        canisterId: canisterId,
+        canisterId: usersCanisterId,
       });
       setBackendActor(_backendActor);
       syncSessionData();
@@ -337,7 +334,7 @@ export const useAuth = () => {
   };
 
   const getSIWSPrincipalAddress = async () => {
-    if (!siwsIdentity) {
+    if (!siwsIdentity || !publicKey) {
       throw new Error("SIWS identity is not available.");
     }
     const principalAddress = siwsIdentity.getPrincipal().toText();

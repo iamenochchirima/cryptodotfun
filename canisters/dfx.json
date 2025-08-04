@@ -1,26 +1,17 @@
 {
   "canisters": {
     "users": {
-      "candid": "canisters/users/users.did",
+      "candid": "src/users/users.did",
       "package": "users",
-      "declarations": {
-        "output": "canisters/declarations/users"
-      },
       "type": "rust"
     },
     "ic_siws_provider": {
       "candid": "https://github.com/kristoferlund/ic-siws/releases/download/v0.1.0/ic_siws_provider.did",
-      "declarations": {
-        "output": "canisters/declarations/ic_siws_provider"
-      },
       "type": "custom",
       "wasm": "https://github.com/kristoferlund/ic-siws/releases/download/v0.1.0/ic_siws_provider.wasm.gz"
     },
     "ic_siwe_provider": {
       "candid": "https://github.com/kristoferlund/ic-siwe/releases/download/v0.1.1/ic_siwe_provider.did",
-      "declarations": {
-        "output": "canisters/declarations/ic_siwe_provider"
-      },
       "type": "custom",
       "wasm": "https://github.com/kristoferlund/ic-siwe/releases/download/v0.1.1/ic_siwe_provider.wasm.gz"
     },
