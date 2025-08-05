@@ -25,50 +25,95 @@ export default function EthConnect() {
 
   // Custom wallet connector mapping with proper icons and display names
   const getWalletConfig = (connector: Connector) => {
-    const configs = {
-      metaMask: {
+    const id = connector.id.toLowerCase();
+    const name = connector.name.toLowerCase();
+    
+    // MetaMask
+    if (id.includes('metamask') || name.includes('metamask')) {
+      return {
         name: "MetaMask",
         icon: "/metamask-fox-logo.png",
-        description: "Connect using MetaMask browser extension"
-      },
-      walletConnect: {
+        description: "The most popular Ethereum wallet"
+      };
+    }
+    
+    // WalletConnect
+    if (id.includes('walletconnect') || name.includes('walletconnect')) {
+      return {
         name: "WalletConnect",
-        icon: "/walletconnect-icon.png", 
-        description: "Scan QR code to connect your mobile wallet"
-      },
-      coinbaseWallet: {
+        icon: "/walletconnect-icon.png",
+        description: "Connect mobile wallets via QR code"
+      };
+    }
+    
+    // Coinbase
+    if (id.includes('coinbase') || name.includes('coinbase')) {
+      return {
         name: "Coinbase Wallet",
         icon: "/placeholder-logo.svg",
-        description: "Connect using Coinbase Wallet"
-      },
-      injected: {
+        description: "Self-custody wallet by Coinbase"
+      };
+    }
+    
+    // Brave
+    if (id.includes('brave') || name.includes('brave')) {
+      return {
+        name: "Brave Wallet",
+        icon: "/placeholder-logo.svg",
+        description: "Built-in Brave browser wallet"
+      };
+    }
+    
+    // Rabby
+    if (id.includes('rabby') || name.includes('rabby')) {
+      return {
+        name: "Rabby",
+        icon: "/placeholder-logo.svg",
+        description: "Multi-chain DeFi wallet"
+      };
+    }
+    
+    // Rainbow
+    if (id.includes('rainbow') || name.includes('rainbow')) {
+      return {
+        name: "Rainbow",
+        icon: "/placeholder-logo.svg",
+        description: "Ethereum wallet for DeFi & NFTs"
+      };
+    }
+    
+    // Trust Wallet
+    if (id.includes('trust') || name.includes('trust')) {
+      return {
+        name: "Trust Wallet",
+        icon: "/placeholder-logo.svg",
+        description: "Multi-chain mobile wallet"
+      };
+    }
+    
+    // Solana wallets (show but deprioritize)
+    if (id.includes('phantom') || name.includes('phantom')) {
+      return {
+        name: "Phantom",
+        icon: "/placeholder-logo.svg",
+        description: "Multi-chain wallet (primarily Solana)"
+      };
+    }
+    
+    // Generic/Browser wallets
+    if (id.includes('injected') || name.includes('injected') || name.includes('browser')) {
+      return {
         name: "Browser Wallet",
         icon: "/placeholder-logo.svg",
         description: "Connect using your browser's wallet"
-      }
-    };
-
-    const config = configs[connector.id as keyof typeof configs] || {
+      };
+    }
+    
+    // Fallback for unknown connectors
+    return {
       name: connector.name,
       icon: connector.icon || "/placeholder-logo.svg",
       description: `Connect using ${connector.name}`
-    };
-
-    // Clean up the icon URL and handle data URLs
-    let cleanIcon = config.icon;
-    if (typeof cleanIcon === 'string') {
-      cleanIcon = cleanIcon.trim();
-      // If it's a data URL, use a fallback icon instead
-      if (cleanIcon.startsWith('data:')) {
-        cleanIcon = "/placeholder-logo.svg";
-      }
-    } else {
-      cleanIcon = "/placeholder-logo.svg";
-    }
-
-    return {
-      ...config,
-      icon: cleanIcon
     };
   };
 
@@ -77,11 +122,48 @@ export default function EthConnect() {
   };
 
   console.log("Identity in EthConnect:", { identity, isLoginSuccess, isConnected });
+  console.log("Available connectors:", connectors.map(c => ({ id: c.id, name: c.name, type: c.type })));
 
-  // Remove duplicate connectors based on their ID
-  const uniqueConnectors = connectors.filter((connector, index, arr) => 
-    arr.findIndex(c => c.id === connector.id) === index
-  );
+  // Remove duplicate connectors and sort by priority for EVM wallets
+  const uniqueConnectors = connectors
+    .filter((connector, index, arr) => 
+      arr.findIndex(c => c.id === connector.id) === index
+    )
+    .sort((a, b) => {
+      // Define priority order for EVM wallets - using both ID and name for matching
+      const getPriority = (connector: Connector) => {
+        const id = connector.id.toLowerCase();
+        const name = connector.name.toLowerCase();
+        
+        // MetaMask should be first
+        if (id.includes('metamask') || name.includes('metamask')) return 1;
+        
+        // WalletConnect second
+        if (id.includes('walletconnect') || name.includes('walletconnect')) return 2;
+        
+        // Coinbase Wallet third
+        if (id.includes('coinbase') || name.includes('coinbase')) return 3;
+        
+        // Other popular EVM wallets
+        if (id.includes('rabby') || name.includes('rabby')) return 4;
+        if (id.includes('rainbow') || name.includes('rainbow')) return 5;
+        if (id.includes('trust') || name.includes('trust')) return 6;
+        if (id.includes('brave') || name.includes('brave')) return 7;
+        
+        // Browser/injected wallets last
+        if (id.includes('injected') || name.includes('injected') || name.includes('browser')) return 8;
+        
+        // Solana wallets should be deprioritized on Ethereum
+        if (id.includes('phantom') || name.includes('phantom')) return 99;
+        if (id.includes('solflare') || name.includes('solflare')) return 99;
+        if (id.includes('backpack') || name.includes('backpack')) return 99;
+        
+        // Unknown wallets
+        return 50;
+      };
+      
+      return getPriority(a) - getPriority(b);
+    });
 
   return (
     <div className="space-y-4">

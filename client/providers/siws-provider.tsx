@@ -3,7 +3,7 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import { SiwsIdentityProvider } from "ic-siws-js/react";
 import { useMemo, useEffect, useState } from "react";
 import type { Adapter } from "@solana/wallet-adapter-base";
-import { usersCanisterId } from "@/constants/canisters-config";
+import { icSiwsProviderCanisterId } from "@/constants/canisters-config";
 
 export default function SiwsProvider({
   children,
@@ -15,7 +15,7 @@ export default function SiwsProvider({
 
   // Memoize values to prevent unnecessary re-renders
   const adapter = useMemo<Adapter | undefined>(() => wallet?.adapter, [wallet?.adapter]);
-  const canisterId = useMemo(() => usersCanisterId, []);
+  const canisterId = useMemo(() => icSiwsProviderCanisterId, []);
 
   useEffect(() => {
     // Delay initialization to prevent render conflicts - shorter delay than SiweProvider

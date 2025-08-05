@@ -9,8 +9,8 @@ import { WalletType } from "@/providers/types"
 import { connectInternetIdentityWallet } from "@/providers/internetidentity"
 import { connectNFIDWallet } from "@/providers/nfid"
 import { useAuth } from "@/providers/auth-context"
-import EthConnect from "./eth-connect"
-import SolConnect from "./sol-connect"
+import EthConnect from "./eth/eth-connect"
+import SolConnect from "./sol/sol-connect"
 
 interface WalletConnectionModalProps {
   isOpen: boolean
@@ -74,6 +74,8 @@ export default function WalletConnectionModal({ isOpen, onClose }: WalletConnect
   const handleClose = () => {
     if (!connecting) {
       setError(null)
+      setSelectedWallet(null);
+      setConnecting(false)
       onClose()
     }
   }

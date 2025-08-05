@@ -169,10 +169,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         await updateInternetIdentityClient();
         break;
       case WalletType.SIWB:
-        await updateSIWSClient();
+        await updateSIWBClient();
         break;
       case WalletType.SIWS:
-        await updateSIWEClient();
+        await updateSIWSClient();
         break;
       case WalletType.SIWE:
         await updateSIWEClient();
@@ -222,6 +222,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     if (!siwsIdentity) {
       throw new Error("SIWS identity is not available.");
     }
+    console.log("🔥 Updating SIWS client with identity:", siwsIdentity, "🔥");
     const principalId = siwsIdentity.getPrincipal().toText();
     setPrincipalId(principalId);
     setIdentity(siwsIdentity);

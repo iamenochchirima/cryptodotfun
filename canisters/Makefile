@@ -51,6 +51,7 @@ upgrade-provider:
 	        session_expires_in = opt 604800000000000; /* 1 week */ \
 	        targets = opt vec { \
 	            \"$$(dfx canister id ic_siws_provider)\"; \
+				\"$$(dfx canister id users)\"; \
 	        }; \
           runtime_features = null; \
 	    } \
