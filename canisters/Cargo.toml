@@ -1,9 +1,12 @@
 [workspace]
-members = ["src/users"]
+members = [
+    "src/users",
+    "src/packages/ic_siwb_provider"
+]
 resolver = "2"
 
 [workspace.dependencies]
-candid = "0.10.13"
+candid = "0.10.17"
 ic-cdk = "0.17.1"
 uuid = "1.6"
 rstest = "0.25.0"
@@ -19,4 +22,3 @@ ciborium = "0.2.1"
 ic-certification = "2.4.0"
 icrc-ledger-types = "0.1.8"
 ic-ledger-types = "0.14.0"
-

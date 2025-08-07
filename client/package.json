@@ -62,6 +62,7 @@
     "ic-siwe-js": "^0.2.1",
     "ic-siws-js": "^0.1.0",
     "ic-use-actor": "^0.1.0",
+    "ic-use-siwb-identity": "file:./packages/ic-use-siwb-identity",
     "input-otp": "latest",
     "lucide-react": "^0.454.0",
     "next": "15.2.4",

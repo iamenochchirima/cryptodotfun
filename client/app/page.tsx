@@ -23,8 +23,6 @@ import { useAuth } from "@/providers/auth-context";
 
 export default function Home() {
 
-  const { isAuthenticated, user, backendActor } = useAuth()
-
   return (
     <div className="flex flex-col">
       {/* Hero Section */}

@@ -10,6 +10,11 @@
       "type": "custom",
       "wasm": "https://github.com/kristoferlund/ic-siws/releases/download/v0.1.0/ic_siws_provider.wasm.gz"
     },
+    "ic_siwb_provider": {
+      "candid": "src/packages/ic_siwb_provider/ic_siwb_provider.did",
+      "package": "ic_siwb_provider",
+      "type": "rust"
+    },
     "ic_siwe_provider": {
       "candid": "https://github.com/kristoferlund/ic-siwe/releases/download/v0.1.1/ic_siwe_provider.did",
       "type": "custom",

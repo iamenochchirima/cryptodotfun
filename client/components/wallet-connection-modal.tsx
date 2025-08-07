@@ -9,8 +9,9 @@ import { WalletType } from "@/providers/types"
 import { connectInternetIdentityWallet } from "@/providers/internetidentity"
 import { connectNFIDWallet } from "@/providers/nfid"
 import { useAuth } from "@/providers/auth-context"
-import EthConnect from "./eth/eth-connect"
-import SolConnect from "./sol/sol-connect"
+import EthConnect from "./chains/eth/eth-connect"
+import SolConnect from "./chains/sol/sol-connect"
+import BtcConnect from "./chains/btc/btc-connect"
 
 interface WalletConnectionModalProps {
   isOpen: boolean
@@ -228,6 +229,7 @@ export default function WalletConnectionModal({ isOpen, onClose }: WalletConnect
 
             {selectedWallet && selectedWallet === "ethereum" && <EthConnect />}
             {selectedWallet && selectedWallet === "solana" && <SolConnect />}
+            {selectedWallet && selectedWallet === "bitcoin" && <BtcConnect />}
 
             {connecting && (
               <div className="mt-4 flex items-center justify-center">

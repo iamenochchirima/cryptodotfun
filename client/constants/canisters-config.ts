@@ -1,5 +1,6 @@
 export { idlFactory as icSiwsIDL } from "../../canisters/src/declarations/ic_siws_provider/ic_siws_provider.did.js";
 export { idlFactory as icSiweIDL } from "../../canisters/src/declarations/ic_siwe_provider/ic_siwe_provider.did.js";
+export { idlFactory as icSiwbIDL } from "../../canisters/src/declarations/ic_siwb_provider/ic_siwb_provider.did.js";
 export { idlFactory as usersIDL } from "../../canisters/src/declarations/users/users.did.js";
 
 import prodConfig from '../../canisters/canister_ids.json';
@@ -44,13 +45,16 @@ interface CanisterConfig {
   usersCanisterId: string;
   icSiweProviderCanisterId: string;
   icSiwsProviderCanisterId: string;
+  icSiwbProviderCanisterId: string;
   internetIdentityCanisterId: string;
+
 }
 
 const productionCanisters: CanisterConfig = {
   usersCanisterId: getCanisterId('users'),
   icSiweProviderCanisterId: getCanisterId('ic_siwe_provider'),
   icSiwsProviderCanisterId: getCanisterId('ic_siws_provider'),
+  icSiwbProviderCanisterId: getCanisterId('ic_siwb_provider'),
   internetIdentityCanisterId: getCanisterId('internet_identity'),
 };
 
@@ -58,6 +62,7 @@ const localCanisters: CanisterConfig = {
   usersCanisterId: getCanisterId('users'),
   icSiweProviderCanisterId: getCanisterId('ic_siwe_provider'),
   icSiwsProviderCanisterId: getCanisterId('ic_siws_provider'),
+  icSiwbProviderCanisterId: getCanisterId('ic_siwb_provider'),
   internetIdentityCanisterId: getCanisterId('internet_identity'),
 };
 
@@ -70,5 +75,6 @@ export const {
   usersCanisterId,
   icSiweProviderCanisterId,
   icSiwsProviderCanisterId,
+  icSiwbProviderCanisterId,
   internetIdentityCanisterId,
 } = canisterConfigs[network as Env];

@@ -13,9 +13,10 @@ import { getAuthClient } from "./nfid";
 import { aidFromPrincipal } from "./util";
 import { useSiws } from "ic-siws-js/react";
 import { useSiwe } from "ic-siwe-js/react";
-import { useAccount, useChainId, useDisconnect } from "wagmi";
+import { useSiwbIdentity } from 'ic-use-siwb-identity';
+import { useAccount, useDisconnect } from "wagmi";
 import { useWallet } from "@solana/wallet-adapter-react";
-import { host, getIIURL, network } from "@/constants/urls";
+import { host, network } from "@/constants/urls";
 import { usersCanisterId, usersIDL } from "@/constants/canisters-config";
 
 interface AuthContextType {
@@ -50,16 +51,25 @@ const useSafeSiwe = () => {
   }
 };
 
+const useSafeSiwb = () => {
+  try {
+    return useSiwbIdentity();
+  } catch (error) {
+    return { identity: null, connectedBtcAddress: null, clear: () => {} };
+  }
+};
+
 // AuthProvider component
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [authClient, setAuthClient] = useState<AuthClient | null>(null);
   const { identity: siwsIdentity, clear: siwsClear } = useSafeSiws();
+  const { identity: siweIdentity, clear: siweClear } = useSafeSiwe();
+  const { identity: siwbIdentity, connectedBtcAddress, clear: siwbClear } = useSafeSiwb();
+
   const { publicKey, disconnect: solanaDisconnect } = useWallet();
   const { disconnect: wagmiDisconnect } = useDisconnect();
-  const { isConnected, address: ethAddress } = useAccount();
+  const { address: ethAddress } = useAccount();
   const [identity, setIdentity] = useState<any>(null);
-  const chainId = useChainId();
-  const { clear: siweClear, identity: siweIdentity } = useSafeSiwe();
   const { sessionData, updateSessionData, deleteSessionData, syncSessionData } =
     useSessionData();
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
@@ -146,7 +156,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const logoutSIWB = async () => {
-    //TODO: Implement SIWB logout
+    siwbClear();
+    setIdentity(null);
+    setPrincipalId(null);
+    setIsAuthenticated(false);
+    setBackendActor(null);
+    setUser(null);
+    deleteSessionData();
   };
 
   const logoutSIWE = async () => {
@@ -215,7 +231,31 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const updateSIWBClient = async () => {
-    //TODO:
+    if (!siwbIdentity) {
+      throw new Error("SIWB identity is not available.");
+    }
+    console.log("🔥 Updating SIWB client with identity:", siwbIdentity, "🔥");
+    const principalId = siwbIdentity.getPrincipal().toText();
+    setPrincipalId(principalId);
+    setIdentity(siwbIdentity);
+    const agent = await HttpAgent.create({
+      identity: siwbIdentity as any,
+      host: host,
+    });
+    if (network === "local") {
+      agent.fetchRootKey().catch((err) => {
+        console.log("Error fetching root key: ", err);
+      });
+    }
+    const _backendActor = Actor.createActor<BACKEND_SERVICE>(usersIDL, {
+      agent,
+      canisterId: usersCanisterId,
+    });
+    setBackendActor(_backendActor);
+    setIsAuthenticated(true);
+    if (_backendActor) {
+      syncSessionData();
+    }
   };
 
   const updateSIWSClient = async () => {
@@ -327,7 +367,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const getSIWBPrincipalAddress = async () => {
-    //TODO:
+    if (!siwbIdentity || !connectedBtcAddress) {
+      throw new Error("SIWB identity is not available.");
+    }
+    const principalAddress = siwbIdentity.getPrincipal().toText();
+    const aid = aidFromPrincipal(siwbIdentity.getPrincipal() as any);
+    const chainAddress = connectedBtcAddress || principalAddress;
+    return { principalAddress, aid, chainAddress };
   };
 
   const getSIWEPrincipalAddress = async () => {

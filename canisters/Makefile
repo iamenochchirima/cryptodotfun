@@ -37,6 +37,23 @@ deploy-provider:
 	    } \
 	)"
 	dfx generate ic_siwe_provider
+	dfx deploy ic_siwb_provider --argument "( \
+		record { \
+			domain = \"127.0.0.1\"; \
+			uri = \"http://127.0.0.1:5173\"; \
+			salt = \"123456\"; \
+			network = opt \"testnet\"; \
+			scheme = opt \"http\"; \
+			statement = opt \"Login to the app\"; \
+			sign_in_expires_in = opt 1500000000000; \
+			session_expires_in = opt 604800000000000; \
+			targets = opt vec { \
+				\"$$(dfx canister id ic_siwb_provider)\"; \
+				\"$$(dfx canister id users)\"; \
+			}; \
+		} \
+	)"
+	dfx generate ic_siwb_provider
 
 upgrade-provider:
 	dfx canister install ic_siws_provider --mode upgrade --upgrade-unchanged --argument "( \
