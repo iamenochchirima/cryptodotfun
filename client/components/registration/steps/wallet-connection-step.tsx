@@ -8,7 +8,7 @@ import { Wallet, AlertCircle } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import Image from "next/image"
 import { WalletType } from "@/providers/types"
-import { useAuth } from "@/providers/useAuth"
+import { useAuth } from "@/providers/auth-context"
 import { connectInternetIdentityWallet } from "@/providers/internetidentity"
 import { connectNFIDWallet } from "@/providers/nfid"
 
