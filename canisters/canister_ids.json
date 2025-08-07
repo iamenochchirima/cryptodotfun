@@ -1,4 +1,13 @@
 {
+  "ic_siwb_provider": {
+    "ic": "z5z4u-eqaaa-aaaal-qsrxa-cai"
+  },
+  "ic_siwe_provider": {
+    "ic": "z2y2a-jiaaa-aaaal-qsrxq-cai"
+  },
+  "ic_siws_provider": {
+    "ic": "zu2xi-syaaa-aaaal-qsrwq-cai"
+  },
   "users": {
     "ic": "ymtcl-4yaaa-aaaal-qsrsq-cai"
   }

@@ -44,7 +44,7 @@ deploy-provider:
 			salt = \"123456\"; \
 			network = opt \"testnet\"; \
 			scheme = opt \"http\"; \
-			statement = opt \"Login to the app\"; \
+			statement = opt \"Login to the CryptoDotFun\"; \
 			sign_in_expires_in = opt 1500000000000; \
 			session_expires_in = opt 604800000000000; \
 			targets = opt vec { \
@@ -61,9 +61,9 @@ upgrade-provider:
 			domain = \"localhost:3000\"; \
 	        uri = \"http://localhost:3000\"; \
 	        salt = \"salt\"; \
-          chain_id = opt \"mainnet\"; \
+          	chain_id = opt \"mainnet\"; \
 	        scheme = opt \"http\"; \
-	        statement = opt \"Login to the siws/IC demo app\"; \
+	        statement = opt \"Login to the CryptoDotFun\"; \
 	        sign_in_expires_in = opt 300000000000; /* 5 minutes */ \
 	        session_expires_in = opt 604800000000000; /* 1 week */ \
 	        targets = opt vec { \
@@ -95,4 +95,117 @@ clean:
 	rm -rf src/declarations
 	rm -f .env
 	cargo clean
+
+
+deploy-providers-live:
+	dfx install ic_siws_provider --mode upgrade --argument "( \
+	    record { \
+			domain = \"cryptodotfun.com\"; \
+	        uri = \"https://cryptodotfun.com\"; \
+	        salt = \"salt\"; \
+		  	chain_id = opt \"mainnet\"; \
+	        scheme = opt \"https\"; \
+	        statement = opt \"Login to the CryptoDotFun\"; \
+	        sign_in_expires_in = opt 300000000000; /* 5 minutes */ \
+	        session_expires_in = opt 604800000000000; /* 1 week */ \
+	        targets = opt vec { \
+	            \"$$(dfx canister id ic_siws_provider --network ic)\"; \
+				\"$$(dfx canister id users --network ic)\"; \
+	        }; \
+		  runtime_features = null; \
+	    } \
+	)" --network ic
+
+	dfx deploy ic_siwe_provider --argument "( \
+	    record { \
+	        domain = \"cryptodotfun.com\"; \
+	        uri = \"https://cryptodotfun.com\"; \
+	        salt = \"salt\"; \
+	        chain_id = opt 1; \
+	        scheme = opt \"https\"; \
+	        statement = opt \"Login to the CryptoDotFun\"; \
+	        sign_in_expires_in = opt 300000000000; /* 5 minutes */ \
+	        session_expires_in = opt 604800000000000; /* 1 week */ \
+	        targets = opt vec { \
+	            \"$$(dfx canister id ic_siwe_provider --network ic)\"; \
+				\"$$(dfx canister id users --network ic)\"; \
+	        }; \
+	    } \
+	)" --network ic
+
+	dfx deploy ic_siwb_provider --argument "( \
+		record { \
+			domain = \"cryptodotfun.com\"; \
+			uri = \"https://cryptodotfun.com\"; \
+			salt = \"123456\"; \
+			network = opt \"mainnet\"; \
+			scheme = opt \"https\"; \
+			statement = opt \"Login to the CryptoDotFun\"; \
+			sign_in_expires_in = opt 1500000000000; \
+			session_expires_in = opt 604800000000000; \
+			targets = opt vec { \
+				\"$$(dfx canister id ic_siwb_provider --network ic)\"; \
+				\"$$(dfx canister id users --network ic)\"; \
+			}; \
+		} \
+	)" --network ic	
+	
+deploy-all-live: deploy-providers-live deploy-backend 
+
+reinstall-providers-live:
+	dfx canister install ic_siws_provider --mode reinstall --argument "( \
+	    record { \
+			domain = \"cryptodotfun.com\"; \
+	        uri = \"https://cryptodotfun.com\"; \
+	        salt = \"salt\"; \
+		  	chain_id = opt \"mainnet\"; \
+	        scheme = opt \"https\"; \
+	        statement = opt \"Login to the CryptoDotFun\"; \
+	        sign_in_expires_in = opt 300000000000; /* 5 minutes */ \
+	        session_expires_in = opt 604800000000000; /* 1 week */ \
+	        targets = opt vec { \
+	            \"$$(dfx canister id ic_siws_provider --network ic)\"; \
+				\"$$(dfx canister id users --network ic)\"; \
+	        }; \
+		  runtime_features = null; \
+	    } \
+	)" --network ic
+
+# 	dfx canister install ic_siwe_provider --mode reinstall --argument "( \
+# 	    record { \
+# 	        domain = \"cryptodotfun.com\"; \
+# 	        uri = \"https://cryptodotfun.com\"; \
+# 	        salt = \"salt\"; \
+# 	        chain_id = opt 1; \
+# 	        scheme = opt \"https\"; \
+# 	        statement = opt \"Login to the CryptoDotFun\"; \
+# 	        sign_in_expires_in = opt 300000000000; /* 5 minutes */ \
+# 	        session_expires_in = opt 604800000000000; /* 1 week */ \
+# 	        targets = opt vec { \
+# 	            \"$$(dfx canister id ic_siwe_provider --network ic)\"; \
+# 				\"$$(dfx canister id users --network ic)\"; \
+# 	        }; \
+# 	    } \
+# 	)" --network ic
+
+# 	dfx canister install ic_siwb_provider --mode reinstall --argument "( \
+# 		record { \
+# 			domain = \"cryptodotfun.com\"; \
+# 			uri = \"https://cryptodotfun.com\"; \
+# 			salt = \"123456\"; \
+# 			network = opt \"mainnet\"; \
+# 			scheme = opt \"https\"; \
+# 			statement = opt \"Login to the CryptoDotFun\"; \
+# 			sign_in_expires_in = opt 1500000000000; \
+# 			session_expires_in = opt 604800000000000; \
+# 			targets = opt vec { \	
+# 				\"$$(dfx canister id ic_siwb_provider --network ic)\"; \
+# 				\"$$(dfx canister id users --network ic)\"; \
+# 			}; \
+# 		} \
+# 	)" --network ic
+
+
+reinstall-all-live: reinstall-providers-live 
+
 

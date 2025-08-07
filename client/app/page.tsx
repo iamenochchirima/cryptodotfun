@@ -19,7 +19,6 @@ import {
   ImageIcon,
 } from "lucide-react"
 import { AnimatedHeroText } from "@/components/animated-hero-text"
-import { useAuth } from "@/providers/auth-context";
 
 export default function Home() {
 
