@@ -4,12 +4,11 @@
   "private": true,
   "scripts": {
     "build": "next build",
-    "prepare:deps": "cd packages/ic-use-siwb-identity && pnpm install && pnpm run build",
+    "prepare:deps": "cd packages/ic-use-siwb-identity && pnpm install && pnpm run build && cd ../.. && pnpm install",
     "predev": "npm run prepare:deps",
     "dev": "next dev",
     "lint": "next lint",
-    "start": "next start",
-    "postinstall": "npm run prepare:deps"
+    "start": "next start"
   },
   "dependencies": {
     "@dfinity/agent": "^2.4.1",
