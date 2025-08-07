@@ -40,38 +40,6 @@ export default function WalletConnectionModal({ isOpen, onClose }: WalletConnect
     }
   };
 
-  const connectWallet = async (walletType: string) => {
-    setConnecting(true)
-    setError(null)
-
-    try {
-      // Simulate wallet connection for other wallet types
-      await new Promise((resolve) => setTimeout(resolve, 1500))
-
-      // Handle different wallet types
-      switch (walletType) {
-        case "ethereum":
-          // TODO: Implement SIWE connection
-          break
-        case "solana":
-          // TODO: Implement SIWS connection
-          break
-        case "bitcoin":
-          // TODO: Implement Bitcoin connection
-          break
-        default:
-          break
-      }
-
-      onClose()
-    } catch (err) {
-      setError("Failed to connect wallet. Please try again.")
-    } finally {
-      setConnecting(false)
-    }
-  }
-
-  // Handle modal close
   const handleClose = () => {
     if (!connecting) {
       setError(null)
@@ -81,7 +49,6 @@ export default function WalletConnectionModal({ isOpen, onClose }: WalletConnect
     }
   }
 
-  // Prevent body scroll when modal is open
   if (isOpen) {
     document.body.style.overflow = "hidden"
   } else {
@@ -194,6 +161,23 @@ export default function WalletConnectionModal({ isOpen, onClose }: WalletConnect
               <Button
                 variant="outline"
                 className="w-full flex items-center justify-start h-14 px-4 hover:border-primary hover:text-primary bg-transparent"
+                onClick={() => handleWalletSelect("bitcoin")}
+                disabled={connecting}
+              >
+                <div className="w-8 h-8 mr-3 relative">
+                  <Image
+                    src="/placeholder.svg?height=32&width=32&text=BTC"
+                    alt="Bitcoin"
+                    fill
+                    className="object-contain"
+                  />
+                </div>
+                <span>Sign In with Bitcoin</span>
+              </Button>
+
+              <Button
+                variant="outline"
+                className="w-full flex items-center justify-start h-14 px-4 hover:border-primary hover:text-primary bg-transparent"
                 onClick={() => handleWalletSelect("nfid")}
                 disabled={connecting}
               >
@@ -208,22 +192,6 @@ export default function WalletConnectionModal({ isOpen, onClose }: WalletConnect
                 <span>Sign in with NFID</span>
               </Button>
 
-              <Button
-                variant="outline"
-                className="w-full flex items-center justify-start h-14 px-4 hover:border-primary hover:text-primary bg-transparent"
-                onClick={() => handleWalletSelect("bitcoin")}
-                disabled={connecting}
-              >
-                <div className="w-8 h-8 mr-3 relative">
-                  <Image
-                    src="/placeholder.svg?height=32&width=32&text=BTC"
-                    alt="Bitcoin"
-                    fill
-                    className="object-contain"
-                  />
-                </div>
-                <span>Sign In with Bitcoin</span>
-              </Button>
             </div>
             }
 

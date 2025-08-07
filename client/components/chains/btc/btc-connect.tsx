@@ -2,8 +2,6 @@ import { useEffect, useState, useRef } from "react";
 import { useSiwbIdentity } from 'ic-use-siwb-identity';
 import { useAuth } from "@/providers/auth-context";
 import { WalletType } from "@/providers/types";
-import { Loader2 } from "lucide-react";
-import Image from "next/image";
 
 export default function BtcConnect() {
   const { login: completeLogin, logout } = useAuth();
@@ -16,6 +14,7 @@ export default function BtcConnect() {
     login, 
     getAddress, 
     connectedBtcAddress, 
+    identityAddress,
     identity 
   } = useSiwbIdentity();
   
@@ -24,6 +23,16 @@ export default function BtcConnect() {
   const [manually, setManually] = useState<boolean>(false);
   const loginCompletedRef = useRef(false);
 
+
+     useEffect(() => {
+    if (identityAddress && identity) {
+      loginCompletedRef.current = true;
+      completeLogin(WalletType.SIWB);
+    } else if (!identityAddress || !identity) {
+      loginCompletedRef.current = false;
+    }
+  }, [ identity, identityAddress,  ]);
+
   useEffect(() => {
     if (connectedBtcAddress && identity && !loginCompletedRef.current) {
       loginCompletedRef.current = true;
@@ -31,7 +40,7 @@ export default function BtcConnect() {
     } else if (!connectedBtcAddress || !identity) {
       loginCompletedRef.current = false;
     }
-  }, [connectedBtcAddress, identity, completeLogin]);
+  }, [connectedBtcAddress, identity]);
 
   // Clear errors when connection is successful or when wallet changes
   useEffect(() => {
@@ -40,7 +49,7 @@ export default function BtcConnect() {
     }
   }, [connectedBtcAddress]);
 
-  // Handle prepareLogin errors
+  // Handle prepareLogin error
   useEffect(() => {
     if (prepareLoginError) {
       setError(prepareLoginError.message || "Prepare login failed");
@@ -87,56 +96,6 @@ export default function BtcConnect() {
     }
   }, [prepareLogin, isPrepareLoginIdle, getAddress, login, connectedBtcAddress, identity, manually]);
 
-  // Custom wallet mapping with proper icons and display names
-  const getWalletConfig = (walletType: string) => {
-    const configs = {
-      'unisat': {
-        name: "Unisat",
-        icon: "/placeholder-logo.svg",
-        description: "Leading Bitcoin wallet extension"
-      },
-      'wizz': {
-        name: "Wizz",
-        icon: "/placeholder-logo.svg",
-        description: "Bitcoin wallet for Web3"
-      },
-      'xverse': {
-        name: "Xverse",
-        icon: "/placeholder-logo.svg",
-        description: "Bitcoin & Stacks wallet"
-      },
-      'BitcoinProvider': {
-        name: "Xverse",
-        icon: "/placeholder-logo.svg",
-        description: "Bitcoin & Stacks wallet"
-      }
-    };
-
-    return configs[walletType as keyof typeof configs] || {
-      name: walletType,
-      icon: "/placeholder-logo.svg",
-      description: `Connect using ${walletType}`
-    };
-  };
-
-  const handleWalletSelect = async (walletType: string) => {
-    try {
-      setError(null);
-      setConnecting(walletType);
-      setManually(true);
-      
-      await setWalletProvider(walletType as any);
-      
-      // The useEffect will handle the connection flow once the wallet provider is set
-      
-    } catch (err: any) {
-      const errorMessage = err?.message || "Failed to set wallet provider";
-      setError(errorMessage);
-      setConnecting(null);
-      setManually(false);
-      console.error("Wallet provider error:", err);
-    }
-  };
 
   const handleSignIn = async () => {
     try {
@@ -156,26 +115,20 @@ export default function BtcConnect() {
 
   const handleDisconnect = async () => {
     try {
-      // Clear SIWB identity and reset state
+      console.log("🔥 Disconnecting BTC wallet 🔥");
+      // Reset local state first
       setManually(false);
       setConnecting(null);
       setError(null);
-      logout(); // This should handle clearing the auth state
+      loginCompletedRef.current = false;
+      
+      // This should handle clearing the auth state and call siwbClear()
+      logout(); 
     } catch (err: any) {
       console.error("Disconnect error:", err);
     }
   };
 
-  // Available Bitcoin wallets
-  const availableWallets = ['unisat', 'wizz', 'xverse'];
-
-  console.log("Bitcoin Connect State:", { 
-    connectedBtcAddress, 
-    identity: identity?.getPrincipal().toText(),
-    connecting,
-    manually,
-    isPrepareLoginIdle
-  });
 
   return (
     <div className="space-y-4">
@@ -186,53 +139,35 @@ export default function BtcConnect() {
             Choose a Bitcoin wallet to connect
           </div>
           
-          {availableWallets.map((walletType) => {
-            const walletConfig = getWalletConfig(walletType);
-            const isConnecting = connecting === walletType;
-            
-            return (
-              <button
-                key={walletType}
-                onClick={() => handleWalletSelect(walletType)}
-                disabled={!!connecting}
-                className="w-full flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-accent hover:border-primary transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed group"
-              >
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 relative flex-shrink-0">
-                    {isConnecting ? (
-                      <Loader2 className="w-8 h-8 animate-spin text-primary" />
-                    ) : (
-                      <Image
-                        src={walletConfig.icon}
-                        alt={walletConfig.name}
-                        width={32}
-                        height={32}
-                        className="rounded-md"
-                        onError={(e) => {
-                          // Fallback to placeholder if image fails to load
-                          e.currentTarget.src = "/placeholder-logo.svg";
-                        }}
-                      />
-                    )}
-                  </div>
-                  <div className="text-left">
-                    <div className="font-medium text-foreground group-hover:text-primary transition-colors">
-                      {walletConfig.name}
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      {walletConfig.description}
-                    </div>
-                  </div>
-                </div>
-                
-                {isConnecting && (
-                  <div className="text-xs text-primary">
-                    {connecting === "auto-login" ? "Signing in..." : "Connecting..."}
-                  </div>
-                )}
-              </button>
-            );
-          })}
+          <button
+            className="w-full px-4 py-3 rounded-lg bg-secondary text-secondary-foreground hover:bg-secondary/90 transition-colors font-medium disabled:opacity-50"
+            onClick={async () => {
+              setManually(true);
+              await setWalletProvider('unisat');
+            }}
+          >
+            Unisat Wallet
+          </button>
+
+          <button
+            className="w-full px-4 py-3 rounded-lg bg-secondary text-secondary-foreground hover:bg-secondary/90 transition-colors font-medium disabled:opacity-50"
+            onClick={async () => {
+              setManually(true);
+              await setWalletProvider('wizz');
+            }}
+          >
+            Wizz Wallet
+          </button>
+
+          <button
+            className="w-full px-4 py-3 rounded-lg bg-secondary text-secondary-foreground hover:bg-secondary/90 transition-colors font-medium disabled:opacity-50"
+            onClick={async () => {
+              setManually(true);
+              await setWalletProvider('BitcoinProvider');
+            }}
+          >
+            Xverse Wallet
+          </button>
         </div>
       )}
 
