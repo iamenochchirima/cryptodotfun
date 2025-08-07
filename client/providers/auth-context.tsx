@@ -4,7 +4,7 @@ import { Actor, ActorSubclass, HttpAgent } from "@dfinity/agent";
 import {
   _SERVICE as BACKEND_SERVICE,
   User,
-} from "../../canisters/src/declarations/users/users.did";
+} from "../idls/users/users.did";
 
 import { SessionData, useSessionData } from "./useSessionData";
 import { WalletType } from "./types";

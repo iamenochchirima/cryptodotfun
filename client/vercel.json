@@ -1,0 +1,6 @@
+{
+  "buildCommand": "npm run prepare:deps && npm run build",
+  "installCommand": "echo 'Skipping install, will be handled by prepare:deps'",
+  "framework": "nextjs",
+  "outputDirectory": ".next"
+}
