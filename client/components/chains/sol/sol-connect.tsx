@@ -3,10 +3,14 @@ import { useEffect, useState, useRef } from "react";
 import { useSiws } from "ic-siws-js/react";
 import { useAuth } from "@/providers/auth-context";
 import { WalletType } from "@/providers/types";
-import { Loader2 } from "lucide-react";
+import { Loader2, ArrowLeft } from "lucide-react";
 import Image from "next/image";
 
-export default function SolConnect() {
+interface SolConnectProps {
+  onBack?: () => void;
+}
+
+export default function SolConnect({ onBack }: SolConnectProps) {
   const { login: completeLogin, logout } = useAuth();
   const { 
     wallets, 
@@ -49,80 +53,78 @@ export default function SolConnect() {
     return () => clearTimeout(timer);
   }, []);
 
-  const getWalletConfig = (walletItem: any) => {
-    const configs = {
-      'Phantom': {
+  // Custom wallet configuration with proper icons and descriptions
+  const getWalletConfig = (wallet: any) => {
+    const name = wallet.adapter?.name?.toLowerCase() || '';
+    
+    // Phantom - top priority
+    if (name.includes('phantom')) {
+      return {
         name: "Phantom",
-        icon: "/phantom-wallet-logo.png",
-        description: "The most popular Solana wallet"
-      },
-      'Solflare': {
-        name: "Solflare",
-        icon: "/placeholder-logo.svg", 
-        description: "Native Solana wallet with staking"
-      },
-      'Backpack': {
-        name: "Backpack",
-        icon: "/placeholder-logo.svg",
-        description: "Multi-chain wallet for Solana & Ethereum"
-      },
-      'Glow': {
-        name: "Glow",
-        icon: "/placeholder-logo.svg",
-        description: "Solana-first wallet with DeFi focus"
-      },
-      'Slope': {
-        name: "Slope",
-        icon: "/placeholder-logo.svg",
-        description: "Mobile-first Solana wallet"
-      },
-      'Torus': {
-        name: "Torus",
-        icon: "/placeholder-logo.svg",
-        description: "Social login for Solana"
-      },
-      'Trust Wallet': {
-        name: "Trust Wallet", 
-        icon: "/placeholder-logo.svg",
-        description: "Multi-chain mobile wallet"
-      },
-      'Exodus': {
-        name: "Exodus",
-        icon: "/placeholder-logo.svg",
-        description: "Desktop & mobile crypto wallet"
-      },
-      'Coinbase Wallet': {
-        name: "Coinbase Wallet",
-        icon: "/placeholder-logo.svg",
-        description: "Self-custody wallet by Coinbase"
-      }
-    };
-
-    const config = configs[walletItem.adapter.name as keyof typeof configs] || {
-      name: walletItem.adapter.name,
-      icon: walletItem.adapter.icon || "/placeholder-logo.svg",
-      description: `Connect using ${walletItem.adapter.name}`
-    };
-
-    // Clean up the icon URL and handle data URLs
-    let cleanIcon = config.icon;
-    if (typeof cleanIcon === 'string') {
-      cleanIcon = cleanIcon.trim();
-      // If it's a data URL, use a fallback icon instead
-      if (cleanIcon.startsWith('data:')) {
-        cleanIcon = "/placeholder-logo.svg";
-      }
-    } else {
-      cleanIcon = "/placeholder-logo.svg";
+        icon: "/wallets/phantom.png",
+        description: "The most popular Solana wallet",
+        priority: 1
+      };
     }
-
+    
+    // Solflare
+    if (name.includes('solflare')) {
+      return {
+        name: "Solflare",
+        icon: "/wallets/solana-sol-logo.png", // Using Solana logo as fallback
+        description: "Feature-rich Solana wallet",
+        priority: 2
+      };
+    }
+    
+    // Backpack
+    if (name.includes('backpack')) {
+      return {
+        name: "Backpack",
+        icon: "/wallets/solana-sol-logo.png",
+        description: "Multi-chain crypto wallet",
+        priority: 3
+      };
+    }
+    
+    // Glow
+    if (name.includes('glow')) {
+      return {
+        name: "Glow",
+        icon: "/wallets/solana-sol-logo.png",
+        description: "Staking-focused Solana wallet",
+        priority: 4
+      };
+    }
+    
+    // WalletConnect
+    if (name.includes('walletconnect')) {
+      return {
+        name: "WalletConnect",
+        icon: "/wallets/walletconnect.png",
+        description: "Connect mobile wallets",
+        priority: 5
+      };
+    }
+    
+    // Torus
+    if (name.includes('torus')) {
+      return {
+        name: "Torus",
+        icon: "/wallets/solana-sol-logo.png",
+        description: "Social login wallet",
+        priority: 6
+      };
+    }
+    
+    // Fallback for other wallets
     return {
-      ...config,
-      icon: cleanIcon
+      name: wallet.adapter?.name || 'Unknown Wallet',
+      icon: "/wallets/solana-sol-logo.png",
+      description: `Connect using ${wallet.adapter?.name}`,
+      priority: 99
     };
-  };
-
-  const handleWalletSelect = async (selectedWallet: any) => {
+  };  const handleWalletSelect = async (selectedWallet: any) => {
     try {
       setError(null);
       
@@ -228,23 +230,23 @@ export default function SolConnect() {
       return !evmOnlyWallets.includes(name);
     });
 
-  console.log("Solana Connect State:", { 
-    connected, 
-    publicKey: publicKey?.toBase58(), 
-    identity: identity?.getPrincipal().toText(),
-    isLoginSuccess,
-    wallet: wallet?.adapter.name 
-  });
 
   return (
     <div className="space-y-4">
+      {/* Back Button */}
+      {onBack && (
+       <button
+          onClick={onBack}
+          className="flex items-center space-x-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4 text-white" />
+          <span className="text-white">Back</span>
+        </button>
+      )}
+
       {/* Connection State: Not Connected */}
       {!connected && (
         <div className="space-y-3">
-          <div className="text-sm text-muted-foreground mb-4">
-            Choose a Solana wallet to connect
-          </div>
-          
           {availableWallets.map((walletOption) => {
             const walletConfig = getWalletConfig(walletOption);
             const isConnecting = connecting && wallet?.adapter.name === walletOption.adapter.name;

@@ -3,10 +3,14 @@ import { useEffect } from "react";
 import { useSiwe } from "ic-siwe-js/react";
 import { useAuth } from "@/providers/auth-context";
 import { WalletType } from "@/providers/types";
-import { Loader2 } from "lucide-react";
+import { Loader2, ArrowLeft } from "lucide-react";
 import Image from "next/image";
 
-export default function EthConnect() {
+interface EthConnectProps {
+  onBack?: () => void;
+}
+
+export default function EthConnect({ onBack }: EthConnectProps) {
   const { login: completeLogin, logout } = useAuth();
   const { connect, connectors, error, isPending, variables, reset } = useConnect();
   const { isConnected } = useAccount();
@@ -27,25 +31,25 @@ export default function EthConnect() {
   const getWalletConfig = (connector: Connector) => {
     const id = connector.id.toLowerCase();
     const name = connector.name.toLowerCase();
-    
+
     // MetaMask
     if (id.includes('metamask') || name.includes('metamask')) {
       return {
         name: "MetaMask",
-        icon: "/metamask-fox-logo.png",
+        icon: "/wallets/metamask.svg",
         description: "The most popular Ethereum wallet"
       };
     }
-    
+
     // WalletConnect
     if (id.includes('walletconnect') || name.includes('walletconnect')) {
       return {
         name: "WalletConnect",
-        icon: "/walletconnect-icon.png",
+        icon: "/wallets/walletconnect.png",
         description: "Connect mobile wallets via QR code"
       };
     }
-    
+
     // Coinbase
     if (id.includes('coinbase') || name.includes('coinbase')) {
       return {
@@ -54,16 +58,16 @@ export default function EthConnect() {
         description: "Self-custody wallet by Coinbase"
       };
     }
-    
+
     // Brave
     if (id.includes('brave') || name.includes('brave')) {
       return {
         name: "Brave Wallet",
-        icon: "/placeholder-logo.svg",
+        icon: "/wallets/brave.png",
         description: "Built-in Brave browser wallet"
       };
     }
-    
+
     // Rabby
     if (id.includes('rabby') || name.includes('rabby')) {
       return {
@@ -72,7 +76,7 @@ export default function EthConnect() {
         description: "Multi-chain DeFi wallet"
       };
     }
-    
+
     // Rainbow
     if (id.includes('rainbow') || name.includes('rainbow')) {
       return {
@@ -81,7 +85,7 @@ export default function EthConnect() {
         description: "Ethereum wallet for DeFi & NFTs"
       };
     }
-    
+
     // Trust Wallet
     if (id.includes('trust') || name.includes('trust')) {
       return {
@@ -90,16 +94,16 @@ export default function EthConnect() {
         description: "Multi-chain mobile wallet"
       };
     }
-    
+
     // Solana wallets (show but deprioritize)
     if (id.includes('phantom') || name.includes('phantom')) {
       return {
         name: "Phantom",
-        icon: "/placeholder-logo.svg",
+        icon: "/wallets/phantom.png",
         description: "Multi-chain wallet (primarily Solana)"
       };
     }
-    
+
     // Generic/Browser wallets
     if (id.includes('injected') || name.includes('injected') || name.includes('browser')) {
       return {
@@ -108,7 +112,7 @@ export default function EthConnect() {
         description: "Connect using your browser's wallet"
       };
     }
-    
+
     // Fallback for unknown connectors
     return {
       name: connector.name,
@@ -121,63 +125,63 @@ export default function EthConnect() {
     return isPending && variables && "id" in variables.connector && connector.id === variables.connector.id;
   };
 
-  console.log("Identity in EthConnect:", { identity, isLoginSuccess, isConnected });
-  console.log("Available connectors:", connectors.map(c => ({ id: c.id, name: c.name, type: c.type })));
-
-  // Remove duplicate connectors and sort by priority for EVM wallets
   const uniqueConnectors = connectors
-    .filter((connector, index, arr) => 
+    .filter((connector, index, arr) =>
       arr.findIndex(c => c.id === connector.id) === index
     )
     .sort((a, b) => {
-      // Define priority order for EVM wallets - using both ID and name for matching
       const getPriority = (connector: Connector) => {
         const id = connector.id.toLowerCase();
         const name = connector.name.toLowerCase();
-        
-        // MetaMask should be first
+
         if (id.includes('metamask') || name.includes('metamask')) return 1;
-        
-        // WalletConnect second
+
+
         if (id.includes('walletconnect') || name.includes('walletconnect')) return 2;
-        
-        // Coinbase Wallet third
+
+
         if (id.includes('coinbase') || name.includes('coinbase')) return 3;
-        
-        // Other popular EVM wallets
+
+
         if (id.includes('rabby') || name.includes('rabby')) return 4;
         if (id.includes('rainbow') || name.includes('rainbow')) return 5;
         if (id.includes('trust') || name.includes('trust')) return 6;
         if (id.includes('brave') || name.includes('brave')) return 7;
-        
-        // Browser/injected wallets last
+
         if (id.includes('injected') || name.includes('injected') || name.includes('browser')) return 8;
-        
-        // Solana wallets should be deprioritized on Ethereum
+
         if (id.includes('phantom') || name.includes('phantom')) return 99;
         if (id.includes('solflare') || name.includes('solflare')) return 99;
         if (id.includes('backpack') || name.includes('backpack')) return 99;
-        
+
         // Unknown wallets
         return 50;
       };
-      
+
       return getPriority(a) - getPriority(b);
     });
 
   return (
     <div className="space-y-4">
+      {/* Back Button */}
+      {onBack && (
+        <button
+          onClick={onBack}
+          className="flex items-center space-x-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4 text-white" />
+          <span className="text-white">Back</span>
+        </button>
+      )}
+
       {/* Connection State: Not Connected */}
       {!isConnected && (
         <div className="space-y-3">
-          <div className="text-sm text-muted-foreground mb-4">
-            Choose an Ethereum wallet to connect
-          </div>
-          
+
           {uniqueConnectors.map((connector, index) => {
             const walletConfig = getWalletConfig(connector);
             const isPendingConnector = isConnectorPending(connector);
-            
+
             return (
               <button
                 key={`${connector.id}-${index}`}
@@ -212,7 +216,7 @@ export default function EthConnect() {
                     </div>
                   </div>
                 </div>
-                
+
                 {isPendingConnector && (
                   <div className="text-xs text-primary">Connecting...</div>
                 )}
@@ -246,7 +250,7 @@ export default function EthConnect() {
           </div>
         </div>
       )}
-{/* Disconnet button */}
+      {/* Disconnet button */}
       {isConnected && !identity && (
         <div className="p-4 rounded-lg border bg-card">
           <div className="text-center space-y-3">

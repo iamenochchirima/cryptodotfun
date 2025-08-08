@@ -156,7 +156,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const logoutSIWB = async () => {
-    console.log("🔥 Logging out SIWB 🔥");
     siwbClear();
     setIdentity(null);
     setPrincipalId(null);
@@ -236,8 +235,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       console.error("SIWB identity is not available.");
       throw new Error("SIWB identity is not available.");
     }
-    console.log("🔥 Updating SIWB client with identity:", siwbIdentity.getPrincipal().toText(), "🔥");
-    console.log("🔥 Connected BTC Address:", identityAddress, "🔥");
     
     try {
       const principalId = siwbIdentity.getPrincipal().toText();
@@ -263,7 +260,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setBackendActor(_backendActor);
       setIsAuthenticated(true);
       
-      console.log("🔥 SIWB client update complete, syncing session data 🔥");
       syncSessionData();
     } catch (error) {
       console.error("Error updating SIWB client:", error);
@@ -275,7 +271,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     if (!siwsIdentity) {
       throw new Error("SIWS identity is not available.");
     }
-    console.log("🔥 Updating SIWS client with identity:", siwsIdentity, "🔥");
+
     const principalId = siwsIdentity.getPrincipal().toText();
     setPrincipalId(principalId);
     setIdentity(siwsIdentity);

@@ -40,6 +40,11 @@ export default function WalletConnectionModal({ isOpen, onClose }: WalletConnect
     }
   };
 
+  const handleBack = () => {
+    setSelectedWallet(null);
+    setError(null);
+  };
+
   const handleClose = () => {
     if (!connecting) {
       setError(null)
@@ -115,7 +120,7 @@ export default function WalletConnectionModal({ isOpen, onClose }: WalletConnect
               >
                 <div className="w-8 h-8 mr-3 relative">
                   <Image
-                    src="/placeholder.svg?height=32&width=32&text=II"
+                    src="/wallets/icp.png"
                     alt="Internet Identity"
                     fill
                     className="object-contain"
@@ -132,7 +137,7 @@ export default function WalletConnectionModal({ isOpen, onClose }: WalletConnect
               >
                 <div className="w-8 h-8 mr-3 relative">
                   <Image
-                    src="/placeholder.svg?height=32&width=32&text=ETH"
+                    src="/wallets/etherium.png"
                     alt="Ethereum"
                     fill
                     className="object-contain"
@@ -149,7 +154,7 @@ export default function WalletConnectionModal({ isOpen, onClose }: WalletConnect
               >
                 <div className="w-8 h-8 mr-3 relative">
                   <Image
-                    src="/placeholder.svg?height=32&width=32&text=SOL"
+                    src="/wallets/solana-sol-logo.png"
                     alt="Solana"
                     fill
                     className="object-contain"
@@ -166,7 +171,7 @@ export default function WalletConnectionModal({ isOpen, onClose }: WalletConnect
               >
                 <div className="w-8 h-8 mr-3 relative">
                   <Image
-                    src="/placeholder.svg?height=32&width=32&text=BTC"
+                    src="/wallets/bitcoin.png"
                     alt="Bitcoin"
                     fill
                     className="object-contain"
@@ -183,21 +188,21 @@ export default function WalletConnectionModal({ isOpen, onClose }: WalletConnect
               >
                 <div className="w-8 h-8 mr-3 relative">
                   <Image
-                    src="/placeholder.svg?height=32&width=32&text=NFID"
+                    src="/wallets/email.png"
                     alt="NFID"
                     fill
                     className="object-contain"
                   />
                 </div>
-                <span>Sign in with NFID</span>
+                <span>Sign in with Email (NFID)</span>
               </Button>
 
             </div>
             }
 
-            {selectedWallet && selectedWallet === "ethereum" && <EthConnect />}
-            {selectedWallet && selectedWallet === "solana" && <SolConnect />}
-            {selectedWallet && selectedWallet === "bitcoin" && <BtcConnect />}
+            {selectedWallet && selectedWallet === "ethereum" && <EthConnect onBack={handleBack} />}
+            {selectedWallet && selectedWallet === "solana" && <SolConnect onBack={handleBack} />}
+            {selectedWallet && selectedWallet === "bitcoin" && <BtcConnect onBack={handleBack} />}
 
             {connecting && (
               <div className="mt-4 flex items-center justify-center">
