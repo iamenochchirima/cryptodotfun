@@ -100,7 +100,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           break;
       }
     }
-  }, []);
+  }, [siwsIdentity, siweIdentity, siwbIdentity]);
 
   const login = async (walletType: WalletType) => {
     const result = await getPrincipalAddress(walletType);

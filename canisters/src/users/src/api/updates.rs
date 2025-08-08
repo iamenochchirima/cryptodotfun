@@ -35,6 +35,10 @@ pub async fn add_user(args: AddUserArgs) -> Result<(), String> {
     let user = User {
         principal: caller,
         username: args.username,
+        email: args.email,
+        referral_source: args.referral_source,
+        referral_code: args.referral_code,
+        interests: args.interests,
         created_at: time(),
     };
 
@@ -43,4 +47,6 @@ pub async fn add_user(args: AddUserArgs) -> Result<(), String> {
     });
     Ok(())
 }
+
+
 
