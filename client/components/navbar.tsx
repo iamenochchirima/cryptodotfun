@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { Menu, Search, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -53,7 +54,14 @@ export default function Navbar() {
     >
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         <div className="flex items-center">
-          <Link href="/" className="flex items-center">
+          <Link href="/" className="flex items-center space-x-2">
+            <Image
+              src="/logo.png"
+              alt="CryptoDotFun Logo"
+              width={32}
+              height={32}
+              className="rounded-md"
+            />
             <span className="text-xl font-bold crypto-gradient-text">CryptoDotFun</span>
           </Link>
         </div>

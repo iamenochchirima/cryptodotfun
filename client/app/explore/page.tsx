@@ -1,7 +1,7 @@
 import Link from "next/link"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
-import { ArrowRight, BookOpen, Coins, Shield, Users, ImageIcon, BarChart3, Zap, Gamepad2 } from "lucide-react"
+import { ArrowRight, BookOpen, Coins, Shield, Users, ImageIcon, BarChart3, Zap, Gamepad2, Bitcoin } from "lucide-react"
 
 const features = [
   {
@@ -81,34 +81,49 @@ const features = [
     ],
   },
   {
-    title: "NFT Platform",
+    title: "NFTs Platform",
     description:
-      "Complete NFT ecosystem - discover, buy, sell, and launch your own NFT collections with advanced tools and low fees.",
+      "Complete multi-chain NFT ecosystem - discover, buy, sell, and launch your own NFT collections across Ethereum, Solana, and more.",
     icon: ImageIcon,
     color: "text-crypto-purple",
     bgColor: "bg-crypto-purple/10",
     image: "/nft-marketplace-digital-art.png",
     link: "/nft/marketplace",
     highlights: [
-      "Multi-chain NFT marketplace",
+      "Multi-chain NFT marketplace (ETH, SOL, ICP)",
       "No-code NFT collection creation",
       "Low marketplace fees & creator royalties",
-      "Launch tools with marketing support",
+      "Cross-chain NFT bridging & trading",
     ],
   },
   {
-    title: "Token Launchpad",
-    description: "Launch your own fungible tokens with customizable tokenomics, distribution, and vesting schedules.",
+    title: "Bitcoin Assets",
+    description: "Etching, trading, and collecting Bitcoin Runes, Ordinals, and inscriptions on the Bitcoin network.",
+    icon: Bitcoin,
+    color: "text-orange-500",
+    bgColor: "bg-orange-500/10",
+    image: "/bitcoin-assets.png",
+    link: "/bitcoin/assets",
+    highlights: [
+      "Bitcoin Ordinals marketplace",
+      "Runes etching and trading platform",
+      "Inscription creation tools",
+      "Rare sats and asset discovery",
+    ],
+  },
+  {
+    title: "Token Trading Hub",
+    description: "Complete token trading ecosystem with launchpad, DEX aggregation, trading bots, and multi-chain support.",
     icon: BarChart3,
     color: "text-crypto-yellow",
     bgColor: "bg-crypto-yellow/10",
     image: "/token-launchpad-charts.png",
     link: "/tokens/launchpad",
     highlights: [
-      "No-code token creation",
-      "Multiple blockchain support",
-      "Customizable tokenomics",
-      "Secure and audited contracts",
+      "Multi-chain token launchpad",
+      "DEX aggregation & best price routing",
+      "Automated trading bots & strategies",
+      "Portfolio tracking & analytics",
     ],
   },
   {

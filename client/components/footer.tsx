@@ -1,4 +1,5 @@
 import Link from "next/link"
+import Image from "next/image"
 import { Github, Twitter, DiscIcon as Discord } from "lucide-react"
 
 export default function Footer() {
@@ -7,7 +8,16 @@ export default function Footer() {
       <div className="container mx-auto px-4 py-8">
         <div className="grid grid-cols-1 gap-8 md:grid-cols-4">
           <div>
-            <h3 className="mb-4 text-lg font-bold crypto-gradient-text">CryptoDotFun</h3>
+            <div className="flex items-center space-x-2 mb-4">
+              <Image
+                src="/logo.png"
+                alt="CryptoDotFun Logo"
+                width={24}
+                height={24}
+                className="rounded-md"
+              />
+              <h3 className="text-lg font-bold crypto-gradient-text">CryptoDotFun</h3>
+            </div>
             <p className="text-sm text-muted-foreground">
               Your blockchain education and engagement platform. Learn, earn, secure, and connect with the crypto
               community.
