@@ -18,7 +18,8 @@ import { useSiwbIdentity } from 'ic-use-siwb-identity';
 import { useAccount, useDisconnect } from "wagmi";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { host, network } from "@/constants/urls";
-import { identityCertifierCanisterId, usersCanisterId, usersIDL } from "@/constants/canisters-config";
+import { identityCertifierCanisterId, usersCanisterId, usersIDL, identityCertifierIDL } from "@/constants/canisters-config";
+import { apiInitAuth, apiLogout, apiMe, apiVerifyIdentity } from "@/services/AuthService";
 
 interface AuthContextType {
   login: (walletType: WalletType) => Promise<void>;
@@ -29,6 +30,7 @@ interface AuthContextType {
   sessionData: SessionData | null;
   user: User | null;
   isAuthenticated: boolean;
+  fetchingUser: boolean;
   backendActor: ActorSubclass<BACKEND_SERVICE> | null;
   identityCertifierActor: ActorSubclass<IDENTITY_CERTIFIER_SERVICE> | null;
   setUser: (user: User | null) => void;
@@ -41,7 +43,7 @@ const useSafeSiws = () => {
   try {
     return useSiws();
   } catch (error) {
-    return { identity: null, clear: () => {} };
+    return { identity: null, clear: () => { } };
   }
 };
 
@@ -49,7 +51,7 @@ const useSafeSiwe = () => {
   try {
     return useSiwe();
   } catch (error) {
-    return { identity: null, clear: () => {} };
+    return { identity: null, clear: () => { } };
   }
 };
 
@@ -57,7 +59,7 @@ const useSafeSiwb = () => {
   try {
     return useSiwbIdentity();
   } catch (error) {
-    return { identity: null, clear: () => {}, identityAddress: null};
+    return { identity: null, clear: () => { }, identityAddress: null };
   }
 };
 
@@ -80,6 +82,55 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     useState<ActorSubclass<BACKEND_SERVICE> | null>(null);
   const [identityCertifierActor, setIdentityCertifierActor] = useState<ActorSubclass<IDENTITY_CERTIFIER_SERVICE> | null>(null);
   const [user, setUser] = useState<User | null>(null);
+  const [fetchingUser, setFetchingUser] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (!isAuthenticated || !identityCertifierActor || !sessionData || !backendActor) {
+      return;
+    }
+
+    const authenticateServer = async () => {
+      setFetchingUser(true);
+      if (sessionData.isBackendAuthenticated) {
+        const userData = await backendActor.get_user();
+        if ("Ok" in userData) {
+          setUser(userData.Ok);
+        }
+        setFetchingUser(false);
+        return;
+      }
+      try {
+        const initResponse = await apiInitAuth();
+        if (initResponse && initResponse.success) {
+          await identityCertifierActor.confirmIdentity(initResponse.sessionId);
+          await apiVerifyIdentity(initResponse.sessionId);
+
+          const meResponse = await apiMe();
+          const userData = await backendActor.get_user()
+          if (meResponse) {
+            const updatedSessionData: SessionData = {
+              ...sessionData,
+              isBackendAuthenticated: true,
+              updatedAt: Date.now(),
+            };
+            updateSessionData(updatedSessionData);
+            if ("Ok" in userData) {
+              setUser(userData.Ok);
+            }
+          }
+        }
+        else {
+          console.error("Server authentication failed:", initResponse);
+        }
+      } catch (error) {
+        console.error("Error authenticating with server:", error);
+      } finally {
+        setFetchingUser(false);
+      }
+    }
+    authenticateServer()
+  }, [isAuthenticated, identityCertifierActor, sessionData, backendActor]);
+
 
   useEffect(() => {
     const session = localStorage.getItem("session-data")
@@ -113,10 +164,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const { principalAddress, aid, chainAddress } = result;
     updateSessionData({
       connected: true,
+      isBackendAuthenticated: false,
       connectedWalletType: walletType,
       principalId: principalAddress,
       aid: aid,
       chainAddress: chainAddress,
+      setTime: Date.now(),
     });
     updateClient(walletType);
   };
@@ -146,6 +199,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setUser(null);
     deleteSessionData();
     setIsAuthenticated(false);
+    apiLogout();
   };
 
   const logoutInternetIdentity = async () => {
@@ -224,7 +278,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           canisterId: usersCanisterId,
         });
         setBackendActor(_backendActor);
-        const _identityCertifierActor = Actor.createActor<IDENTITY_CERTIFIER_SERVICE>(usersIDL, {
+        const _identityCertifierActor = Actor.createActor<IDENTITY_CERTIFIER_SERVICE>(identityCertifierIDL, {
           agent,
           canisterId: identityCertifierCanisterId,
         });
@@ -243,35 +297,35 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       console.error("SIWB identity is not available.");
       throw new Error("SIWB identity is not available.");
     }
-    
+
     try {
       const principalId = siwbIdentity.getPrincipal().toText();
       setPrincipalId(principalId);
       setIdentity(siwbIdentity);
-      
+
       const agent = await HttpAgent.create({
         identity: siwbIdentity,
         host: host,
       });
-      
+
       if (network === "local") {
         agent.fetchRootKey().catch((err) => {
           console.log("Error fetching root key: ", err);
         });
       }
-      
+
       const _backendActor = Actor.createActor<BACKEND_SERVICE>(usersIDL, {
         agent,
         canisterId: usersCanisterId,
       });
       setBackendActor(_backendActor);
-      const _identityCertifierActor = Actor.createActor<IDENTITY_CERTIFIER_SERVICE>(usersIDL, {
+      const _identityCertifierActor = Actor.createActor<IDENTITY_CERTIFIER_SERVICE>(identityCertifierIDL, {
         agent,
         canisterId: identityCertifierCanisterId,
       });
       setIdentityCertifierActor(_identityCertifierActor);
       setIsAuthenticated(true);
-      
+
       syncSessionData();
     } catch (error) {
       console.error("Error updating SIWB client:", error);
@@ -301,7 +355,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       canisterId: usersCanisterId,
     });
     setBackendActor(_backendActor);
-    const _identityCertifierActor = Actor.createActor<IDENTITY_CERTIFIER_SERVICE>(usersIDL, {
+    const _identityCertifierActor = Actor.createActor<IDENTITY_CERTIFIER_SERVICE>(identityCertifierIDL, {
       agent,
       canisterId: identityCertifierCanisterId,
     });
@@ -331,7 +385,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       canisterId: usersCanisterId,
     });
     setBackendActor(_backendActor);
-    const _identityCertifierActor = Actor.createActor<IDENTITY_CERTIFIER_SERVICE>(usersIDL, {
+    const _identityCertifierActor = Actor.createActor<IDENTITY_CERTIFIER_SERVICE>(identityCertifierIDL, {
       agent,
       canisterId: identityCertifierCanisterId,
     });
@@ -362,7 +416,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         canisterId: usersCanisterId,
       });
       setBackendActor(_backendActor);
-      const _identityCertifierActor = Actor.createActor<IDENTITY_CERTIFIER_SERVICE>(usersIDL, {
+      const _identityCertifierActor = Actor.createActor<IDENTITY_CERTIFIER_SERVICE>(identityCertifierIDL, {
         agent,
         canisterId: identityCertifierCanisterId,
       });
@@ -443,6 +497,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     isAuthenticated,
     backendActor,
     identityCertifierActor,
+    fetchingUser,
     setUser,
   };
 

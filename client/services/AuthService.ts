@@ -11,13 +11,26 @@ export async function apiInitAuth() {
     })
 }
 
-export async function apiVerifyIdentity(sessionId: string, principal : string) {
+export async function apiVerifyIdentity(sessionId: string) {
     return ApiService.fetchDataWithAxios({
         url: endpointConfig.verifyIdentity,
-        method: 'post',
-        data: {
+        method: 'get',
+        params: {
             sessionId,
-            principal
         }
+    })
+}
+
+export async function apiLogout() {
+    return ApiService.fetchDataWithAxios({
+        url: endpointConfig.logout,
+        method: 'post',
+    })
+}
+
+export async function apiMe () {
+    return ApiService.fetchDataWithAxios({
+        url: endpointConfig.me,
+        method: 'get',
     })
 }

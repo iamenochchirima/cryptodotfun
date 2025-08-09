@@ -7,8 +7,7 @@
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js",
-    "dev": "TS_NODE_FILES=true pnpm nodemon -L",
-    "demo": "ts-node src/demo.ts"
+    "dev": "TS_NODE_FILES=true pnpm nodemon -L"
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",
@@ -31,7 +30,9 @@
     "@dfinity/identity": "^2.4.1",
     "@dfinity/identity-secp256k1": "^2.4.1",
     "@dfinity/principal": "^2.4.1",
+    "@types/cookie-parser": "^1.4.9",
     "bip39": "^3.1.0",
+    "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",

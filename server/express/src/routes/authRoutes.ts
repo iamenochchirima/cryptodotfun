@@ -2,7 +2,9 @@ import express, { Router } from 'express';
 import {
   initiateAuthentication,
   verifyIdentity,
-  getSessionStatus
+  getSessionStatus,
+  checkAuth,
+  logout
 } from '../controllers/authController';
 
 const router: Router = express.Router();
@@ -15,7 +17,12 @@ const router: Router = express.Router();
 router.post('/initiate', initiateAuthentication);
 
 // GET /api/auth/verify/:sessionId - Verify user identity
-router.get('/verify/:sessionId', verifyIdentity);
+router.get('/verify', verifyIdentity);
+
+// GET /api/auth/me - Check if user is authenticated
+router.get('/me', checkAuth);
+
+router.post('/logout', logout);
 
 // GET /api/auth/session/:sessionId - Get session status (utility)
 router.get('/session/:sessionId', getSessionStatus);

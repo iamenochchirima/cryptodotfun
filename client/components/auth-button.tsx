@@ -15,10 +15,11 @@ import { LogOut, User, Settings } from "lucide-react"
 import Link from "next/link"
 import RegistrationModal from "./registration/registration-modal"
 import WalletConnectionModal from "./wallet-connection-modal"
+import LoadingModal from "./loading-modal"
 import { useAuth } from "@/providers/auth-context"
 
 export default function AuthButton() {
-  const { isAuthenticated, user, logout } = useAuth()
+  const { isAuthenticated, user, logout , fetchingUser} = useAuth()
   const [isWalletModalOpen, setIsWalletModalOpen] = useState(false)
   const [isRegistrationModalOpen, setIsRegistrationModalOpen] = useState(false)
 
@@ -45,7 +46,7 @@ export default function AuthButton() {
   }
 
   // Show user profile dropdown if authenticated and user exists
-  if (isAuthenticated && user) {
+  if (isAuthenticated && user && !fetchingUser) {
     return (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
@@ -92,6 +93,13 @@ export default function AuthButton() {
       <Button onClick={handleLogin}>
         Log in
       </Button>
+      
+      {/* Loading Modal - shows when fetching user data */}
+      <LoadingModal 
+        isOpen={fetchingUser}
+        title="Authenticating..."
+        description="Please wait while we verify your authentication."
+      />
       
       {/* Wallet Connection Modal */}
       <WalletConnectionModal 

@@ -7,7 +7,10 @@ export interface SessionData {
   connectedWalletType: WalletType;
   principalId?: string;
   aid?: string;
+  isBackendAuthenticated?: boolean;
   chainAddress?: string;
+  updatedAt?: number;
+  setTime: number;
 }
 
 export const useSessionData = () => {

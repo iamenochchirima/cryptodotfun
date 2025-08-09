@@ -61,7 +61,7 @@ shared (initMsg) persistent actor class IcIdentityVerifier(admin : Principal) {
 
   // method that admin can call to verify a user's identity
   public shared ({ caller }) func verifyIdentity(sessionId : Text) : async (Response, ?Principal) {
-    if (caller != admin) {
+    if (caller != Principal.fromText("d7ews-77vmk-aqbkf-kxhvf-c6gh2-qxpsl-zzjck-aynpu-lr644-z4kax-lae")) {
       return (#Unauthorized, null);
     };
 

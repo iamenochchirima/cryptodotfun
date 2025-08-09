@@ -4,6 +4,7 @@ import { Principal } from '@dfinity/principal';
 import { network } from '../constants';
 import crypto from 'crypto';
 import { getActor } from '../utils';
+import { redisClient } from '../../index';
 
 // Types based on the canister interface
 type AuthResponse = {
@@ -31,15 +32,20 @@ const isAuthResponse = (obj: any): obj is AuthResponse => {
   );
 };
 
-// Store for active sessions (in production, use Redis or database)
 interface SessionData {
   sessionId: string;
   createdAt: Date;
   expiresAt: Date;
   status: 'initiated' | 'confirmed' | 'verified';
+  principal?: string;
 }
 
-const activeSessions = new Map<string, SessionData>();
+interface UserSession {
+  sessionId: string;
+  principal: string;
+  createdAt: Date;
+  expiresAt: Date;
+}
 
 // Generate secure session ID
 const generateSessionId = (): string => {
@@ -64,13 +70,19 @@ export const initiateAuthentication = async (req: Request, res: Response) => {
     const expirationMinutes = 5; // Default 5 minutes
     const expiresAt = new Date(Date.now() + expirationMinutes * 60 * 1000);
     
-    // Store session locally
-    activeSessions.set(sessionId, {
+    // Store session in Redis
+    const sessionData: SessionData = {
       sessionId,
       createdAt: new Date(),
       expiresAt,
       status: 'initiated'
-    });
+    };
+    
+    await redisClient.setex(
+      `auth_session:${sessionId}`, 
+      expirationMinutes * 60, 
+      JSON.stringify(sessionData)
+    );
 
     const actor = await getActor(network);
     const expirationNanoseconds = BigInt(expirationMinutes * 60 * 1000 * 1000 * 1000); // Convert to nanoseconds
@@ -107,7 +119,7 @@ export const initiateAuthentication = async (req: Request, res: Response) => {
  */
 export const verifyIdentity = async (req: Request, res: Response) => {
   try {
-    const { sessionId } = req.params;
+    const { sessionId } = req.query;
     
     if (!sessionId) {
       return res.status(400).json({
@@ -116,18 +128,20 @@ export const verifyIdentity = async (req: Request, res: Response) => {
       });
     }
 
-    // Check if session exists locally
-    const sessionData = activeSessions.get(sessionId);
-    if (!sessionData) {
+    // Get session from Redis
+    const sessionDataStr = await redisClient.get(`auth_session:${sessionId}`);
+    if (!sessionDataStr) {
       return res.status(404).json({
         success: false,
         error: 'Session not found'
       });
     }
 
+    const sessionData: SessionData = JSON.parse(sessionDataStr);
+    
     // Check if session expired
-    if (new Date() > sessionData.expiresAt) {
-      activeSessions.delete(sessionId);
+    if (new Date() > new Date(sessionData.expiresAt)) {
+      await redisClient.del(`auth_session:${sessionId}`);
       return res.status(400).json({
         success: false,
         error: 'Session expired'
@@ -135,24 +149,56 @@ export const verifyIdentity = async (req: Request, res: Response) => {
     }
 
     const actor = await getActor(network);
+    console.log(`Verifying identity for sessionId: ${sessionId} using actor:`, actor);
     const verifyResult = await actor.verifyIdentity(sessionId) as VerifyIdentityResult;
+    console.log(`Verify result for sessionId ${sessionId}:`, verifyResult);
     const [result, principalOpt] = verifyResult;
     
     if (isAuthResponse(result) && 'Ok' in result) {
-      // Update session status
-      sessionData.status = 'verified';
-      activeSessions.set(sessionId, sessionData);
-      
       const principal = principalOpt && principalOpt.length > 0 ? principalOpt[0]?.toString() : null;
       
-      res.json({
-        success: true,
-        sessionId,
-        principal,
-        message: 'Identity verified successfully',
-        // Here you would typically generate a JWT or session token
-        // jwt: generateJWT(principal)
-      });
+      if (principal) {
+        // Create a new user session with longer expiration (7 days)
+        const userSessionId = generateSessionId();
+        const userSessionExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+        
+        const userSession: UserSession = {
+          sessionId: userSessionId,
+          principal,
+          createdAt: new Date(),
+          expiresAt: userSessionExpiry
+        };
+        
+        // Store user session in Redis (expires in 7 days)
+        await redisClient.setex(
+          `user_session:${userSessionId}`,
+          7 * 24 * 60 * 60,
+          JSON.stringify(userSession)
+        );
+        
+        // Create HTTP-only cookie
+        res.cookie('CRYPTO_DOT_FUN_SESSION', userSessionId, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'strict',
+          maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+          path: '/'
+        });
+        
+        // Clean up auth session
+        await redisClient.del(`auth_session:${sessionId}`);
+        
+        res.json({
+          success: true,
+          principal,
+          message: 'Identity verified successfully and session created'
+        });
+      } else {
+        res.status(400).json({
+          success: false,
+          error: 'No principal returned from verification'
+        });
+      }
     } else {
       const errorType = isAuthResponse(result) ? Object.keys(result)[0] : 'Unknown';
       let message = 'Verification failed';
@@ -163,11 +209,11 @@ export const verifyIdentity = async (req: Request, res: Response) => {
           break;
         case 'Expired':
           message = 'Authentication session expired';
-          activeSessions.delete(sessionId);
+          await redisClient.del(`auth_session:${sessionId}`);
           break;
         case 'InvalidSession':
           message = 'Invalid session ID';
-          activeSessions.delete(sessionId);
+          await redisClient.del(`auth_session:${sessionId}`);
           break;
         case 'Unauthorized':
           message = 'Unauthorized to verify this session';
@@ -193,7 +239,7 @@ export const verifyIdentity = async (req: Request, res: Response) => {
 /**
  * Get session status - utility endpoint for debugging
  */
-export const getSessionStatus = (req: Request, res: Response) => {
+export const getSessionStatus = async (req: Request, res: Response) => {
   const { sessionId } = req.params;
   
   if (!sessionId) {
@@ -203,37 +249,143 @@ export const getSessionStatus = (req: Request, res: Response) => {
     });
   }
 
-  const sessionData = activeSessions.get(sessionId);
-  if (!sessionData) {
-    return res.status(404).json({
+  try {
+    const sessionDataStr = await redisClient.get(`auth_session:${sessionId}`);
+    if (!sessionDataStr) {
+      return res.status(404).json({
+        success: false,
+        error: 'Session not found'
+      });
+    }
+
+    const sessionData: SessionData = JSON.parse(sessionDataStr);
+    const isExpired = new Date() > new Date(sessionData.expiresAt);
+    
+    res.json({
+      success: true,
+      session: {
+        ...sessionData,
+        isExpired,
+        timeRemaining: isExpired ? 0 : Math.max(0, new Date(sessionData.expiresAt).getTime() - Date.now())
+      }
+    });
+  } catch (error) {
+    console.error('Error getting session status:', error);
+    res.status(500).json({
       success: false,
-      error: 'Session not found'
+      error: 'Internal server error'
     });
   }
-
-  const isExpired = new Date() > sessionData.expiresAt;
-  
-  res.json({
-    success: true,
-    session: {
-      ...sessionData,
-      isExpired,
-      timeRemaining: isExpired ? 0 : Math.max(0, sessionData.expiresAt.getTime() - Date.now())
-    }
-  });
 };
 
 /**
- * Clean up expired sessions - utility function
+ * Check if user is authenticated - /auth/me endpoint
  */
-export const cleanupExpiredSessions = () => {
-  const now = new Date();
-  for (const [sessionId, sessionData] of activeSessions.entries()) {
-    if (now > sessionData.expiresAt) {
-      activeSessions.delete(sessionId);
+export const checkAuth = async (req: Request, res: Response) => {
+  try {
+    const sessionId = req.cookies?.CRYPTO_DOT_FUN_SESSION;
+    
+    if (!sessionId) {
+      return res.status(401).json({
+        success: false,
+        authenticated: false,
+        error: 'No session cookie found'
+      });
     }
+
+    const userSessionStr = await redisClient.get(`user_session:${sessionId}`);
+    if (!userSessionStr) {
+      return res.status(401).json({
+        success: false,
+        authenticated: false,
+        error: 'Session not found or expired'
+      });
+    }
+
+    const userSession: UserSession = JSON.parse(userSessionStr);
+    
+    // Check if session expired
+    if (new Date() > new Date(userSession.expiresAt)) {
+      await redisClient.del(`user_session:${sessionId}`);
+      res.clearCookie('CRYPTO_DOT_FUN_SESSION');
+      return res.status(401).json({
+        success: false,
+        authenticated: false,
+        error: 'Session expired'
+      });
+    }
+
+    res.json({
+      success: true,
+      authenticated: true,
+      principal: userSession.principal,
+      sessionCreated: userSession.createdAt,
+      sessionExpires: userSession.expiresAt
+    });
+  } catch (error) {
+    console.error('Error checking authentication:', error);
+    res.status(500).json({
+      success: false,
+      authenticated: false,
+      error: 'Internal server error'
+    });
   }
 };
 
-// Clean up expired sessions every 5 minutes
-setInterval(cleanupExpiredSessions, 5 * 60 * 1000);
+/**
+ * Logout user - clear session and remove cookie
+ */
+export const logout = async (req: Request, res: Response) => {
+  try {
+    const sessionId = req.cookies?.CRYPTO_DOT_FUN_SESSION;
+    
+    if (sessionId) {
+      // Remove session from Redis
+      await redisClient.del(`user_session:${sessionId}`);
+    }
+    
+    // Clear the session cookie
+    res.clearCookie('CRYPTO_DOT_FUN_SESSION', {
+      path: '/',
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict'
+    });
+    
+    res.json({
+      success: true,
+      message: 'Logout successful'
+    });
+  } catch (error) {
+    console.error('Error during logout:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error during logout'
+    });
+  }
+};
+
+/**
+ * Clean up expired sessions - Redis handles TTL automatically
+ * This is just for manual cleanup if needed
+ */
+export const cleanupExpiredSessions = async () => {
+  try {
+    const authSessionKeys = await redisClient.keys('auth_session:*');
+    const userSessionKeys = await redisClient.keys('user_session:*');
+    
+    const now = new Date();
+    
+    for (const key of [...authSessionKeys, ...userSessionKeys]) {
+      const sessionStr = await redisClient.get(key);
+      if (sessionStr) {
+        const session = JSON.parse(sessionStr);
+        if (new Date(session.expiresAt) < now) {
+          await redisClient.del(key);
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error cleaning up expired sessions:', error);
+  }
+};

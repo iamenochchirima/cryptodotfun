@@ -2,6 +2,7 @@ import express, { Express } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
+import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
 import IORedis from "ioredis"; 
 import { getHealth, getStatus } from './src/controllers/healthController';
@@ -27,6 +28,9 @@ app.use(morgan('combined'));
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
+
+// Cookie parsing middleware
+app.use(cookieParser());
 
 // Health check endpoints
 app.get('/health', getHealth);

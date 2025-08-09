@@ -21,13 +21,11 @@ const navLinks = [
 ]
 
 export default function Navbar() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, fetchingUser } = useAuth();
   const [isOpen, setIsOpen] = useState(false)
   const [isScrolled, setIsScrolled] = useState(false)
   const [mounted, setMounted] = useState(false)
   const pathname = usePathname()
-
-  // Get auth state from Redux
 
   useEffect(() => {
     setMounted(true)

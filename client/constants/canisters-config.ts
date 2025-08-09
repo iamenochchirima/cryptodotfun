@@ -2,6 +2,7 @@ export { idlFactory as icSiwsIDL } from "../idls/ic_siws_provider/ic_siws_provid
 export { idlFactory as icSiweIDL } from "../idls/ic_siwe_provider/ic_siwe_provider.did.js";
 export { idlFactory as icSiwbIDL } from "../idls/ic_siwb_provider/ic_siwb_provider.did.js";
 export { idlFactory as usersIDL } from "../idls/users/users.did.js";
+export { idlFactory as identityCertifierIDL } from "../idls/identity_certifier/identity_certifier.did.js";
 
 // Define network locally to avoid circular dependency
 const network = process.env.NEXT_PUBLIC_ENVIRONMENT || "local";
