@@ -5,7 +5,7 @@ use ic_cdk::api::{ time };
 use ic_stable_structures::storable::Bound;
 use ic_stable_structures::Storable;
 
-use crate::common::types::user::{AddUserArgs, User };
+use crate::common::types::user::{AddUserArgs, Interest, User };
 use crate::{ USERS};
 
 impl Storable for User {
@@ -23,7 +23,7 @@ impl Storable for User {
 #[update]
 pub async fn add_user(args: AddUserArgs) -> Result<(), String> {
     let caller = ic_cdk::caller();
-    ic_cdk::println!("add_user called by: {:?}", caller.to_text());
+    
     let existing_user = USERS.with(|users| {
         users.borrow().get(&caller)
     });
@@ -32,13 +32,19 @@ pub async fn add_user(args: AddUserArgs) -> Result<(), String> {
         return Err("User already exists".to_string());
     }
 
+    let interests: Vec<_> = args.interests.into_iter()
+        .map(|interest| Interest::new(&interest))
+        .collect::<Result<_, _>>()
+        .map_err(|e| e.to_string())?;
+
     let user = User {
         principal: caller,
         username: args.username,
+        chain_data: args.chain_data,
         email: args.email,
         referral_source: args.referral_source,
         referral_code: args.referral_code,
-        interests: args.interests,
+        interests: interests,
         created_at: time(),
     };
 

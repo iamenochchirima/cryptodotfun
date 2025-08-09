@@ -5,6 +5,10 @@
       "package": "users",
       "type": "rust"
     },
+    "identity_certifier": {
+      "main": "src/identity-certifier/main.mo",
+      "type": "motoko"
+    },
     "ic_siws_provider": {
       "candid": "https://github.com/kristoferlund/ic-siws/releases/download/v0.1.0/ic_siws_provider.did",
       "type": "custom",

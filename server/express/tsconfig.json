@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "target": "es2018",
+    "module": "commonjs",
+    "outDir": "dist",
+    "declaration": true,
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "moduleResolution": "node"
+  },
+  "include": ["index.ts", "src/utils.ts", "src/constants.ts"],
+  "exclude": ["node_modules", "dist", "tests", "src/index.ts", "src/demo.ts"]
+}

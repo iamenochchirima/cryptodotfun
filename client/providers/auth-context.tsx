@@ -5,6 +5,7 @@ import {
   _SERVICE as BACKEND_SERVICE,
   User,
 } from "../idls/users/users.did";
+import { _SERVICE as IDENTITY_CERTIFIER_SERVICE } from "../idls/identity_certifier/identity_certifier.did";
 
 import { SessionData, useSessionData } from "./useSessionData";
 import { WalletType } from "./types";
@@ -17,7 +18,7 @@ import { useSiwbIdentity } from 'ic-use-siwb-identity';
 import { useAccount, useDisconnect } from "wagmi";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { host, network } from "@/constants/urls";
-import { usersCanisterId, usersIDL } from "@/constants/canisters-config";
+import { identityCertifierCanisterId, usersCanisterId, usersIDL } from "@/constants/canisters-config";
 
 interface AuthContextType {
   login: (walletType: WalletType) => Promise<void>;
@@ -29,6 +30,7 @@ interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   backendActor: ActorSubclass<BACKEND_SERVICE> | null;
+  identityCertifierActor: ActorSubclass<IDENTITY_CERTIFIER_SERVICE> | null;
   setUser: (user: User | null) => void;
 }
 
@@ -76,6 +78,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [principalId, setPrincipalId] = useState<string | null>(null);
   const [backendActor, setBackendActor] =
     useState<ActorSubclass<BACKEND_SERVICE> | null>(null);
+  const [identityCertifierActor, setIdentityCertifierActor] = useState<ActorSubclass<IDENTITY_CERTIFIER_SERVICE> | null>(null);
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
@@ -221,6 +224,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           canisterId: usersCanisterId,
         });
         setBackendActor(_backendActor);
+        const _identityCertifierActor = Actor.createActor<IDENTITY_CERTIFIER_SERVICE>(usersIDL, {
+          agent,
+          canisterId: identityCertifierCanisterId,
+        });
+        setIdentityCertifierActor(_identityCertifierActor);
         setIdentity(identity);
         setIsAuthenticated(isAuthenticated);
         syncSessionData();
@@ -256,8 +264,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         agent,
         canisterId: usersCanisterId,
       });
-      
       setBackendActor(_backendActor);
+      const _identityCertifierActor = Actor.createActor<IDENTITY_CERTIFIER_SERVICE>(usersIDL, {
+        agent,
+        canisterId: identityCertifierCanisterId,
+      });
+      setIdentityCertifierActor(_identityCertifierActor);
       setIsAuthenticated(true);
       
       syncSessionData();
@@ -289,6 +301,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       canisterId: usersCanisterId,
     });
     setBackendActor(_backendActor);
+    const _identityCertifierActor = Actor.createActor<IDENTITY_CERTIFIER_SERVICE>(usersIDL, {
+      agent,
+      canisterId: identityCertifierCanisterId,
+    });
+    setIdentityCertifierActor(_identityCertifierActor);
     setIsAuthenticated(true);
     syncSessionData();
   };
@@ -314,6 +331,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       canisterId: usersCanisterId,
     });
     setBackendActor(_backendActor);
+    const _identityCertifierActor = Actor.createActor<IDENTITY_CERTIFIER_SERVICE>(usersIDL, {
+      agent,
+      canisterId: identityCertifierCanisterId,
+    });
+    setIdentityCertifierActor(_identityCertifierActor);
     setIsAuthenticated(true);
     syncSessionData();
   };
@@ -340,6 +362,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         canisterId: usersCanisterId,
       });
       setBackendActor(_backendActor);
+      const _identityCertifierActor = Actor.createActor<IDENTITY_CERTIFIER_SERVICE>(usersIDL, {
+        agent,
+        canisterId: identityCertifierCanisterId,
+      });
+      setIdentityCertifierActor(_identityCertifierActor);
       syncSessionData();
     }
   };
@@ -415,6 +442,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     user,
     isAuthenticated,
     backendActor,
+    identityCertifierActor,
     setUser,
   };
 

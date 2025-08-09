@@ -40,7 +40,6 @@ export default function Navbar() {
     return () => window.removeEventListener("scroll", handleScroll)
   }, [])
 
-  // Don't render anything until mounted to prevent hydration mismatch
   if (!mounted) {
     return <header className="fixed top-0 z-50 w-full h-16" />
   }

@@ -58,6 +58,7 @@ interface CanisterConfig {
   icSiweProviderCanisterId: string;
   icSiwsProviderCanisterId: string;
   icSiwbProviderCanisterId: string;
+  identityCertifierCanisterId: string;
   internetIdentityCanisterId: string;
 
 }
@@ -67,6 +68,7 @@ const productionCanisters: CanisterConfig = {
   icSiweProviderCanisterId: getCanisterId('ic_siwe_provider'),
   icSiwsProviderCanisterId: getCanisterId('ic_siws_provider'),
   icSiwbProviderCanisterId: getCanisterId('ic_siwb_provider'),
+  identityCertifierCanisterId: getCanisterId('identity_certifier'),
   internetIdentityCanisterId: getCanisterId('internet_identity'),
 };
 
@@ -75,6 +77,7 @@ const localCanisters: CanisterConfig = {
   icSiweProviderCanisterId: getCanisterId('ic_siwe_provider'),
   icSiwsProviderCanisterId: getCanisterId('ic_siws_provider'),
   icSiwbProviderCanisterId: getCanisterId('ic_siwb_provider'),
+  identityCertifierCanisterId: getCanisterId('identity_certifier'),
   internetIdentityCanisterId: getCanisterId('internet_identity'),
 };
 
@@ -89,4 +92,5 @@ export const {
   icSiwsProviderCanisterId,
   icSiwbProviderCanisterId,
   internetIdentityCanisterId,
+  identityCertifierCanisterId,
 } = canisterConfigs[network as Env];
