@@ -30,7 +30,7 @@ shared (initMsg) persistent actor class IcIdentityVerifier(admin : Principal) {
   ) : async (Response) {
     Debug.print("Initiating auth for session: " # sessionId);
     Debug.print("Caller: " # Principal.toText(caller));
-    if (caller != Principal.fromText("d7ews-77vmk-aqbkf-kxhvf-c6gh2-qxpsl-zzjck-aynpu-lr644-z4kax-lae")) {
+    if (caller != Principal.fromText("ozsjz-aryrz-56mzd-qifrs-tmiqu-2jx65-vfxhj-dhyin-uithf-mx4dr-5ae")) {
       return #Unauthorized;
     };
 
@@ -61,7 +61,7 @@ shared (initMsg) persistent actor class IcIdentityVerifier(admin : Principal) {
 
   // method that admin can call to verify a user's identity
   public shared ({ caller }) func verifyIdentity(sessionId : Text) : async (Response, ?Principal) {
-    if (caller != Principal.fromText("d7ews-77vmk-aqbkf-kxhvf-c6gh2-qxpsl-zzjck-aynpu-lr644-z4kax-lae")) {
+    if (caller != Principal.fromText("ozsjz-aryrz-56mzd-qifrs-tmiqu-2jx65-vfxhj-dhyin-uithf-mx4dr-5ae")) {
       return (#Unauthorized, null);
     };
 

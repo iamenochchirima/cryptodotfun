@@ -17,6 +17,8 @@
 /client/.next/
 /out/
 
+*.pem
+
 # production
 /build
 

@@ -4,6 +4,8 @@ use crate::controllers::{
     health_check, api_info,
     // Auth endpoints
     initiate_auth, verify_auth, auth_status, logout,
+    // User endpoints (IC-powered)
+    users::{check_username, create_new_user, get_principal, test_connection},
 };
 
 /// Configure all application routes
@@ -16,8 +18,20 @@ pub fn configure_routes(cfg: &mut ServiceConfig) {
         .service(
             web::scope("/api/auth")
                 .route("/initiate", web::post().to(initiate_auth))
-                .route("/verify", web::post().to(verify_auth))
+                .route("/verify", web::get().to(verify_auth))
                 .route("/status", web::get().to(auth_status))
                 .route("/logout", web::post().to(logout))
+        )
+        
+        .service(
+            web::scope("/api/users")
+                .route("/check-username", web::post().to(check_username))
+                .route("/create", web::post().to(create_new_user))
+                .route("/principal", web::get().to(get_principal))
+        )
+        
+        .service(
+            web::scope("/api/ic")
+                .route("/test", web::get().to(test_connection))
         );
 }

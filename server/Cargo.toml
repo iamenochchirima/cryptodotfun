@@ -13,5 +13,11 @@ env_logger = "0.11"  # Logging
 chrono = { version = "0.4", features = ["serde"] }  # Date/time handling
 dotenv = "0.15"  # Environment variables
 redis = { version = "0.27", features = ["tokio-comp", "connection-manager"] }  # Redis client
+rand = "0.8"  # Random number generation
+hex = "0.4"  # Hex encoding/decoding
+
+# IC Agent dependencies
+ic-agent = "0.37"  # IC agent for communicating with Internet Computer
+candid = "0.10"  # For encoding/decoding Candid types
 
 sqlx = { version = "0.8.6", features = ["postgres", "runtime-tokio-native-tls"] }

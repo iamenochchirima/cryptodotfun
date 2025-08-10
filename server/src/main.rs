@@ -6,10 +6,12 @@ mod controllers;
 mod routes;
 mod config;
 mod redis;
+mod ic_agent;
 
 use config::AppConfig;
 use routes::configure_routes;
 use redis::RedisClient;
+use ic_agent::BackendActor;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -33,6 +35,16 @@ async fn main() -> std::io::Result<()> {
             ));
         }
     };
+
+    // Initialize Backend Actor (IC Agent)
+    if let Err(e) = BackendActor::initialize_global(config.clone()).await {
+        eprintln!("❌ Failed to initialize Backend Actor: {}", e);
+        eprintln!("🔄 Server will continue without IC connection...");
+        return Err(std::io::Error::new(
+            std::io::ErrorKind::ConnectionRefused,
+            format!("IC Backend Actor initialization failed: {}", e)
+        ));
+    }
 
     println!("🚀 Server starting at http://localhost:{}", config.port);
     println!("🌍 Environment: {}", config.environment);
