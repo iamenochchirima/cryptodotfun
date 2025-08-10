@@ -63,6 +63,7 @@ pub struct User {
 #[derive(CandidType, Clone, Serialize, Deserialize)]
 pub struct AddUserArgs {
     pub username: String,
+    pub image: String,
     pub chain_data: ChainData,
     pub email: Option<String>,
     pub referral_source: Option<String>,
