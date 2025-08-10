@@ -1,9 +1,10 @@
-use actix_web::{web, HttpResponse, Responder, Result};
+use actix_web::{web, HttpResponse, Responder, Result, HttpRequest, cookie::Cookie};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use chrono::{DateTime, Utc, Duration};
-use candid::{CandidType, Deserialize as CandidDeserialize, Nat};
+use candid::{CandidType, Deserialize as CandidDeserialize};
 use crate::ic_agent::BackendActor;
+use crate::redis::RedisClient;
 use rand::{Rng, thread_rng};
 
 #[derive(Deserialize)]
@@ -58,6 +59,14 @@ pub enum SessionStatus {
     Verified,
 }
 
+#[derive(Serialize, Deserialize)]
+pub struct UserSession {
+    pub session_id: String,
+    pub principal: String,
+    pub created_at: DateTime<Utc>,
+    pub expires_at: DateTime<Utc>,
+}
+
 // Define the AuthResponse type from the canister
 #[derive(CandidType, CandidDeserialize, Debug)]
 pub enum CanisterAuthResponse {
@@ -82,8 +91,8 @@ pub async fn initiate_auth(req: web::Json<InitAuthRequest>) -> Result<impl Respo
     let expiration_minutes = req.expiration_minutes.unwrap_or(5) as i64;
     let expires_at = Utc::now() + Duration::minutes(expiration_minutes);
     
-    // Store session in Redis - TODO: implement Redis storage
-    let _session_data = SessionData {
+    // Store session in Redis
+    let session_data = SessionData {
         session_id: session_id.clone(),
         created_at: Utc::now(),
         expires_at,
@@ -91,8 +100,35 @@ pub async fn initiate_auth(req: web::Json<InitAuthRequest>) -> Result<impl Respo
         principal: None,
     };
     
-    // We'll add Redis storage here once we have access to it
-    // For now, let's just call the IC canister
+    // Store in Redis with expiration
+    let redis_client = RedisClient::instance().await;
+    let session_json = serde_json::to_string(&session_data)
+        .map_err(|e| {
+            println!("❌ Failed to serialize session data: {}", e);
+            e
+        });
+    
+    match session_json {
+        Ok(json_data) => {
+            let redis_key = format!("auth_session:{}", session_id);
+            if let Err(e) = redis_client.set_ex(&redis_key, &json_data, (expiration_minutes * 60) as u64).await {
+                println!("❌ Failed to store session in Redis: {}", e);
+                return Ok(HttpResponse::InternalServerError().json(json!({
+                    "success": false,
+                    "error": "Failed to store session",
+                    "details": e.to_string()
+                })));
+            }
+            println!("✅ Session stored in Redis: {}", redis_key);
+        },
+        Err(e) => {
+            return Ok(HttpResponse::InternalServerError().json(json!({
+                "success": false,
+                "error": "Failed to serialize session data",
+                "details": e.to_string()
+            })));
+        }
+    }
     
     match call_ic_initiate_auth(&session_id, expiration_minutes as u64).await {
         Ok(response) => match response {
@@ -107,6 +143,9 @@ pub async fn initiate_auth(req: web::Json<InitAuthRequest>) -> Result<impl Respo
             },
             _ => {
                 println!("❌ IC authentication initiation failed: {:?}", response);
+                // Clean up Redis session on failure
+                let redis_key = format!("auth_session:{}", session_id);
+                let _ = redis_client.del(&redis_key).await;
                 Ok(HttpResponse::BadRequest().json(json!({
                     "success": false,
                     "error": "Failed to initiate authentication",
@@ -116,6 +155,9 @@ pub async fn initiate_auth(req: web::Json<InitAuthRequest>) -> Result<impl Respo
         },
         Err(e) => {
             println!("❌ Error calling IC canister: {}", e);
+            // Clean up Redis session on failure
+            let redis_key = format!("auth_session:{}", session_id);
+            let _ = redis_client.del(&redis_key).await;
             Ok(HttpResponse::InternalServerError().json(json!({
                 "success": false,
                 "error": "Internal server error",
@@ -171,6 +213,51 @@ pub async fn verify_auth(req: web::Query<std::collections::HashMap<String, Strin
     
     println!("🔍 Verifying identity for sessionId: {}", session_id);
     
+    // Get session from Redis
+    let redis_client = RedisClient::instance().await;
+    let redis_key = format!("auth_session:{}", session_id);
+    
+    let session_data_str = match redis_client.get(&redis_key).await {
+        Ok(Some(data)) => data,
+        Ok(None) => {
+            return Ok(HttpResponse::BadRequest().json(json!({
+                "success": false,
+                "error": "Session not found or expired"
+            })));
+        },
+        Err(e) => {
+            println!("❌ Failed to get session from Redis: {}", e);
+            return Ok(HttpResponse::InternalServerError().json(json!({
+                "success": false,
+                "error": "Internal server error",
+                "details": e.to_string()
+            })));
+        }
+    };
+    
+    let session_data: SessionData = match serde_json::from_str(&session_data_str) {
+        Ok(data) => data,
+        Err(e) => {
+            println!("❌ Failed to deserialize session data: {}", e);
+            // Clean up invalid session
+            let _ = redis_client.del(&redis_key).await;
+            return Ok(HttpResponse::BadRequest().json(json!({
+                "success": false,
+                "error": "Invalid session data"
+            })));
+        }
+    };
+    
+    // Check if session expired
+    if Utc::now() > session_data.expires_at {
+        let _ = redis_client.del(&redis_key).await;
+        return Ok(HttpResponse::BadRequest().json(json!({
+            "success": false,
+            "error": "Authentication session expired",
+            "details": "Expired"
+        })));
+    }
+    
     match call_ic_verify_identity(session_id).await {
         Ok((auth_response, principal_opt)) => {
             match auth_response {
@@ -178,16 +265,60 @@ pub async fn verify_auth(req: web::Query<std::collections::HashMap<String, Strin
                     if let Some(principal) = principal_opt {
                         println!("✅ Identity verified for principal: {}", principal);
                         
-                        // In a real implementation, you'd:
-                        // 1. Create a user session
-                        // 2. Set HTTP-only cookies
-                        // 3. Clean up the auth session
+                        // 1. Create a user session with longer expiration (7 days)
+                        let user_session_id = generate_session_id();
+                        let user_session_expiry = Utc::now() + Duration::days(7);
                         
-                        Ok(HttpResponse::Ok().json(VerifyAuthResponse {
-                            success: true,
-                            principal: Some(principal),
-                            message: "Identity verified successfully and session created".to_string(),
-                        }))
+                        let user_session = UserSession {
+                            session_id: user_session_id.clone(),
+                            principal: principal.clone(),
+                            created_at: Utc::now(),
+                            expires_at: user_session_expiry,
+                        };
+                        
+                        // Store user session in Redis (expires in 7 days)
+                        let user_session_json = match serde_json::to_string(&user_session) {
+                            Ok(json) => json,
+                            Err(e) => {
+                                println!("❌ Failed to serialize user session: {}", e);
+                                return Ok(HttpResponse::InternalServerError().json(json!({
+                                    "success": false,
+                                    "error": "Failed to create user session"
+                                })));
+                            }
+                        };
+                        
+                        let user_redis_key = format!("user_session:{}", user_session_id);
+                        if let Err(e) = redis_client.set_ex(&user_redis_key, &user_session_json, 7 * 24 * 60 * 60).await {
+                            println!("❌ Failed to store user session: {}", e);
+                            return Ok(HttpResponse::InternalServerError().json(json!({
+                                "success": false,
+                                "error": "Failed to store user session",
+                                "details": e.to_string()
+                            })));
+                        }
+                        
+                        // 2. Set HTTP-only cookie
+                        let cookie = Cookie::build("CRYPTO_DOT_FUN_SESSION", user_session_id.clone())
+                            .http_only(true)
+                            .secure(false) // Set to true in production with HTTPS
+                            .same_site(actix_web::cookie::SameSite::Strict)
+                            .max_age(actix_web::cookie::time::Duration::days(7))
+                            .path("/")
+                            .finish();
+                        
+                        // 3. Clean up the auth session
+                        let _ = redis_client.del(&redis_key).await;
+                        
+                        println!("✅ User session created: {}", user_redis_key);
+                        
+                        Ok(HttpResponse::Ok()
+                            .cookie(cookie)
+                            .json(VerifyAuthResponse {
+                                success: true,
+                                principal: Some(principal),
+                                message: "Identity verified successfully and session created".to_string(),
+                            }))
                     } else {
                         Ok(HttpResponse::BadRequest().json(json!({
                             "success": false,
@@ -203,6 +334,8 @@ pub async fn verify_auth(req: web::Query<std::collections::HashMap<String, Strin
                     })))
                 },
                 CanisterAuthResponse::Expired => {
+                    // Clean up expired session
+                    let _ = redis_client.del(&redis_key).await;
                     Ok(HttpResponse::BadRequest().json(json!({
                         "success": false,
                         "error": "Authentication session expired",
@@ -210,6 +343,8 @@ pub async fn verify_auth(req: web::Query<std::collections::HashMap<String, Strin
                     })))
                 },
                 CanisterAuthResponse::InvalidSession => {
+                    // Clean up invalid session
+                    let _ = redis_client.del(&redis_key).await;
                     Ok(HttpResponse::BadRequest().json(json!({
                         "success": false,
                         "error": "Invalid session ID",
@@ -268,16 +403,124 @@ async fn call_ic_verify_identity(session_id: &str) -> Result<(CanisterAuthRespon
     Ok((auth_response, principal_string))
 }
 
-pub async fn auth_status() -> Result<impl Responder> {
-    Ok(HttpResponse::Ok().json(json!({
-        "authenticated": false,
-        "message": "Not implemented yet"
-    })))
+pub async fn auth_status(req: HttpRequest) -> Result<impl Responder> {
+    // Check if user has a valid session cookie
+    let session_cookie = req.cookie("CRYPTO_DOT_FUN_SESSION");
+    
+    match session_cookie {
+        Some(cookie) => {
+            let session_id = cookie.value();
+            let redis_client = RedisClient::instance().await;
+            let user_redis_key = format!("user_session:{}", session_id);
+            
+            match redis_client.get(&user_redis_key).await {
+                Ok(Some(session_str)) => {
+                    match serde_json::from_str::<UserSession>(&session_str) {
+                        Ok(user_session) => {
+                            // Check if session is still valid
+                            if Utc::now() <= user_session.expires_at {
+                                Ok(HttpResponse::Ok().json(json!({
+                                    "authenticated": true,
+                                    "principal": user_session.principal,
+                                    "expires_at": user_session.expires_at.to_rfc3339(),
+                                    "message": "User is authenticated"
+                                })))
+                            } else {
+                                // Session expired, clean it up
+                                let _ = redis_client.del(&user_redis_key).await;
+                                Ok(HttpResponse::Ok()
+                                    .cookie(
+                                        Cookie::build("CRYPTO_DOT_FUN_SESSION", "")
+                                            .max_age(actix_web::cookie::time::Duration::ZERO)
+                                            .path("/")
+                                            .finish()
+                                    )
+                                    .json(json!({
+                                        "authenticated": false,
+                                        "message": "Session expired"
+                                    })))
+                            }
+                        },
+                        Err(_) => {
+                            // Invalid session data, clean it up
+                            let _ = redis_client.del(&user_redis_key).await;
+                            Ok(HttpResponse::Ok()
+                                .cookie(
+                                    Cookie::build("CRYPTO_DOT_FUN_SESSION", "")
+                                        .max_age(actix_web::cookie::time::Duration::ZERO)
+                                        .path("/")
+                                        .finish()
+                                )
+                                .json(json!({
+                                    "authenticated": false,
+                                    "message": "Invalid session data"
+                                })))
+                        }
+                    }
+                },
+                Ok(None) => {
+                    // No session found
+                    Ok(HttpResponse::Ok()
+                        .cookie(
+                            Cookie::build("CRYPTO_DOT_FUN_SESSION", "")
+                                .max_age(actix_web::cookie::time::Duration::ZERO)
+                                .path("/")
+                                .finish()
+                        )
+                        .json(json!({
+                            "authenticated": false,
+                            "message": "No valid session found"
+                        })))
+                },
+                Err(e) => {
+                    println!("❌ Redis error checking auth status: {}", e);
+                    Ok(HttpResponse::InternalServerError().json(json!({
+                        "error": "Failed to check authentication status"
+                    })))
+                }
+            }
+        },
+        None => {
+            Ok(HttpResponse::Ok().json(json!({
+                "authenticated": false,
+                "message": "No session cookie found"
+            })))
+        }
+    }
 }
 
-pub async fn logout() -> Result<impl Responder> {
-    Ok(HttpResponse::Ok().json(json!({
-        "success": true,
-        "message": "Logged out successfully"
-    })))
+pub async fn logout(req: HttpRequest) -> Result<impl Responder> {
+    let session_cookie = req.cookie("CRYPTO_DOT_FUN_SESSION");
+    
+    match session_cookie {
+        Some(cookie) => {
+            let session_id = cookie.value();
+            let redis_client = RedisClient::instance().await;
+            let user_redis_key = format!("user_session:{}", session_id);
+            
+            // Delete session from Redis
+            if let Err(e) = redis_client.del(&user_redis_key).await {
+                println!("❌ Failed to delete session from Redis: {}", e);
+            }
+            
+            // Clear the cookie
+            Ok(HttpResponse::Ok()
+                .cookie(
+                    Cookie::build("CRYPTO_DOT_FUN_SESSION", "")
+                        .max_age(actix_web::cookie::time::Duration::ZERO)
+                        .path("/")
+                        .finish()
+                )
+                .json(json!({
+                    "success": true,
+                    "message": "Logged out successfully"
+                })))
+        },
+        None => {
+            Ok(HttpResponse::Ok().json(json!({
+                "success": true,
+                "message": "No active session found"
+            })))
+        }
+    }
 }

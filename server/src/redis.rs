@@ -1,5 +1,9 @@
 use redis::{Client, RedisError, aio::ConnectionManager};
 use std::env;
+use std::sync::Arc;
+use tokio::sync::OnceCell;
+
+static REDIS_CLIENT: OnceCell<Arc<RedisClient>> = OnceCell::const_new();
 
 pub struct RedisClient {
     pub manager: ConnectionManager,
@@ -15,7 +19,6 @@ impl RedisClient {
         let client = Client::open(redis_url)?;
         let manager = ConnectionManager::new(client).await?;
         
-        // Test the connection
         redis::cmd("PING")
             .query_async(&mut manager.clone())
             .await
@@ -24,6 +27,20 @@ impl RedisClient {
             })?;
         
         Ok(RedisClient { manager })
+    }
+
+    /// Initialize and store the global instance
+    pub async fn initialize_global() -> Result<(), RedisError> {
+        let client = Self::new().await?;
+        REDIS_CLIENT.set(Arc::new(client)).map_err(|_| {
+            RedisError::from((redis::ErrorKind::InvalidClientConfig, "Redis client already initialized"))
+        })?;
+        Ok(())
+    }
+
+    /// Get the global instance of the Redis client
+    pub async fn instance() -> &'static Arc<RedisClient> {
+        REDIS_CLIENT.get().expect("Redis client not initialized. Call RedisClient::initialize_global() first.")
     }
 
     pub async fn get(&self, key: &str) -> Result<Option<String>, RedisError> {

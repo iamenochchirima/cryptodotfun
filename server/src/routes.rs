@@ -3,7 +3,9 @@ use crate::controllers::{
     // Health endpoints
     health_check, api_info,
     // Auth endpoints
-    initiate_auth, verify_auth, auth_status, logout,
+    auth::{initiate_auth, verify_auth, auth_status, logout},
+    // Protected endpoints
+    protected::{protected_endpoint, user_profile},
     // User endpoints (IC-powered)
     users::{check_username, create_new_user, get_principal, test_connection},
 };
@@ -21,6 +23,12 @@ pub fn configure_routes(cfg: &mut ServiceConfig) {
                 .route("/verify", web::get().to(verify_auth))
                 .route("/status", web::get().to(auth_status))
                 .route("/logout", web::post().to(logout))
+        )
+        
+        .service(
+            web::scope("/api/protected")
+                .route("/test", web::get().to(protected_endpoint))
+                .route("/profile", web::get().to(user_profile))
         )
         
         .service(

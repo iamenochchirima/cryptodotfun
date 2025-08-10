@@ -7,6 +7,7 @@ mod routes;
 mod config;
 mod redis;
 mod ic_agent;
+mod middleware;
 
 use config::AppConfig;
 use routes::configure_routes;
@@ -21,20 +22,17 @@ async fn main() -> std::io::Result<()> {
 
     let config = AppConfig::from_env();
 
-    let _redis_client = match RedisClient::new().await {
-        Ok(client) => {
-            println!("✅ Redis connection established successfully!");
-            client
-        },
-        Err(e) => {
-            eprintln!("❌ Failed to connect to Redis: {}", e);
-            eprintln!("🔄 Server will continue without Redis...");
-            return Err(std::io::Error::new(
-                std::io::ErrorKind::ConnectionRefused,
-                format!("Redis connection failed: {}", e)
-            ));
-        }
-    };
+    // Initialize Redis client
+    if let Err(e) = RedisClient::initialize_global().await {
+        eprintln!("❌ Failed to connect to Redis: {}", e);
+        eprintln!("🔄 Server will continue without Redis...");
+        return Err(std::io::Error::new(
+            std::io::ErrorKind::ConnectionRefused,
+            format!("Redis connection failed: {}", e)
+        ));
+    } else {
+        println!("✅ Redis connection established successfully!");
+    }
 
     // Initialize Backend Actor (IC Agent)
     if let Err(e) = BackendActor::initialize_global(config.clone()).await {

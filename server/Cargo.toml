@@ -6,6 +6,7 @@ edition = "2021"
 [dependencies]
 base64ct = "=1.6.0"
 actix-web = "4.4"  # Latest stable version
+actix-web-httpauth = "0.8"  # HTTP authentication middleware
 tokio = { version = "1.0", features = ["full"] }  # Async runtime
 serde = { version = "1.0", features = ["derive"] }  # For JSON serialization
 serde_json = "1.0"  # JSON handling
@@ -15,6 +16,7 @@ dotenv = "0.15"  # Environment variables
 redis = { version = "0.27", features = ["tokio-comp", "connection-manager"] }  # Redis client
 rand = "0.8"  # Random number generation
 hex = "0.4"  # Hex encoding/decoding
+futures-util = "0.3"  # Futures utilities
 
 # IC Agent dependencies
 ic-agent = "0.37"  # IC agent for communicating with Internet Computer
