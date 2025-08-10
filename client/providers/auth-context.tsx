@@ -19,7 +19,8 @@ import { useAccount, useDisconnect } from "wagmi";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { host, network } from "@/constants/urls";
 import { identityCertifierCanisterId, usersCanisterId, usersIDL, identityCertifierIDL } from "@/constants/canisters-config";
-import { apiInitAuth, apiLogout, apiMe, apiVerifyIdentity } from "@/services/AuthService";
+import { apiLogout } from "@/services/AuthService";
+import { useServerAuth } from "../hooks/useServerAuth";
 
 interface AuthContextType {
   login: (walletType: WalletType) => Promise<void>;
@@ -34,6 +35,8 @@ interface AuthContextType {
   backendActor: ActorSubclass<BACKEND_SERVICE> | null;
   identityCertifierActor: ActorSubclass<IDENTITY_CERTIFIER_SERVICE> | null;
   setUser: (user: User | null) => void;
+  serverAuthError: string | null;
+  clearServerAuthError: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -63,7 +66,6 @@ const useSafeSiwb = () => {
   }
 };
 
-// AuthProvider component
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [authClient, setAuthClient] = useState<AuthClient | null>(null);
   const { identity: siwsIdentity, clear: siwsClear } = useSafeSiws();
@@ -81,55 +83,46 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [backendActor, setBackendActor] =
     useState<ActorSubclass<BACKEND_SERVICE> | null>(null);
   const [identityCertifierActor, setIdentityCertifierActor] = useState<ActorSubclass<IDENTITY_CERTIFIER_SERVICE> | null>(null);
-  const [user, setUser] = useState<User | null>(null);
-  const [fetchingUser, setFetchingUser] = useState<boolean>(false);
+
+  const {
+    isAuthenticating: isServerAuthenticating,
+    isAuthenticated: isServerAuthenticated,
+    error: serverAuthError,
+    user,
+    authenticateWithServer,
+    checkExistingSession,
+    resetAuth: resetServerAuth,
+    clearError: clearServerAuthError,
+    setUser
+  } = useServerAuth({
+    identityCertifierActor,
+    backendActor,
+    sessionData,
+    updateSessionData
+  });
 
   useEffect(() => {
     if (!isAuthenticated || !identityCertifierActor || !sessionData || !backendActor) {
       return;
     }
 
-    const authenticateServer = async () => {
-      setFetchingUser(true);
-      if (sessionData.isBackendAuthenticated) {
-        const userData = await backendActor.get_user();
-        if ("Ok" in userData) {
-          setUser(userData.Ok);
-        }
-        setFetchingUser(false);
-        return;
-      }
-      try {
-        const initResponse = await apiInitAuth();
-        if (initResponse && initResponse.success) {
-          await identityCertifierActor.confirmIdentity(initResponse.sessionId);
-          await apiVerifyIdentity(initResponse.sessionId);
-
-          const meResponse = await apiMe();
-          const userData = await backendActor.get_user()
-          if (meResponse) {
-            const updatedSessionData: SessionData = {
-              ...sessionData,
-              isBackendAuthenticated: true,
-              updatedAt: Date.now(),
-            };
-            updateSessionData(updatedSessionData);
-            if ("Ok" in userData) {
-              setUser(userData.Ok);
-            }
-          }
-        }
-        else {
-          console.error("Server authentication failed:", initResponse);
-        }
-      } catch (error) {
-        console.error("Error authenticating with server:", error);
-      } finally {
-        setFetchingUser(false);
-      }
+    if (sessionData.isBackendAuthenticated) {
+      checkExistingSession();
+      return;
     }
-    authenticateServer()
-  }, [isAuthenticated, identityCertifierActor, sessionData, backendActor]);
+
+    if (!isServerAuthenticating && !isServerAuthenticated && !serverAuthError) {
+      authenticateWithServer();
+    }
+  }, [
+    isAuthenticated, 
+    !!identityCertifierActor, 
+    !!backendActor, 
+    sessionData?.isBackendAuthenticated,
+    isServerAuthenticating,
+    isServerAuthenticated,
+    !!serverAuthError 
+  ]);
 
 
   useEffect(() => {
@@ -196,7 +189,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           break;
       }
     }
-    setUser(null);
+    
+    // Reset server authentication state
+    resetServerAuth();
     deleteSessionData();
     setIsAuthenticated(false);
     apiLogout();
@@ -497,8 +492,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     isAuthenticated,
     backendActor,
     identityCertifierActor,
-    fetchingUser,
+    fetchingUser: isServerAuthenticating,
     setUser,
+    serverAuthError,
+    clearServerAuthError,
   };
 
   return (

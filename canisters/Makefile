@@ -15,6 +15,7 @@ deploy-provider:
 	        targets = opt vec { \
 	            \"$$(dfx canister id ic_siws_provider)\"; \
 	            \"$$(dfx canister id users)\"; \
+				\"$$(dfx canister id identity_certifier)\"; \
 	        }; \
           runtime_features = null; \
 	    } \
@@ -33,6 +34,7 @@ deploy-provider:
 	        targets = opt vec { \
 	            \"$$(dfx canister id ic_siwe_provider)\"; \
 	            \"$$(dfx canister id users)\"; \
+				\"$$(dfx canister id identity_certifier)\"; \
 	        }; \
 	    } \
 	)"
@@ -50,6 +52,7 @@ deploy-provider:
 			targets = opt vec { \
 				\"$$(dfx canister id ic_siwb_provider)\"; \
 				\"$$(dfx canister id users)\"; \
+				\"$$(dfx canister id identity_certifier)\"; \
 			}; \
 		} \
 	)"
@@ -80,9 +83,10 @@ deploy-frontend:
 
 deploy-backend:
 	dfx deploy users
+	dfx deploy identity_certifier
 	dfx generate users
 
-deploy-all: create-canisters deploy-provider deploy-backend deploy-frontend
+deploy-all: create-canisters deploy-provider deploy-backend  deploy-frontend
 
 run-frontend:
 	pnpm install

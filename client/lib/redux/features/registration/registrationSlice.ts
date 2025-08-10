@@ -1,10 +1,23 @@
+import { SessionData } from "@/providers/useSessionData"
+import { Actor, ActorSubclass } from "@dfinity/agent"
 import { createSlice, createAsyncThunk, type PayloadAction } from "@reduxjs/toolkit"
+import { WalletType } from "@/providers/types"
+
+interface CompleteRegistrationParams {
+  sessionData: SessionData | null
+  backendActor: ActorSubclass<BACKEND_SERVICE> | null;
+  email: string | null;
+  username: string;
+  referralSource: string;
+  referralCode: string;
+  interests: string[];
+  agreedToTerms: boolean;
+}
+import { _SERVICE as BACKEND_SERVICE } from "@/idls/users/users.did"
 
 export interface RegistrationState {
   currentStep: number
-  walletConnected: boolean
-  walletAddress: string
-  email: string
+  email: string | null
   username: string
   referralSource: string
   referralCode: string
@@ -18,9 +31,7 @@ export interface RegistrationState {
 
 const initialState: RegistrationState = {
   currentStep: 0,
-  walletConnected: false,
-  walletAddress: "",
-  email: "",
+  email: null,
   username: "",
   referralSource: "",
   referralCode: "",
@@ -32,29 +43,92 @@ const initialState: RegistrationState = {
   isCompleted: false,
 }
 
-// Mock async thunk to check username availability
-export const checkUsernameAvailability = createAsyncThunk("registration/checkUsername", async (username: string) => {
-  console.log("Checking username availability for:", username)
-  // Simulate API call
-  await new Promise((resolve) => setTimeout(resolve, 800))
 
-  // Mock check - usernames containing "taken" are considered unavailable
-  const isAvailable = !username.toLowerCase().includes("taken")
-  console.log("Username availability result:", isAvailable)
-  return isAvailable
-})
 
-// Mock async thunk to complete registration
+export const checkUsernameAvailability = createAsyncThunk(
+  "registration/checkUsername", 
+  async ({ username, backendActor }: { username: string; backendActor: any }) => {
+    
+    if (!backendActor) {
+      console.error("Backend actor not available")
+      return false
+    }
+
+    try {
+      const available = await backendActor.is_username_available(username)
+      return available
+    } catch (error) {
+      console.error("Error checking username availability:", error)
+      throw error
+    }
+  }
+)
+
+// Async thunk to complete registration using backend actor
 export const completeRegistration = createAsyncThunk(
   "registration/complete",
-  async (
-    userData: Omit<RegistrationState, "currentStep" | "loading" | "error" | "usernameAvailable" | "isCompleted">,
-  ) => {
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1500))
+  async (params: CompleteRegistrationParams) => {
+    console.log("Completing registration with params:", params)
+    
+    if (!params.backendActor) {
+      throw new Error("Backend actor not available")
+    }
 
-    // Mock successful registration
-    return { success: true, userData }
+    if (!params.sessionData) {
+      throw new Error("Session data not available")
+    }
+
+    try {
+      // Determine chain and wallet based on session data
+      let chain;
+      let walletName;
+      
+      switch (params.sessionData?.connectedWalletType) {
+        case WalletType.InternetIdentity:
+          chain = { ICP: null };
+          walletName = "Internet Identity";
+          break;
+        case WalletType.SIWB:
+          chain = { Bitcoin: null };
+          walletName = "Bitcoin Wallet";
+          break;
+        case WalletType.SIWS:
+          chain = { Solana: null };
+          walletName = "Solana Wallet";
+          break;
+        case WalletType.SIWE:
+          chain = { Ethereum: null };
+          walletName = "Ethereum Wallet";
+          break;
+        case WalletType.NFID:
+          chain = { ICP: null };
+          walletName = "NFID";
+          break;
+        default:
+          chain = { ICP: null };
+          walletName = "Unknown Wallet";
+      }
+
+      // Call the backend canister to add the user
+      const userResult = await params.backendActor.add_user({
+        username: params.username,
+        email: params.email ? [params.email] : [],
+        referral_source: params.referralSource ? [params.referralSource] : [], 
+        referral_code: params.referralCode ? [params.referralCode] : [],
+        interests: params.interests,
+        chain_data: {
+          chain,
+          wallet_address: params.sessionData?.chainAddress || "",
+          wallet: walletName,
+        },
+      })
+
+      console.log("User creation result:", userResult)
+      return { success: true, userData: params, userResult }
+    } catch (error) {
+      console.error("Error completing registration:", error)
+      throw error
+    }
   },
 )
 
@@ -63,7 +137,6 @@ export const registrationSlice = createSlice({
   initialState,
   reducers: {
     nextStep: (state) => {
-      console.log("Moving to next step from:", state.currentStep)
       state.currentStep += 1
     },
     prevStep: (state) => {
@@ -71,11 +144,7 @@ export const registrationSlice = createSlice({
         state.currentStep -= 1
       }
     },
-    setWalletInfo: (state, action: PayloadAction<{ connected: boolean; address: string }>) => {
-      state.walletConnected = action.payload.connected
-      state.walletAddress = action.payload.address
-    },
-    setEmail: (state, action: PayloadAction<string>) => {
+    setEmail: (state, action: PayloadAction<string | null>) => {
       state.email = action.payload
     },
     setUsername: (state, action: PayloadAction<string>) => {
@@ -134,7 +203,6 @@ export const registrationSlice = createSlice({
 export const {
   nextStep,
   prevStep,
-  setWalletInfo,
   setEmail,
   setUsername,
   setReferralSource,

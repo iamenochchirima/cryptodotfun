@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
 import { Loader2 } from "lucide-react"
+import { useAuth } from "@/providers/auth-context"
 
 const referralSourceLabels: Record<string, string> = {
   search: "Search Engine",
@@ -20,19 +21,20 @@ const referralSourceLabels: Record<string, string> = {
 }
 
 const interestLabels: Record<string, string> = {
-  learn: "Learning & Education",
-  play: "Play & Games",
-  nft: "NFT Marketplace",
-  tokens: "Token Launchpad",
-  earn: "Earn & Rewards",
-  secure: "Security & Protection",
-  blog: "Blog & News",
-  community: "Community & Events",
+  LEARNING: "Learning & Education",
+  GAMING: "Play & Games",
+  BTC_ASSETS: "Bitcoin Assets",
+  NFTS: "Multi-Chain NFTs Platform",
+  TOKENS: "Token Trading Hub",
+  EARNING: "Earn & Rewards",
+  SECURITY: "Security & Protection",
+  COMMUNITY: "Community & Events",
 }
 
 export default function ConfirmationStep() {
+  const { sessionData, backendActor } = useAuth()
   const dispatch = useAppDispatch()
-  const { walletAddress, email, username, referralSource, referralCode, interests, agreedToTerms, loading } =
+  const { email, username, referralSource, referralCode, interests, agreedToTerms, loading } =
     useAppSelector((state) => state.registration)
 
   const [termsError, setTermsError] = useState("")
@@ -52,8 +54,8 @@ export default function ConfirmationStep() {
 
     dispatch(
       completeRegistration({
-        walletConnected: true,
-        walletAddress,
+        sessionData,
+        backendActor,
         email,
         username,
         referralSource,
@@ -77,14 +79,12 @@ export default function ConfirmationStep() {
 
       <div className="space-y-4 bg-muted p-4 rounded-md">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <h3 className="text-sm font-medium text-muted-foreground">Wallet Address</h3>
-            <p className="text-sm truncate">{walletAddress}</p>
-          </div>
-          <div>
-            <h3 className="text-sm font-medium text-muted-foreground">Email</h3>
-            <p className="text-sm">{email}</p>
-          </div>
+          {email && (
+            <div>
+              <h3 className="text-sm font-medium text-muted-foreground">Email</h3>
+              <p className="text-sm">{email}</p>
+            </div>
+          )}
           <div>
             <h3 className="text-sm font-medium text-muted-foreground">Username</h3>
             <p className="text-sm">{username}</p>

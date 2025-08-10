@@ -19,21 +19,45 @@ import LoadingModal from "./loading-modal"
 import { useAuth } from "@/providers/auth-context"
 
 export default function AuthButton() {
-  const { isAuthenticated, user, logout , fetchingUser} = useAuth()
+  const { isAuthenticated, user, logout, fetchingUser } = useAuth()
   const [isWalletModalOpen, setIsWalletModalOpen] = useState(false)
   const [isRegistrationModalOpen, setIsRegistrationModalOpen] = useState(false)
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
 
   useEffect(() => {
-    if (isAuthenticated && !user) {
-      setIsRegistrationModalOpen(true)
+    // Close registration modal if user is found
+    if (user) {
+      setIsRegistrationModalOpen(false)
+      return
     }
-  }, [isAuthenticated, user])
+
+    // Reset logout state when user becomes unauthenticated
+    if (!isAuthenticated) {
+      setIsLoggingOut(false)
+      setIsRegistrationModalOpen(false)
+      return
+    }
+
+    // Only show registration modal if authenticated, no user, not fetching, and not in logout process
+    if (isAuthenticated && !user && !fetchingUser && !isLoggingOut) {
+      // Small delay to ensure logout process is complete and prevent race conditions
+      const timer = setTimeout(() => {
+        if (isAuthenticated && !user && !fetchingUser && !isLoggingOut) {
+          setIsRegistrationModalOpen(true)
+        }
+      }, 300)
+
+      return () => clearTimeout(timer)
+    }
+  }, [isAuthenticated, user, fetchingUser, isLoggingOut])
 
   const handleLogin = () => {
     setIsWalletModalOpen(true)
   }
 
   const handleLogout = () => {
+    setIsLoggingOut(true)
+    setIsRegistrationModalOpen(false) // Immediately close registration modal
     logout()
   }
 

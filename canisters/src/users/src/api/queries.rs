@@ -23,3 +23,12 @@ pub fn get_users() -> Vec<User> {
             .collect::<Vec<User>>()
     )
 }
+
+#[query]
+pub fn is_username_available(username: String) -> bool {
+    USERS.with(|s| {
+        s.borrow()
+            .values()
+            .all(|user| user.username != username)
+    })
+}

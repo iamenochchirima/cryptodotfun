@@ -8,22 +8,21 @@ import { Label } from "@/components/ui/label"
 
 const interestOptions = [
   {
-    id: "learn",
+    id: "LEARNING",
     label: "Learning & Education",
     description: "Courses and educational content about blockchain and crypto",
   },
-  { id: "play", label: "Play & Games", description: "Blockchain games and tournaments" },
-  { id: "btc-assets", label: "Bitcoin Assets", description: "Etching, trading, and collecting Bitcoin Runes, Ordinals, and inscriptions" },
+  { id: "GAMING", label: "Play & Games", description: "Blockchain games and tournaments" },
+  { id: "BTC_ASSETS", label: "Bitcoin Assets", description: "Etching, trading, and collecting Bitcoin Runes, Ordinals, and inscriptions" },
   {
-    id: "nft",
+    id: "NFTS",
     label: "Multi-Chain NFTs Platform",
     description: "NFT marketplace for Ethereum, Solana, ICP and other blockchain NFTs",
   },
-  { id: "tokens", label: "Token Trading Hub", description: "Complete token ecosystem - launchpad, trading, bots, and multi-chain support" },
-  { id: "earn", label: "Earn & Rewards", description: "Earning crypto through activities and rewards" },
-  { id: "secure", label: "Security & Protection", description: "Learning about crypto security best practices" },
-  { id: "blog", label: "Blog & News", description: "Staying updated with the latest crypto news and insights" },
-  { id: "community", label: "Community & Events", description: "Connecting with other crypto enthusiasts" },
+  { id: "TOKENS", label: "Token Trading Hub", description: "Complete token ecosystem - launchpad, trading, bots, and multi-chain support" },
+  { id: "EARNING", label: "Earn & Rewards", description: "Earning crypto through activities and rewards" },
+  { id: "SECURITY", label: "Security & Protection", description: "Learning about crypto security best practices" },
+  { id: "COMMUNITY", label: "Community & Events", description: "Connecting with other crypto enthusiasts" },
 ]
 
 export default function InterestsStep() {

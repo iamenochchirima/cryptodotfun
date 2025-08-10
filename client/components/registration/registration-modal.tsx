@@ -6,28 +6,41 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks"
 import { resetRegistration } from "@/lib/redux/features/registration/registrationSlice"
 import RegistrationForm from "./registration-form"
 import { useAuth } from "@/providers/auth-context"
+import { set } from "react-hook-form"
 
 interface RegistrationModalProps {
   isOpen: boolean
   onClose: () => void
+  onComplete?: () => void
 }
 
-export default function RegistrationModal({ isOpen, onClose }: RegistrationModalProps) {
+export default function RegistrationModal({ isOpen, onClose, onComplete }: RegistrationModalProps) {
   const dispatch = useAppDispatch()
-  const { logout } = useAuth()
+  const { logout, backendActor, setUser } = useAuth()
   const { isCompleted } = useAppSelector((state) => state.registration)
 
-  // Close modal after successful registration
+
   useEffect(() => {
-    if (isCompleted) {
-      const timer = setTimeout(() => {
-        onClose()
-      }, 3000)
-      return () => clearTimeout(timer)
+    if (isCompleted && backendActor) {
+      const getUser = async () => {
+        try {
+          // Call the backend to get the user data
+          const user = await backendActor.get_user()
+          if ("Ok" in user) {
+            setUser(user.Ok)
+            onClose()
+          } else {
+            // No user data, keep the modal open
+            console.warn("No user data found, keeping registration modal open.")
+          }
+        } catch (error) {
+          console.error("Error fetching user data:", error)
+        }
+      }
+      getUser()
     }
   }, [isCompleted, onClose])
 
-  // Handle cancel - logout and close modal
   const handleCancel = () => {
     dispatch(resetRegistration())
     logout()
@@ -37,14 +50,14 @@ export default function RegistrationModal({ isOpen, onClose }: RegistrationModal
   useEffect(() => {
     if (isOpen) {
       const scrollY = window.scrollY
-      
+
       requestAnimationFrame(() => {
         document.body.style.position = "fixed"
         document.body.style.top = `-${scrollY}px`
         document.body.style.width = "100%"
         document.body.style.overflow = "hidden"
       })
-      
+
       return () => {
         // Restore scroll position when modal closes
         document.body.style.position = ""
@@ -59,23 +72,21 @@ export default function RegistrationModal({ isOpen, onClose }: RegistrationModal
   if (!isOpen) return null
 
   return (
-    <div 
+    <div
       className="fixed inset-0 z-50"
-      style={{ 
-        position: 'fixed', 
-        top: 0, 
-        left: 0, 
-        right: 0, 
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
         bottom: 0,
         zIndex: 9999
       }}
     >
-      {/* Backdrop - no click handler */}
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
 
-      {/* Modal Container */}
       <div className="relative z-10 flex items-center justify-center min-h-full p-4">
-        <div 
+        <div
           className="w-full max-w-lg bg-background border rounded-lg shadow-xl max-h-[90vh] overflow-hidden"
           onClick={(e) => e.stopPropagation()}
         >
@@ -88,13 +99,13 @@ export default function RegistrationModal({ isOpen, onClose }: RegistrationModal
               <p className="text-sm text-muted-foreground text-center">Finish setting up your account to get started</p>
             </div>
             <div className="p-6 pt-0">
-              <RegistrationForm isModal={true} onComplete={onClose} />
-              
+              <RegistrationForm isModal={true} onComplete={onComplete || onClose} />
+
               {/* Cancel button - only show if not completed */}
               {!isCompleted && (
                 <div className="mt-6 flex justify-center">
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     onClick={handleCancel}
                     className="w-full"
                   >

@@ -4,9 +4,7 @@ import { useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks"
 import { resetRegistration } from "@/lib/redux/features/registration/registrationSlice"
-import { loginSuccess } from "@/lib/redux/features/auth/authSlice"
 import RegistrationStepper from "./registration-stepper"
-import WalletConnectionStep from "./steps/wallet-connection-step"
 import BasicInfoStep from "./steps/basic-info-step"
 import ReferralStep from "./steps/referral-step"
 import InterestsStep from "./steps/interests-step"
@@ -19,7 +17,7 @@ interface RegistrationFormProps {
 }
 
 export default function RegistrationForm({ isModal = false, onComplete }: RegistrationFormProps) {
-  const { currentStep, isCompleted, walletAddress, username } = useAppSelector((state) => state.registration)
+  const { currentStep, isCompleted, username } = useAppSelector((state) => state.registration)
   const dispatch = useAppDispatch()
   const router = useRouter()
 
@@ -30,25 +28,18 @@ export default function RegistrationForm({ isModal = false, onComplete }: Regist
     }
   }, [dispatch, isModal])
 
-  // Redirect to home after successful registration and login
+  // Handle completion
   useEffect(() => {
     if (isCompleted) {
-      // Mock login after successful registration
-      setTimeout(() => {
-        dispatch(
-          loginSuccess({
-            address: walletAddress,
-            username: username,
-            avatar: "/crypto-user-avatar.png",
-          }),
-        )
-
-        if (!isModal) {
-          router.push("/dashboard")
-        }
-      }, 3000)
+      if (onComplete) {
+        onComplete()
+      }
+      
+      if (!isModal) {
+        router.push("/dashboard")
+      }
     }
-  }, [isCompleted, dispatch, router, walletAddress, username, isModal, onComplete])
+  }, [isCompleted, router, isModal, onComplete])
 
   // Render the current step (skipping wallet connection step)
   const renderStep = () => {
