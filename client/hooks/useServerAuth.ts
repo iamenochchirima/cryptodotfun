@@ -2,7 +2,7 @@ import { useState, useCallback, useRef } from 'react';
 import { ActorSubclass } from '@dfinity/agent';
 import { _SERVICE as BACKEND_SERVICE, User } from '../idls/users/users.did';
 import { _SERVICE as IDENTITY_CERTIFIER_SERVICE } from '../idls/identity_certifier/identity_certifier.did';
-import { apiInitAuth, apiMe, apiVerifyIdentity } from '@/services/AuthService';
+import { apiInitAuth, apiMe, apiVerifyIdentity, apiLogout } from '@/services/AuthService';
 import { SessionData } from '../providers/useSessionData';
 
 // Type definitions for API responses
@@ -16,7 +16,7 @@ interface ApiMeResponse {
 
 interface ApiInitAuthResponse {
   success: boolean;
-  sessionId: string;
+  session_id: string;
   expiresAt: string;
   message: string;
 }
@@ -91,7 +91,7 @@ export const useServerAuth = ({
           if ("Ok" in userData) {
             setUser(userData.Ok);
             
-            // Update session data if not already marked as authenticated
+
             if (sessionData && !sessionData.isBackendAuthenticated) {
               updateSessionData({
                 ...sessionData,
@@ -104,10 +104,7 @@ export const useServerAuth = ({
         } else {
           // Principal mismatch - clear invalid session
           console.warn('Principal mismatch - clearing session');
-          await fetch('/api/auth/logout', { 
-            method: 'POST', 
-            credentials: 'include' 
-          });
+          await apiLogout();
         }
       }
     } catch (error) {
@@ -143,16 +140,16 @@ export const useServerAuth = ({
       // Step 2: Initialize authentication with server
       console.log('Initiating server authentication...');
       const initResponse = await apiInitAuth() as ApiInitAuthResponse;
-      
-      if (!initResponse?.success || !initResponse.sessionId) {
+
+      if (!initResponse?.success || !initResponse.session_id) {
         throw new Error('Failed to initialize authentication session');
       }
 
-      console.log('Authentication session created:', initResponse.sessionId);
+      console.log('Authentication session created:', initResponse.session_id);
 
       // Step 3: Confirm identity on IC canister
       console.log('Confirming identity on-chain...');
-      const confirmResult = await identityCertifierActor.confirmIdentity(initResponse.sessionId);
+      const confirmResult = await identityCertifierActor.confirmIdentity(initResponse.session_id);
       
       if (!('Ok' in confirmResult)) {
         const errorType = Object.keys(confirmResult)[0];
@@ -168,7 +165,7 @@ export const useServerAuth = ({
 
       while (verifyAttempts < maxAttempts && !verifySuccess) {
         try {
-          const verifyResponse = await apiVerifyIdentity(initResponse.sessionId) as ApiVerifyResponse;
+          const verifyResponse = await apiVerifyIdentity(initResponse.session_id) as ApiVerifyResponse;
           
           if (verifyResponse?.success && verifyResponse.principal) {
             console.log('Server verification successful');

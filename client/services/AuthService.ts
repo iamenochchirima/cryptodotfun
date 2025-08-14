@@ -1,13 +1,14 @@
+import { ApiInitAuthResponse } from '@/types/auth'
 import ApiService from './ApiService'
-
-import { InitAuthResponse } from '@/types/auth'
 import endpointConfig from './endpoint.config'
 
 export async function apiInitAuth() {
-    return ApiService.fetchDataWithAxios<InitAuthResponse>({
+    return ApiService.fetchDataWithAxios<ApiInitAuthResponse>({
         url: endpointConfig.initAuth,
         method: 'post',
-
+        data: {
+            expiration_minutes: 5
+        }
     })
 }
 

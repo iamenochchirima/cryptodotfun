@@ -1,4 +1,4 @@
-use actix_web::{web, HttpResponse, Responder, Result};
+use actix_web::{HttpResponse, Responder, Result};
 use serde_json::json;
 use crate::middleware::{AuthenticatedUser};
 

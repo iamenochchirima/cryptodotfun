@@ -10,6 +10,7 @@ import {
   nextStep,
   prevStep,
   checkUsernameAvailability,
+  checkEmailAvailability,
 } from "@/lib/redux/features/registration/registrationSlice"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -21,13 +22,15 @@ import { useAuth } from "@/providers/auth-context"
 export default function BasicInfoStep() {
   const {backendActor} = useAuth()
   const dispatch = useAppDispatch()
-  const { email, username, loading, usernameAvailable } = useAppSelector((state) => state.registration)
+  const { email, username, loading, usernameAvailable, emailAvailable } = useAppSelector((state) => state.registration)
 
   const [emailError, setEmailError] = useState("")
   const [usernameError, setUsernameError] = useState("")
   const [localUsername, setLocalUsername] = useState(username || "")
+  const [localEmail, setLocalEmail] = useState(email || "")
 
   const debouncedUsername = useDebounce(localUsername, 500)
+  const debouncedEmail = useDebounce(localEmail, 500)
 
   // Validate email format
   const validateEmail = (email: string) => {
@@ -36,20 +39,29 @@ export default function BasicInfoStep() {
   }
 
   useEffect(() => {
-    if (debouncedUsername && debouncedUsername.length >= 3 && backendActor) {
+    if (
+      debouncedUsername && 
+      debouncedUsername.length >= 3 && 
+      /^[a-zA-Z0-9_]+$/.test(debouncedUsername) && 
+      backendActor
+    ) {
       dispatch(checkUsernameAvailability({ username: debouncedUsername, backendActor }))
     }
   }, [debouncedUsername, dispatch, backendActor])
 
   useEffect(() => {
-    if (localUsername && localUsername.length >= 3 && !/[^a-zA-Z0-9_]/.test(localUsername)) {
-      dispatch(setUsername(localUsername))
+    if (
+      debouncedEmail && 
+      validateEmail(debouncedEmail) && 
+      backendActor
+    ) {
+      dispatch(checkEmailAvailability({ email: debouncedEmail, backendActor }))
     }
-  }, [localUsername, dispatch])
+  }, [debouncedEmail, dispatch, backendActor])
 
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newEmail = e.target.value
-    dispatch(setEmail(newEmail || null))
+    setLocalEmail(newEmail)
 
     if (newEmail && !validateEmail(newEmail)) {
       setEmailError("Please enter a valid email address")
@@ -73,8 +85,13 @@ export default function BasicInfoStep() {
 
   const handleContinue = () => {
 
-    if (email && !validateEmail(email)) {
+    if (localEmail && !validateEmail(localEmail)) {
       setEmailError("Please enter a valid email address")
+      return
+    }
+
+    if (localEmail && emailAvailable === false) {
+      setEmailError("This email is already in use")
       return
     }
 
@@ -88,6 +105,9 @@ export default function BasicInfoStep() {
       return
     }
 
+    // Update the Redux state with the final values only when continuing
+    dispatch(setEmail(localEmail || null))
+    dispatch(setUsername(localUsername))
     dispatch(nextStep())
   }
 
@@ -95,11 +115,12 @@ export default function BasicInfoStep() {
     dispatch(prevStep())
   }
 
-  const isEmailValid = !email || (email && validateEmail(email) && !emailError)
+  const isEmailValid = !localEmail || (localEmail && validateEmail(localEmail) && !emailError)
+  const isEmailAvailable = !localEmail || emailAvailable === true || emailAvailable === null
   const isUsernameValid = localUsername && localUsername.length >= 3 && !usernameError
   const isUsernameAvailable = usernameAvailable === true || usernameAvailable === null
 
-  const canContinue = isEmailValid && isUsernameValid && isUsernameAvailable && !loading
+  const canContinue = isEmailValid && isEmailAvailable && isUsernameValid && isUsernameAvailable && !loading
 
   return (
     <div className="space-y-6">
@@ -111,16 +132,34 @@ export default function BasicInfoStep() {
       <div className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="email">Email Address (Optional)</Label>
-          <Input
-            id="email"
-            type="email"
-            placeholder="your@email.com"
-            value={email || ""}
-            onChange={handleEmailChange}
-            className={emailError ? "border-red-500" : isEmailValid ? "border-green-500" : ""}
-          />
+          <div className="relative">
+            <Input
+              id="email"
+              type="email"
+              placeholder="your@email.com"
+              value={localEmail}
+              onChange={handleEmailChange}
+              className={emailError ? "border-red-500 pr-10" : (isEmailValid && isEmailAvailable) ? "border-green-500 pr-10" : "pr-10"}
+            />
+            <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+              {loading && localEmail && validateEmail(localEmail) && (
+                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+              )}
+              {!loading && emailAvailable === true && localEmail && validateEmail(localEmail) && (
+                <CheckCircle2 className="h-4 w-4 text-green-500" />
+              )}
+              {!loading && emailAvailable === false && localEmail && validateEmail(localEmail) && (
+                <XCircle className="h-4 w-4 text-red-500" />
+              )}
+            </div>
+          </div>
           {emailError && <p className="text-sm text-red-500">{emailError}</p>}
-          {isEmailValid && email && <p className="text-sm text-green-500">Valid email address</p>}
+          {!emailError && emailAvailable === false && localEmail && validateEmail(localEmail) && (
+            <p className="text-sm text-red-500">This email is already in use</p>
+          )}
+          {!emailError && emailAvailable === true && localEmail && validateEmail(localEmail) && (
+            <p className="text-sm text-green-500">Email is available</p>
+          )}
           <p className="text-xs text-muted-foreground">We'll only use your email for important account notifications</p>
         </div>
 
@@ -174,7 +213,7 @@ export default function BasicInfoStep() {
 
       {/* Debug info - remove in production */}
       <div className="text-xs text-gray-500 mt-2">
-        Debug: Email valid: {isEmailValid ? "✓" : "✗"}, Username valid: {isUsernameValid ? "✓" : "✗"}, Available:{" "}
+        Debug: Email valid: {isEmailValid ? "✓" : "✗"}, Email available: {emailAvailable?.toString() || "null"}, Username valid: {isUsernameValid ? "✓" : "✗"}, Username available:{" "}
         {usernameAvailable?.toString() || "null"}, Can continue: {canContinue ? "✓" : "✗"}
       </div>
     </div>

@@ -41,6 +41,7 @@ pub async fn add_user(args: AddUserArgs) -> Result<(), String> {
         principal: caller,
         username: args.username,
         chain_data: args.chain_data,
+        image_url: args.image_url,
         email: args.email,
         referral_source: args.referral_source,
         referral_code: args.referral_code,

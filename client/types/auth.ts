@@ -1,6 +1,6 @@
-export type InitAuthResponse = {
+export interface ApiInitAuthResponse {
   success: boolean;
-  sessionId: string;
+  session_id: string;
   expiresAt: string;
   message: string;
-};
+}

@@ -4,6 +4,7 @@ import type { IDL } from '@dfinity/candid';
 
 export interface AddUserArgs {
   'username' : string,
+  'image_url' : [] | [string],
   'interests' : Array<string>,
   'email' : [] | [string],
   'referral_code' : [] | [string],
@@ -28,6 +29,7 @@ export type Result_1 = { 'Ok' : User } |
 export interface User {
   'principal' : Principal,
   'username' : string,
+  'image_url' : [] | [string],
   'interests' : Array<Interest>,
   'created_at' : bigint,
   'email' : [] | [string],
@@ -39,6 +41,7 @@ export interface _SERVICE {
   'add_user' : ActorMethod<[AddUserArgs], Result>,
   'get_user' : ActorMethod<[], Result_1>,
   'get_users' : ActorMethod<[], Array<User>>,
+  'is_email_in_use' : ActorMethod<[string], boolean>,
   'is_username_available' : ActorMethod<[string], boolean>,
 }
 export declare const idlFactory: IDL.InterfaceFactory;

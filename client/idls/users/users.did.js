@@ -13,6 +13,7 @@ export const idlFactory = ({ IDL }) => {
   });
   const AddUserArgs = IDL.Record({
     'username' : IDL.Text,
+    'image_url' : IDL.Opt(IDL.Text),
     'interests' : IDL.Vec(IDL.Text),
     'email' : IDL.Opt(IDL.Text),
     'referral_code' : IDL.Opt(IDL.Text),
@@ -24,6 +25,7 @@ export const idlFactory = ({ IDL }) => {
   const User = IDL.Record({
     'principal' : IDL.Principal,
     'username' : IDL.Text,
+    'image_url' : IDL.Opt(IDL.Text),
     'interests' : IDL.Vec(Interest),
     'created_at' : IDL.Nat64,
     'email' : IDL.Opt(IDL.Text),
@@ -36,6 +38,7 @@ export const idlFactory = ({ IDL }) => {
     'add_user' : IDL.Func([AddUserArgs], [Result], []),
     'get_user' : IDL.Func([], [Result_1], ['query']),
     'get_users' : IDL.Func([], [IDL.Vec(User)], ['query']),
+    'is_email_in_use' : IDL.Func([IDL.Text], [IDL.Bool], ['query']),
     'is_username_available' : IDL.Func([IDL.Text], [IDL.Bool], ['query']),
   });
 };

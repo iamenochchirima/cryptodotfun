@@ -32,3 +32,16 @@ pub fn is_username_available(username: String) -> bool {
             .all(|user| user.username != username)
     })
 }
+
+#[query]
+pub fn is_email_in_use(email: String) -> bool {
+    USERS.with(|s| {
+        s.borrow()
+            .values()
+            .any(|user| {
+                user.email
+                    .as_ref()
+                    .map_or(false, |user_email| user_email == &email)
+            })
+    })
+}

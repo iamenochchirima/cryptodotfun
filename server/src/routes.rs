@@ -6,11 +6,10 @@ use crate::controllers::{
     auth::{initiate_auth, verify_auth, auth_status, logout},
     // Protected endpoints
     protected::{protected_endpoint, user_profile},
-    // User endpoints (IC-powered)
-    users::{check_username, create_new_user, get_principal, test_connection},
+    // User endpoints (IC)
+    users::{test_connection},
 };
 
-/// Configure all application routes
 pub fn configure_routes(cfg: &mut ServiceConfig) {
     cfg
         .route("/", web::get().to(api_info))
@@ -33,9 +32,7 @@ pub fn configure_routes(cfg: &mut ServiceConfig) {
         
         .service(
             web::scope("/api/users")
-                .route("/check-username", web::post().to(check_username))
-                .route("/create", web::post().to(create_new_user))
-                .route("/principal", web::get().to(get_principal))
+
         )
         
         .service(

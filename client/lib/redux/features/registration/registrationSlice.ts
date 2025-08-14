@@ -26,6 +26,7 @@ export interface RegistrationState {
   loading: boolean
   error: string | null
   usernameAvailable: boolean | null
+  emailAvailable: boolean | null
   isCompleted: boolean
 }
 
@@ -40,6 +41,7 @@ const initialState: RegistrationState = {
   loading: false,
   error: null,
   usernameAvailable: null,
+  emailAvailable: null,
   isCompleted: false,
 }
 
@@ -59,6 +61,25 @@ export const checkUsernameAvailability = createAsyncThunk(
       return available
     } catch (error) {
       console.error("Error checking username availability:", error)
+      throw error
+    }
+  }
+)
+
+export const checkEmailAvailability = createAsyncThunk(
+  "registration/checkEmail", 
+  async ({ email, backendActor }: { email: string; backendActor: any }) => {
+    
+    if (!backendActor) {
+      console.error("Backend actor not available")
+      return false
+    }
+
+    try {
+      const inUse = await backendActor.is_email_in_use(email)
+      return !inUse // Return true if email is available (not in use)
+    } catch (error) {
+      console.error("Error checking email availability:", error)
       throw error
     }
   }
@@ -121,6 +142,7 @@ export const completeRegistration = createAsyncThunk(
           wallet_address: params.sessionData?.chainAddress || "",
           wallet: walletName,
         },
+        image_url: [], 
       })
 
       console.log("User creation result:", userResult)
@@ -146,6 +168,10 @@ export const registrationSlice = createSlice({
     },
     setEmail: (state, action: PayloadAction<string | null>) => {
       state.email = action.payload
+      // Reset availability when email changes
+      if (state.email !== action.payload) {
+        state.emailAvailable = null
+      }
     },
     setUsername: (state, action: PayloadAction<string>) => {
       state.username = action.payload
@@ -185,6 +211,22 @@ export const registrationSlice = createSlice({
         state.loading = false
         state.error = "Failed to check username availability"
         state.usernameAvailable = null
+      })
+      .addCase(checkEmailAvailability.pending, (state) => {
+        console.log("Email check pending")
+        state.loading = true
+        state.emailAvailable = null
+      })
+      .addCase(checkEmailAvailability.fulfilled, (state, action) => {
+        console.log("Email check fulfilled:", action.payload)
+        state.loading = false
+        state.emailAvailable = action.payload
+      })
+      .addCase(checkEmailAvailability.rejected, (state) => {
+        console.log("Email check rejected")
+        state.loading = false
+        state.error = "Failed to check email availability"
+        state.emailAvailable = null
       })
       .addCase(completeRegistration.pending, (state) => {
         state.loading = true

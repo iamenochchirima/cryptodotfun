@@ -1,5 +1,6 @@
 type AddUserArgs = record {
   username : text;
+  image_url : opt text;
   interests : vec text;
   email : opt text;
   referral_code : opt text;
@@ -14,6 +15,7 @@ type Result_1 = variant { Ok : User; Err : text };
 type User = record {
   "principal" : principal;
   username : text;
+  image_url : opt text;
   interests : vec Interest;
   created_at : nat64;
   email : opt text;
@@ -25,5 +27,6 @@ service : {
   add_user : (AddUserArgs) -> (Result);
   get_user : () -> (Result_1) query;
   get_users : () -> (vec User) query;
+  is_email_in_use : (text) -> (bool) query;
   is_username_available : (text) -> (bool) query;
 }

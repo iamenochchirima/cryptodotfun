@@ -1,4 +1,5 @@
 use actix_web::{middleware::Logger, App, HttpServer};
+use actix_cors::Cors;
 use env_logger::Env;
 use dotenv::dotenv;
 
@@ -48,7 +49,18 @@ async fn main() -> std::io::Result<()> {
     println!("🌍 Environment: {}", config.environment);
 
     HttpServer::new(|| {
+        // Configure CORS
+        let cors = Cors::default()
+            .allowed_origin("http://localhost:3000")  // Allow Next.js dev server
+            .allowed_origin("http://127.0.0.1:3000")  // Alternative localhost
+            .allowed_methods(vec!["GET", "POST", "PUT", "DELETE", "OPTIONS"])
+            .allowed_headers(vec!["Content-Type", "Authorization", "Accept"])
+            .supports_credentials()  // Allow cookies/credentials
+            .max_age(3600);  // Cache preflight for 1 hour
+
         App::new()
+            // Add CORS middleware first
+            .wrap(cors)
             // Add logging middleware
             .wrap(Logger::default())
             // Configure all routes

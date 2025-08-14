@@ -213,7 +213,6 @@ pub async fn verify_auth(req: web::Query<std::collections::HashMap<String, Strin
     
     println!("🔍 Verifying identity for sessionId: {}", session_id);
     
-    // Get session from Redis
     let redis_client = RedisClient::instance().await;
     let redis_key = format!("auth_session:{}", session_id);
     
@@ -248,7 +247,6 @@ pub async fn verify_auth(req: web::Query<std::collections::HashMap<String, Strin
         }
     };
     
-    // Check if session expired
     if Utc::now() > session_data.expires_at {
         let _ = redis_client.del(&redis_key).await;
         return Ok(HttpResponse::BadRequest().json(json!({
@@ -298,7 +296,6 @@ pub async fn verify_auth(req: web::Query<std::collections::HashMap<String, Strin
                             })));
                         }
                         
-                        // 2. Set HTTP-only cookie
                         let cookie = Cookie::build("CRYPTO_DOT_FUN_SESSION", user_session_id.clone())
                             .http_only(true)
                             .secure(false) // Set to true in production with HTTPS
