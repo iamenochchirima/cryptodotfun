@@ -1,5 +1,8 @@
-use candid::{ CandidType, Principal };
-use serde::{ Deserialize, Serialize };
+use candid::{CandidType, Principal};
+use serde::{Deserialize, Serialize};
+use ic_stable_structures::Storable;
+use ic_stable_structures::storable::Bound;
+use std::borrow::Cow;
 
 #[derive(CandidType, Clone, Serialize, Deserialize, Debug, PartialEq, Eq, Hash)]
 pub struct Interest {
@@ -86,6 +89,25 @@ pub struct User {
     pub referral_code: Option<String>,
     pub interests: Vec<Interest>,
     pub created_at: u64,
+}
+
+impl Storable for User {
+    fn to_bytes(&self) -> Cow<[u8]> {
+        Cow::Owned(candid::encode_one(self).unwrap())
+    }
+
+    fn from_bytes(bytes: Cow<[u8]>) -> Self {
+        candid::decode_one(&bytes).unwrap()
+    }
+
+    fn into_bytes(self) -> Vec<u8> {
+        candid::encode_one(&self).unwrap()
+    }
+
+    const BOUND: Bound = Bound::Bounded {
+        max_size: 2048,
+        is_fixed_size: false,
+    };
 }
 
 #[derive(CandidType, Clone, Serialize, Deserialize)]

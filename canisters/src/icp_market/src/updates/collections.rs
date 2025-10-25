@@ -1,8 +1,8 @@
 use candid::{ Nat };
 use ic_cdk::update;
-use crate::types::{
-    CreateCollectionArgs,
-    CreateCollectionResponse,
+use types::icp::{
+    IcpCreateCollectionArgs,
+    IcpCreateCollectionResponse,
     CollectionInfo,
     CollectionStatus,
 };
@@ -15,8 +15,8 @@ use crate::utils::canister_management::{deploy_nft_collection, NFTCollectionInit
 
 #[update]
 async fn create_collection(
-    args: CreateCollectionArgs
-) -> Result<CreateCollectionResponse, MarketplaceError> {
+    args: IcpCreateCollectionArgs
+) -> Result<IcpCreateCollectionResponse, MarketplaceError> {
     let caller = ic_cdk::api::msg_caller();
     let current_time = ic_cdk::api::time();
 
@@ -75,7 +75,7 @@ async fn create_collection(
     add_collection_to_creator(caller, collection_canister_id);
     increment_total_collections();
 
-    Ok(CreateCollectionResponse {
+    Ok(IcpCreateCollectionResponse {
         collection_canister_id,
         transaction_id: current_time,
     })

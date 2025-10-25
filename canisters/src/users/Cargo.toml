@@ -23,3 +23,4 @@ serde_json = { workspace = true }
 ic-stable-structures = { workspace = true }
 icrc-ledger-types = { workspace = true }
 ic-ledger-types = { workspace = true }
+types = { path = "../types" }

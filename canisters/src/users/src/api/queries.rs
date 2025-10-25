@@ -1,6 +1,6 @@
 use ic_cdk::query;
-
-use crate::{common::types::user::User, USERS};
+use types::user::User;
+use crate::USERS;
 
 
 #[query]

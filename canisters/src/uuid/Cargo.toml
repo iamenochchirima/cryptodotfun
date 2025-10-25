@@ -1,0 +1,16 @@
+[package]
+name = "canister_uuid"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+ic-cdk = { workspace = true }
+candid = { workspace = true }
+serde = { workspace = true }
+uuid = { workspace = true, features = ["serde"] }
+rand = { workspace = true }
+rand_chacha = { workspace = true }
+chrono = { workspace = true }

@@ -1,6 +1,6 @@
 use candid::Principal;
 use ic_cdk::query;
-use crate::types::{CollectionInfo, PaginatedCollections};
+use types::icp::{CollectionInfo, IcpPaginatedCollections};
 use crate::state::{get_collections_by_creator as get_collections_by_creator_state, state::*};
 use crate::errors::MarketplaceError;
 
@@ -26,7 +26,7 @@ fn get_collections_by_creator(creator: Principal) -> Vec<CollectionInfo> {
 }
 
 #[query]
-fn get_all_collections(start: Option<u64>, limit: Option<u64>) -> PaginatedCollections {
+fn get_all_collections(start: Option<u64>, limit: Option<u64>) -> IcpPaginatedCollections {
     let start_idx = start.unwrap_or(0) as usize;
     let limit_val = limit.unwrap_or(100).min(100) as usize;
     
@@ -44,7 +44,7 @@ fn get_all_collections(start: Option<u64>, limit: Option<u64>) -> PaginatedColle
             .take(limit_val)
             .collect();
         
-        PaginatedCollections {
+        IcpPaginatedCollections {
             collections: paginated_collections,
             total_count,
             has_more: (start_idx + limit_val) < total_count as usize,

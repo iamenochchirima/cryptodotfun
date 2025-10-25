@@ -5,89 +5,17 @@ use ic_stable_structures::storable::Bound;
 use std::cell::RefCell;
 use candid::{Principal, Nat};
 
-use crate::types::{CollectionInfo, ListingInfo, SaleInfo, MarketplaceConfig, MarketplaceEvent};
+use types::icp::{CollectionInfo, ListingInfo, SaleInfo, MarketplaceConfig, MarketplaceEvent};
 
 type Memory = VirtualMemory<DefaultMemoryImpl>;
 
 // Implement Storable for CollectionInfo
-impl Storable for CollectionInfo {
-    fn to_bytes(&self) -> Cow<[u8]> {
-        Cow::Owned(candid::encode_one(self).unwrap())
-    }
-
-    fn from_bytes(bytes: Cow<[u8]>) -> Self {
-        candid::decode_one(&bytes).unwrap()
-    }
-    
-    fn into_bytes(self) -> Vec<u8> {
-        candid::encode_one(&self).unwrap()
-    }
-
-    const BOUND: Bound = Bound::Bounded {
-        max_size: 1024,
-        is_fixed_size: false,
-    };
-}
 
 // Implement Storable for ListingInfo
-impl Storable for ListingInfo {
-    fn to_bytes(&self) -> Cow<[u8]> {
-        Cow::Owned(candid::encode_one(self).unwrap())
-    }
-
-    fn from_bytes(bytes: Cow<[u8]>) -> Self {
-        candid::decode_one(&bytes).unwrap()
-    }
-    
-    fn into_bytes(self) -> Vec<u8> {
-        candid::encode_one(&self).unwrap()
-    }
-
-    const BOUND: Bound = Bound::Bounded {
-        max_size: 512,
-        is_fixed_size: false,
-    };
-}
 
 // Implement Storable for SaleInfo
-impl Storable for SaleInfo {
-    fn to_bytes(&self) -> Cow<[u8]> {
-        Cow::Owned(candid::encode_one(self).unwrap())
-    }
-
-    fn from_bytes(bytes: Cow<[u8]>) -> Self {
-        candid::decode_one(&bytes).unwrap()
-    }
-    
-    fn into_bytes(self) -> Vec<u8> {
-        candid::encode_one(&self).unwrap()
-    }
-
-    const BOUND: Bound = Bound::Bounded {
-        max_size: 512,
-        is_fixed_size: false,
-    };
-}
 
 // Implement Storable for MarketplaceConfig
-impl Storable for MarketplaceConfig {
-    fn to_bytes(&self) -> Cow<[u8]> {
-        Cow::Owned(candid::encode_one(self).unwrap())
-    }
-
-    fn from_bytes(bytes: Cow<[u8]>) -> Self {
-        candid::decode_one(&bytes).unwrap()
-    }
-    
-    fn into_bytes(self) -> Vec<u8> {
-        candid::encode_one(&self).unwrap()
-    }
-
-    const BOUND: Bound = Bound::Bounded {
-        max_size: 512,
-        is_fixed_size: false,
-    };
-}
 
 thread_local! {
     static MEMORY_MANAGER: RefCell<MemoryManager<DefaultMemoryImpl>> = RefCell::new(

@@ -1,28 +1,7 @@
-use std::borrow::Cow;
-use candid::{ Decode, Encode };
 use ic_cdk::{ update };
 use ic_cdk::api::{ time };
-use ic_stable_structures::storable::Bound;
-use ic_stable_structures::Storable;
-
-use crate::common::types::user::{AddUserArgs, Interest, User };
-use crate::{ USERS};
-
-impl Storable for User {
-    fn to_bytes(&self) -> std::borrow::Cow<[u8]> {
-        Cow::Owned(Encode!(self).unwrap())
-    }
-
-    fn from_bytes(bytes: std::borrow::Cow<[u8]>) -> Self {
-        Decode!(bytes.as_ref(), Self).unwrap()
-    }
-
-    fn into_bytes(self) -> Vec<u8> {
-        Encode!(&self).unwrap()
-    }
-
-    const BOUND: Bound = Bound::Unbounded;
-}
+use types::user::{AddUserArgs, Interest, User};
+use crate::USERS;
 
 #[update]
 pub async fn add_user(args: AddUserArgs) -> Result<(), String> {

@@ -1,10 +1,10 @@
 use candid::Nat;
 use ic_cdk::query;
-use types::icp::{IcpMarketplaceStats, MarketplaceConfig};
+use crate::types::MarketplaceStats;
 use crate::state::state::*;
 
 #[query]
-fn get_marketplace_stats() -> IcpMarketplaceStats {
+fn get_marketplace_stats() -> MarketplaceStats {
     let total_collections = TOTAL_COLLECTIONS_CREATED.with(|count| count.borrow().get().clone());
     
     let total_volume = TOTAL_VOLUME_TRADED.with(|volume| {
@@ -17,7 +17,7 @@ fn get_marketplace_stats() -> IcpMarketplaceStats {
         collections.borrow().iter().count() as u64
     });
     
-    IcpMarketplaceStats {
+    MarketplaceStats {
         total_collections,
         total_volume,
         collection_creation_fee: config.collection_creation_fee,
@@ -27,7 +27,7 @@ fn get_marketplace_stats() -> IcpMarketplaceStats {
 }
 
 #[query]
-fn get_marketplace_config() -> MarketplaceConfig {
+fn get_marketplace_config() -> crate::types::MarketplaceConfig {
     MARKETPLACE_CONFIG.with(|config| config.borrow().get().clone())
 }
 

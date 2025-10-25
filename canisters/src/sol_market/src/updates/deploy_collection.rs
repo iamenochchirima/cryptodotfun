@@ -1,6 +1,6 @@
 use candid::{Nat, Principal};
 use ic_cdk_macros::update;
-use types::icp::{DeployCollectionArgs, DeployCollectionResponse, CollectionInfo, CollectionStatus};
+use crate::types::{DeployCollectionArgs, DeployCollectionResponse, CollectionInfo, CollectionStatus};
 use crate::state::state::*;
 use crate::errors::MarketplaceError;
 use crate::utils::canister_management::{deploy_nft_collection, NFTCollectionInitArgs};
@@ -87,7 +87,7 @@ pub async fn deploy_collection(args: DeployCollectionArgs) -> Result<DeployColle
     crate::state::increment_total_collections();
 
     // Log the event
-    let event = types::icp::MarketplaceEvent::CollectionCreated {
+    let event = crate::types::MarketplaceEvent::CollectionCreated {
         collection_id,
         creator: caller,
         name: args.name.clone(),
@@ -166,7 +166,7 @@ pub async fn activate_collection(collection_id: Principal) -> Result<(), Marketp
     });
 
     // Log the event
-    let event = types::icp::MarketplaceEvent::CollectionActivated {
+    let event = crate::types::MarketplaceEvent::CollectionActivated {
         collection_id,
         creator: caller,
         timestamp: ic_cdk::api::time(),

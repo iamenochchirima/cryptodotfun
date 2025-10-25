@@ -1,7 +1,7 @@
 use candid::Nat;
 use ic_cdk_macros::update;
 use num_traits::cast::ToPrimitive;
-use types::icp::{ListNFTArgs, BuyNFTArgs, ListingInfo, ListingStatus, SaleInfo};
+use crate::types::{ListNFTArgs, BuyNFTArgs, ListingInfo, ListingStatus, SaleInfo};
 use crate::state::state::*;
 use crate::errors::MarketplaceError;
 use crate::utils::validation::validate_listing_args;

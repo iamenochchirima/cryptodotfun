@@ -1,6 +1,6 @@
 use candid::{Nat, Principal};
 use ic_cdk_macros::update;
-use types::icp::MarketplaceConfig;
+use crate::types::MarketplaceConfig;
 use crate::state::state::*;
 use crate::errors::MarketplaceError;
 

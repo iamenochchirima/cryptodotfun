@@ -1,8 +1,8 @@
 use candid::Nat;
-use crate::types::{CreateCollectionArgs, ListNFTArgs};
+use types::icp::{IcpCreateCollectionArgs, ListNFTArgs};
 use crate::errors::MarketplaceError;
 
-pub fn validate_collection_args(args: &CreateCollectionArgs) -> Result<(), MarketplaceError> {
+pub fn validate_collection_args(args: &IcpCreateCollectionArgs) -> Result<(), MarketplaceError> {
     // Validate collection name
     if args.collection_name.is_empty() || args.collection_name.len() > 100 {
         return Err(MarketplaceError::InvalidCollectionName);

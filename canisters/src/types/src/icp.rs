@@ -1,16 +1,18 @@
 use candid::{CandidType, Principal, Nat};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use ic_stable_structures::Storable;
+use ic_stable_structures::storable::Bound;
+use std::borrow::Cow;
 
 #[derive(CandidType, Serialize, Deserialize, Clone, Debug)]
-pub struct InitArgs {
+pub struct IcpInitArgs {
     pub collection_creation_fee: Nat,
-    pub marketplace_fee_percentage: u16, // Basis points (e.g., 250 = 2.5%)
-    pub admin: Principal,
+    pub marketplace_fee_percentage: u16,
+    pub admin: Principal
 }
 
 #[derive(CandidType, Serialize, Deserialize, Clone, Debug)]
-pub struct CreateCollectionArgs {
+pub struct IcpCreateCollectionArgs {
     pub collection_name: String,
     pub collection_symbol: String,
     pub description: Option<String>,
@@ -37,7 +39,7 @@ pub struct DeployCollectionResponse {
 }
 
 #[derive(CandidType, Serialize, Deserialize, Clone, Debug)]
-pub struct CreateCollectionResponse {
+pub struct IcpCreateCollectionResponse {
     pub collection_canister_id: Principal,
     pub transaction_id: u64,
 }
@@ -58,6 +60,82 @@ pub struct CollectionInfo {
     pub total_volume: Nat,
 }
 
+impl Storable for CollectionInfo {
+    fn to_bytes(&self) -> Cow<[u8]> {
+        Cow::Owned(candid::encode_one(self).unwrap())
+    }
+
+    fn from_bytes(bytes: Cow<[u8]>) -> Self {
+        candid::decode_one(&bytes).unwrap()
+    }
+
+    fn into_bytes(self) -> Vec<u8> {
+        candid::encode_one(&self).unwrap()
+    }
+
+    const BOUND: Bound = Bound::Bounded {
+        max_size: 1024,
+        is_fixed_size: false,
+    };
+}
+
+impl Storable for ListingInfo {
+    fn to_bytes(&self) -> Cow<[u8]> {
+        Cow::Owned(candid::encode_one(self).unwrap())
+    }
+
+    fn from_bytes(bytes: Cow<[u8]>) -> Self {
+        candid::decode_one(&bytes).unwrap()
+    }
+
+    fn into_bytes(self) -> Vec<u8> {
+        candid::encode_one(&self).unwrap()
+    }
+
+    const BOUND: Bound = Bound::Bounded {
+        max_size: 512,
+        is_fixed_size: false,
+    };
+}
+
+impl Storable for SaleInfo {
+    fn to_bytes(&self) -> Cow<[u8]> {
+        Cow::Owned(candid::encode_one(self).unwrap())
+    }
+
+    fn from_bytes(bytes: Cow<[u8]>) -> Self {
+        candid::decode_one(&bytes).unwrap()
+    }
+
+    fn into_bytes(self) -> Vec<u8> {
+        candid::encode_one(&self).unwrap()
+    }
+
+    const BOUND: Bound = Bound::Bounded {
+        max_size: 512,
+        is_fixed_size: false,
+    };
+}
+
+impl Storable for MarketplaceConfig {
+    fn to_bytes(&self) -> Cow<[u8]> {
+        Cow::Owned(candid::encode_one(self).unwrap())
+    }
+
+    fn from_bytes(bytes: Cow<[u8]>) -> Self {
+        candid::decode_one(&bytes).unwrap()
+    }
+
+    fn into_bytes(self) -> Vec<u8> {
+        candid::encode_one(&self).unwrap()
+    }
+
+    const BOUND: Bound = Bound::Bounded {
+        max_size: 512,
+        is_fixed_size: false,
+    };
+}
+
 #[derive(CandidType, Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub enum CollectionStatus {
     AssetsPending,
@@ -67,14 +145,14 @@ pub enum CollectionStatus {
 }
 
 #[derive(CandidType, Serialize, Deserialize, Clone, Debug)]
-pub struct PaginatedCollections {
+pub struct IcpPaginatedCollections {
     pub collections: Vec<CollectionInfo>,
     pub total_count: u64,
     pub has_more: bool,
 }
 
 #[derive(CandidType, Serialize, Deserialize, Clone, Debug)]
-pub struct MarketplaceStats {
+pub struct IcpMarketplaceStats {
     pub total_collections: u64,
     pub total_volume: Nat,
     pub collection_creation_fee: Nat,
@@ -119,7 +197,7 @@ pub struct ListNFTArgs {
     pub collection_id: Principal,
     pub token_id: Nat,
     pub price: Nat,
-    pub duration: Option<u64>, // Duration in nanoseconds
+    pub duration: Option<u64>,
 }
 
 #[derive(CandidType, Serialize, Deserialize, Clone, Debug)]
@@ -134,18 +212,16 @@ pub struct PaginatedListings {
     pub has_more: bool,
 }
 
-// Marketplace configuration types
 #[derive(CandidType, Serialize, Deserialize, Clone, Debug)]
 pub struct MarketplaceConfig {
     pub collection_creation_fee: Nat,
     pub marketplace_fee_percentage: u16,
     pub max_listing_duration: u64,
     pub min_listing_price: Nat,
-    pub supported_tokens: Vec<Principal>, // Supported payment tokens
+    pub supported_tokens: Vec<Principal>,
     pub admin: Principal,
 }
 
-// Event types for logging
 #[derive(CandidType, Serialize, Deserialize, Clone, Debug)]
 pub enum MarketplaceEvent {
     CollectionCreated {

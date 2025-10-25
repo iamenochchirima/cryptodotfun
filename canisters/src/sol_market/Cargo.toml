@@ -1,5 +1,5 @@
 [package]
-name = "icp_market"
+name = "sol_market"
 version = "0.1.0"
 edition = "2021"
 
@@ -23,4 +23,5 @@ hex = { workspace = true }
 ic-cdk-timers = { workspace = true }
 num-traits = { workspace = true }
 serde_json = { workspace = true }
+canister_uuid = { path = "../uuid" }
 types = { path = "../types" }

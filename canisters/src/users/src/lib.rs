@@ -1,15 +1,11 @@
 extern crate serde;
 use candid::Principal;
-use common::types::user::{
-    User, AddUserArgs
-};
+use types::user::{User, AddUserArgs};
 use ic_stable_structures::memory_manager::{ MemoryId, MemoryManager, VirtualMemory };
 use ic_stable_structures::{ DefaultMemoryImpl, StableBTreeMap };
 use std::cell::RefCell;
 
-
 pub mod api;
-pub mod common;
 
 type Memory = VirtualMemory<DefaultMemoryImpl>;
 

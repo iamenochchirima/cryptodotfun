@@ -1,0 +1,12 @@
+[package]
+name = "types"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+candid = { workspace = true }
+serde = { workspace = true }
+ic-stable-structures = { workspace = true }

@@ -1,6 +1,6 @@
 use candid::Principal;
 use ic_cdk::query;
-use types::icp::{ListingInfo, PaginatedListings, ListingStatus, SaleInfo};
+use crate::types::{ListingInfo, PaginatedListings, ListingStatus, SaleInfo};
 use crate::state::state::*;
 use crate::errors::MarketplaceError;
 
