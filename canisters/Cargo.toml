@@ -5,6 +5,7 @@ members = [
     "src/sol_market",
     "src/uuid",
     "src/types",
+    "src/packages/ic_siwb_provider"
 ]
 resolver = "2"
 

@@ -83,9 +83,11 @@ deploy-frontend:
 
 deploy-backend:
 	dfx deploy users
-	dfx deploy identity_certifier
+	dfx deploy identity_certifier --argument '(principal "o4jpg-z2hcz-bf2oe-zziee-bsw4t-jgecg-boagp-segn6-pdznr-u6bdc-zae")'
 	dfx deploy icp_market --yes --argument '(record { admin = principal "o4jpg-z2hcz-bf2oe-zziee-bsw4t-jgecg-boagp-segn6-pdznr-u6bdc-zae"; collection_creation_fee = 0; marketplace_fee_percentage = 250 })'
+	dfx deploy sol_market --yes --argument '(record { admin = principal "o4jpg-z2hcz-bf2oe-zziee-bsw4t-jgecg-boagp-segn6-pdznr-u6bdc-zae" })'
 	dfx generate icp_market
+	dfx generate sol_market
 	dfx generate users
 
 deploy-all: create-canisters deploy-provider deploy-backend  deploy-frontend

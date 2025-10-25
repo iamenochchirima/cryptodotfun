@@ -15,6 +15,10 @@ impl Storable for AddressScriptBuf {
         Self(bytes.to_vec())
     }
 
+    fn into_bytes(self) -> Vec<u8> {
+        self.0
+    }
+
     const BOUND: Bound = Bound::Bounded {
         max_size: 128,
         is_fixed_size: false,

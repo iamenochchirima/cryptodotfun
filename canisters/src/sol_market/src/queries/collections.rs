@@ -31,7 +31,6 @@ pub fn get_user_collections(owner: Option<Principal>) -> Vec<SolanaCollection> {
 pub fn query_collections(args: CollectionQueryArgs) -> PaginatedCollections {
     let (mut collections, _total) = get_collections_paginated(0, 10000);
 
-    // Apply filter
     collections = match args.filter {
         CollectionFilter::All => collections,
         CollectionFilter::ByStatus(status) => {
