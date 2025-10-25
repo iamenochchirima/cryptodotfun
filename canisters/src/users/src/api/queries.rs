@@ -19,7 +19,7 @@ pub fn get_users() -> Vec<User> {
         s
             .borrow()
             .iter()
-            .map(|(_, v)| v.clone())
+            .map(|entry| entry.value().clone())
             .collect::<Vec<User>>()
     )
 }

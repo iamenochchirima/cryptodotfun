@@ -5,6 +5,11 @@
       "package": "users",
       "type": "rust"
     },
+    "icp_market": {
+      "candid": "src/icp_market/icp_market.did",
+      "package": "icp_market",
+      "type": "rust"
+    },
     "identity_certifier": {
       "main": "src/identity-certifier/main.mo",
       "type": "motoko"

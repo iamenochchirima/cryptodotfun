@@ -41,7 +41,6 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-// Safe hooks that handle provider not being ready
 const useSafeSiws = () => {
   try {
     return useSiws();
@@ -190,7 +189,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
     }
     
-    // Reset server authentication state
     resetServerAuth();
     deleteSessionData();
     setIsAuthenticated(false);

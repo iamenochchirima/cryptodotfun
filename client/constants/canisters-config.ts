@@ -4,7 +4,6 @@ export { idlFactory as icSiwbIDL } from "../idls/ic_siwb_provider/ic_siwb_provid
 export { idlFactory as usersIDL } from "../idls/users/users.did.js";
 export { idlFactory as identityCertifierIDL } from "../idls/identity_certifier/identity_certifier.did.js";
 
-// Define network locally to avoid circular dependency
 const network = process.env.NEXT_PUBLIC_ENVIRONMENT || "local";
 
 interface CanisterConfigType {
@@ -13,7 +12,6 @@ interface CanisterConfigType {
   };
 }
 
-// Dynamic imports to handle missing files
 let prodConfig: CanisterConfigType = {};
 let localConfig: CanisterConfigType = {};
 

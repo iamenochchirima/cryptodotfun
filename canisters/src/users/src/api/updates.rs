@@ -17,6 +17,10 @@ impl Storable for User {
         Decode!(bytes.as_ref(), Self).unwrap()
     }
 
+    fn into_bytes(self) -> Vec<u8> {
+        Encode!(&self).unwrap()
+    }
+
     const BOUND: Bound = Bound::Unbounded;
 }
 
