@@ -5,7 +5,6 @@ use tokio::sync::OnceCell;
 use crate::config::AppConfig;
 use base64ct::{Base64, Encoding};
 
-// Global instance of the backend actor
 static BACKEND_ACTOR: OnceCell<Arc<BackendActor>> = OnceCell::const_new();
 
 #[derive(Debug, Clone)]
@@ -33,7 +32,6 @@ impl BackendActor {
             agent.fetch_root_key().await?;
         }
 
-        // Parse canister ID
         let canister_id = Principal::from_text(&config.identity_provider_canister_id)
             .map_err(|e| format!("Invalid canister ID: {}", e))?;
 
@@ -91,7 +89,6 @@ impl BackendActor {
     }
 
     fn load_identity_from_env_string(private_key: &str) -> Result<Secp256k1Identity, Box<dyn std::error::Error + Send + Sync>> {
-        // Create a proper PEM content from the private key
         let pem_content = if private_key.starts_with("-----BEGIN") {
             private_key.replace("\\n", "\n")
         } else {

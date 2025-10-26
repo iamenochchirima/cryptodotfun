@@ -1,12 +1,8 @@
 use actix_web::web::{self, ServiceConfig};
 use crate::controllers::{
-    // Health endpoints
     health_check, api_info,
-    // Auth endpoints
     auth::{initiate_auth, verify_auth, auth_status, logout},
-    // Protected endpoints
     protected::{protected_endpoint, user_profile},
-    // User endpoints (IC)
     users::{test_connection},
 };
 

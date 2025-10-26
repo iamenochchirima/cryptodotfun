@@ -41,7 +41,6 @@ export function ImagePreviewGrid({
     const matchesSearch = img.name
       .toLowerCase()
       .includes(searchQuery.toLowerCase())
-    // Add more filter logic here based on filterBy
     return matchesSearch
   })
 

@@ -29,7 +29,6 @@ impl RedisClient {
         Ok(RedisClient { manager })
     }
 
-    /// Initialize and store the global instance
     pub async fn initialize_global() -> Result<(), RedisError> {
         let client = Self::new().await?;
         REDIS_CLIENT.set(Arc::new(client)).map_err(|_| {
@@ -38,7 +37,6 @@ impl RedisClient {
         Ok(())
     }
 
-    /// Get the global instance of the Redis client
     pub async fn instance() -> &'static Arc<RedisClient> {
         REDIS_CLIENT.get().expect("Redis client not initialized. Call RedisClient::initialize_global() first.")
     }

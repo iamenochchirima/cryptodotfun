@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ArrowLeft, Upload, Eye, CheckCircle, Info, Rocket } from "lucide-react"
+import { PreviewFilesModal } from "@/components/solana/PreviewFilesModal"
 
 interface CollectionFormData {
   name: string
@@ -33,6 +34,8 @@ export default function CreateSolanaCollectionPage() {
     mintPrice: "0.1",
     royaltyBps: "500", // 5%
   })
+  const [collectionImage, setCollectionImage] = useState<File | null>(null)
+  const [nftAssets, setNftAssets] = useState<FileList | null>(null)
 
   const steps = [
     { id: 1, title: "Basic Info", description: "Collection details" },
@@ -54,6 +57,22 @@ export default function CreateSolanaCollectionPage() {
 
   const handleInputChange = (field: keyof CollectionFormData, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
+  }
+
+  const handleCollectionImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      setCollectionImage(file)
+      const imageUrl = URL.createObjectURL(file)
+      setFormData((prev) => ({ ...prev, imageUrl }))
+    }
+  }
+
+  const handleNftAssetsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (files && files.length > 0) {
+      setNftAssets(files)
+    }
   }
 
   const progress = (currentStep / 3) * 100
@@ -286,33 +305,109 @@ export default function CreateSolanaCollectionPage() {
                   <div className="space-y-4">
                     <Label>Collection Image</Label>
                     <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center">
-                      <Upload className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                      <div className="text-sm text-muted-foreground mb-2">
-                        Upload collection logo/banner
-                      </div>
-                      <Button variant="outline" size="sm">
-                        Choose File
-                      </Button>
-                      <p className="text-xs text-muted-foreground mt-2">
-                        PNG, JPG, GIF up to 10MB
-                      </p>
+                      {collectionImage ? (
+                        <div className="space-y-4">
+                          <div className="mx-auto w-48 h-48 rounded-lg overflow-hidden">
+                            <img
+                              src={formData.imageUrl}
+                              alt="Collection preview"
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                          <p className="text-sm font-medium">{collectionImage.name}</p>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setCollectionImage(null)
+                              setFormData((prev) => ({ ...prev, imageUrl: "" }))
+                            }}
+                          >
+                            Remove
+                          </Button>
+                        </div>
+                      ) : (
+                        <>
+                          <Upload className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                          <div className="text-sm text-muted-foreground mb-2">
+                            Upload collection logo/banner
+                          </div>
+                          <input
+                            type="file"
+                            id="collectionImage"
+                            accept="image/png,image/jpeg,image/gif"
+                            className="hidden"
+                            onChange={handleCollectionImageChange}
+                          />
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => document.getElementById("collectionImage")?.click()}
+                          >
+                            Choose File
+                          </Button>
+                          <p className="text-xs text-muted-foreground mt-2">
+                            PNG, JPG, GIF up to 10MB
+                          </p>
+                        </>
+                      )}
                     </div>
                   </div>
 
                   <div className="space-y-4">
                     <Label>NFT Assets</Label>
                     <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center">
-                      <Upload className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                      <div className="text-sm text-muted-foreground mb-2">
-                        Upload your NFT images and metadata
-                      </div>
-                      <Button variant="outline" size="sm">
-                        Choose Files
-                      </Button>
-                      <p className="text-xs text-muted-foreground mt-2">
-                        Upload a folder with numbered images (0.png, 1.png,
-                        etc.)
-                      </p>
+                      {nftAssets && nftAssets.length > 0 ? (
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-center gap-2">
+                            <CheckCircle className="h-8 w-8 text-green-600" />
+                            <div>
+                              <p className="text-sm font-medium">
+                                {nftAssets.length} file{nftAssets.length > 1 ? "s" : ""} selected
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {(Array.from(nftAssets).reduce((acc, file) => acc + file.size, 0) / 1024 / 1024).toFixed(2)} MB total
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex gap-2 justify-center">
+                            <PreviewFilesModal files={nftAssets} />
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setNftAssets(null)}
+                            >
+                              Remove
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <Upload className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                          <div className="text-sm text-muted-foreground mb-2">
+                            Upload your NFT images and metadata
+                          </div>
+                          <input
+                            type="file"
+                            id="nftAssets"
+                            accept="image/*"
+                            multiple
+                            className="hidden"
+                            onChange={handleNftAssetsChange}
+                          />
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => document.getElementById("nftAssets")?.click()}
+                          >
+                            Choose Files
+                          </Button>
+                          <p className="text-xs text-muted-foreground mt-2">
+                            Upload a folder with numbered images (0.png, 1.png,
+                            etc.)
+                          </p>
+                        </>
+                      )}
                     </div>
                   </div>
 
