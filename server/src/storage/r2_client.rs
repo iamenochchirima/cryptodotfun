@@ -1,4 +1,4 @@
-use aws_sdk_s3::{Client, config::{Credentials, Region}, Config};
+use aws_sdk_s3::{Client, config::{Credentials, Region, BehaviorVersion}, Config};
 use bytes::Bytes;
 use std::env;
 use uuid::Uuid;
@@ -32,6 +32,7 @@ impl R2Client {
             .credentials_provider(credentials)
             .region(Region::new("auto"))
             .endpoint_url(endpoint_url)
+            .behavior_version(BehaviorVersion::latest())
             .build();
 
         let client = Client::from_conf(config);
