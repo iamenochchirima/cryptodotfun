@@ -4,6 +4,8 @@ use crate::controllers::{
     auth::{initiate_auth, verify_auth, auth_status, logout},
     protected::{protected_endpoint, user_profile},
     users::{test_connection},
+    drafts::{create_draft, get_draft, get_user_drafts, update_draft, delete_draft},
+    uploads::{upload_draft_image, batch_upload_nft_assets},
 };
 
 pub fn configure_routes(cfg: &mut ServiceConfig) {
@@ -34,5 +36,20 @@ pub fn configure_routes(cfg: &mut ServiceConfig) {
         .service(
             web::scope("/api/ic")
                 .route("/test", web::get().to(test_connection))
+        )
+
+        .service(
+            web::scope("/api/drafts")
+                .route("", web::post().to(create_draft))
+                .route("/user/{user_id}", web::get().to(get_user_drafts))
+                .route("/{draft_id}", web::get().to(get_draft))
+                .route("/{draft_id}", web::put().to(update_draft))
+                .route("/{draft_id}", web::delete().to(delete_draft))
+        )
+
+        .service(
+            web::scope("/api/uploads")
+                .route("/draft-image", web::post().to(upload_draft_image))
+                .route("/batch-nft-assets", web::post().to(batch_upload_nft_assets))
         );
 }

@@ -20,7 +20,6 @@ pub struct UserSession {
     pub expires_at: DateTime<Utc>,
 }
 
-// Helper extractor for authenticated user in handlers
 pub struct AuthenticatedUser(pub AuthUser);
 
 impl actix_web::FromRequest for AuthenticatedUser {
@@ -30,7 +29,6 @@ impl actix_web::FromRequest for AuthenticatedUser {
     fn from_request(req: &HttpRequest, _payload: &mut Payload) -> Self::Future {
         let req = req.clone();
         Box::pin(async move {
-            // Get session cookie
             let session_cookie = req.cookie("CRYPTO_DOT_FUN_SESSION");
 
             let session_id = match session_cookie {
@@ -43,7 +41,6 @@ impl actix_web::FromRequest for AuthenticatedUser {
                 }
             };
 
-            // Get user session from Redis
             let redis_client = RedisClient::instance().await;
             let user_redis_key = format!("user_session:{}", session_id);
             
@@ -77,7 +74,6 @@ impl actix_web::FromRequest for AuthenticatedUser {
                 }
             };
 
-            // Check if session expired
             if Utc::now() > user_session.expires_at {
                 let _ = redis_client.del(&user_redis_key).await;
                 return Err(actix_web::error::ErrorUnauthorized(json!({
@@ -86,7 +82,6 @@ impl actix_web::FromRequest for AuthenticatedUser {
                 }).to_string()));
             }
 
-            // Return authenticated user
             let auth_user = AuthUser {
                 principal: user_session.principal,
                 session_id: user_session.session_id,

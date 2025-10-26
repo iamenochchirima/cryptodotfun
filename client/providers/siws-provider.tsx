@@ -13,12 +13,10 @@ export default function SiwsProvider({
   const { wallet } = useWallet();
   const [isReady, setIsReady] = useState(false);
 
-  // Memoize values to prevent unnecessary re-renders
   const adapter = useMemo<Adapter | undefined>(() => wallet?.adapter, [wallet?.adapter]);
   const canisterId = useMemo(() => icSiwsProviderCanisterId, []);
 
   useEffect(() => {
-    // Delay initialization to prevent render conflicts - shorter delay than SiweProvider
     const timer = setTimeout(() => {
       setIsReady(true);
     }, 50);

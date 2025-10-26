@@ -13,10 +13,9 @@ export default function SiweProvider({
   const canisterId = useMemo(() => icSiweProviderCanisterId, []);
 
   useEffect(() => {
-    // Delay initialization to prevent conflicts with other providers
     const timer = setTimeout(() => {
       setIsReady(true);
-    }, 100); // Slightly longer delay than SiwsProvider
+    }, 100);
     return () => clearTimeout(timer);
   }, []);
 

@@ -1,6 +1,5 @@
 use std::env;
 
-/// Application configuration
 #[derive(Debug, Clone)]
 pub struct AppConfig {
     pub port: u16,

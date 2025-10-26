@@ -27,7 +27,6 @@ use yellowstone_grpc_proto::{
     convert_from,
 };
 
-// Core data structures
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TokenLaunch {
     pub mint: String,
