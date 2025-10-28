@@ -330,7 +330,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     if (!siwsIdentity) {
       throw new Error("SIWS identity is not available.");
     }
-
     const principalId = siwsIdentity.getPrincipal().toText();
     setPrincipalId(principalId);
     setIdentity(siwsIdentity);

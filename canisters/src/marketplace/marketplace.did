@@ -1,0 +1,113 @@
+type Blockchain = variant {
+    ICP;
+    Solana;
+    Ethereum;
+    Bitcoin;
+};
+
+type ListingStatus = variant {
+    Active;
+    Sold;
+    Cancelled;
+    Expired;
+};
+
+type NftAttribute = record {
+    trait_type : text;
+    value : text;
+};
+
+type NftMetadata = record {
+    name : text;
+    image_url : text;
+    attributes : vec NftAttribute;
+};
+
+type Collection = record {
+    id : text;
+    blockchain : Blockchain;
+    creator : principal;
+    name : text;
+    symbol : text;
+    description : text;
+    image_url : text;
+    banner_url : opt text;
+    contract_address : opt text;
+    total_supply : nat64;
+    floor_price : nat64;
+    total_volume : nat64;
+    owner_count : nat32;
+    listed_count : nat32;
+    royalty_bps : nat16;
+    metadata : vec record { text; text };
+    created_at : nat64;
+    updated_at : nat64;
+};
+
+type Listing = record {
+    id : text;
+    collection_id : text;
+    nft_id : text;
+    blockchain : Blockchain;
+    seller : principal;
+    seller_address : text;
+    price : nat64;
+    currency : text;
+    escrow_address : opt text;
+    status : ListingStatus;
+    listed_at : nat64;
+    expires_at : opt nat64;
+    updated_at : nat64;
+    nft_metadata : NftMetadata;
+};
+
+type CreateCollectionArgs = record {
+    blockchain : Blockchain;
+    name : text;
+    symbol : text;
+    description : text;
+    image_url : text;
+    banner_url : opt text;
+    total_supply : nat64;
+    royalty_bps : nat16;
+    metadata : vec record { text; text };
+};
+
+type CreateListingArgs = record {
+    collection_id : text;
+    nft_id : text;
+    seller_address : text;
+    price : nat64;
+    currency : text;
+    expires_at : opt nat64;
+    nft_metadata : NftMetadata;
+};
+
+type UpdateListingArgs = record {
+    listing_id : text;
+    price : opt nat64;
+    status : opt ListingStatus;
+};
+
+type InitArgs = record {
+    admin : principal;
+};
+
+service : (InitArgs) -> {
+    // Collection queries
+    "get_collection" : (text) -> (opt Collection) query;
+    "get_all_collections" : (nat32, nat32) -> (vec Collection) query;
+    "get_collections_by_blockchain" : (Blockchain, nat32, nat32) -> (vec Collection) query;
+
+    // Listing queries
+    "get_listing" : (text, text) -> (opt Listing) query;
+    "get_collection_listings" : (text, nat32, nat32, opt ListingStatus) -> (vec Listing) query;
+    "get_user_listings" : (nat32, nat32) -> (vec Listing) query;
+    "get_collection_listing_count" : (text) -> (nat32) query;
+
+    // Mutations
+    "create_collection" : (CreateCollectionArgs) -> (variant { Ok : text; Err : text });
+    "create_listing" : (CreateListingArgs, Blockchain) -> (variant { Ok : text; Err : text });
+    "update_listing" : (UpdateListingArgs, text) -> (variant { Ok : null; Err : text });
+    "cancel_listing" : (text, text) -> (variant { Ok : null; Err : text });
+}

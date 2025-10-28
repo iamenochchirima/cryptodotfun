@@ -1,11 +1,41 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { ArrowLeft, ArrowRight, Zap, Shield, Coins } from "lucide-react"
+import { ArrowLeft, ArrowRight, Zap, Shield, Coins, FileText } from "lucide-react"
+import { getAllDrafts, deleteDraft } from "@/lib/storage/draftStorage"
+import { DraftCard } from "@/components/nft/DraftCard"
 
 export default function SelectBlockchainPage() {
+  const [drafts, setDrafts] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const loadDrafts = async () => {
+      try {
+        const allDrafts = await getAllDrafts()
+        setDrafts(allDrafts)
+      } catch (error) {
+        console.error("Failed to load drafts:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadDrafts()
+  }, [])
+
+  const handleDiscardDraft = async (draftId: string) => {
+    try {
+      await deleteDraft(draftId)
+      setDrafts(drafts.filter((draft) => draft.id !== draftId))
+    } catch (error) {
+      console.error("Failed to delete draft:", error)
+    }
+  }
   const blockchains = [
     {
       id: "solana",
@@ -108,6 +138,28 @@ export default function SelectBlockchainPage() {
           Choose your blockchain to get started with launching your NFT collection
         </p>
       </div>
+
+      {/* Saved Drafts */}
+      {!loading && drafts.length > 0 && (
+        <div className="mb-12">
+          <div className="flex items-center gap-2 mb-4">
+            <FileText className="h-5 w-5 text-muted-foreground" />
+            <h2 className="text-xl font-semibold">Continue Your Drafts</h2>
+            <Badge variant="secondary" className="ml-2">
+              {drafts.length}
+            </Badge>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {drafts.map((draft) => (
+              <DraftCard
+                key={draft.id}
+                draft={draft}
+                onDiscard={handleDiscardDraft}
+              />
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Blockchain Options */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl mx-auto">

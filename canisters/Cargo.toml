@@ -1,11 +1,13 @@
 [workspace]
 members = [
     "src/users",
-    "src/icp_market",
-    "src/sol_market",
+    "src/icp_market",      # TODO: Migrate to marketplace
+    "src/sol_market",      # TODO: Migrate to marketplace
+    "src/marketplace",     # Unified marketplace for all chains
     "src/uuid",
     "src/types",
-    "src/packages/ic_siwb_provider"
+    "src/packages/ic_siwb_provider",
+    "src/treasury"
 ]
 resolver = "2"
 

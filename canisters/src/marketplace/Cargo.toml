@@ -1,0 +1,16 @@
+[package]
+name = "marketplace"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+candid.workspace = true
+ic-cdk.workspace = true
+ic-cdk-macros.workspace = true
+ic-stable-structures = "0.7.2"
+serde.workspace = true
+serde_json.workspace = true
+serde_bytes.workspace = true

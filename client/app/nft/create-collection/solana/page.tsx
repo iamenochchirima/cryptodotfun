@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useCallback } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -10,8 +10,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { ArrowLeft, Upload, Eye, CheckCircle, Info, Rocket } from "lucide-react"
+import { ArrowLeft, Upload, Eye, CheckCircle, Info, Rocket, Check, Clock } from "lucide-react"
 import { PreviewFilesModal } from "@/components/solana/PreviewFilesModal"
+import { saveDraft, loadDraft } from "@/lib/storage/draftStorage"
+import { useDebounce } from "@/hooks/useDebounce"
+import { PaymentModal } from "@/components/nft/PaymentModal"
 
 interface CollectionFormData {
   name: string
@@ -23,7 +26,10 @@ interface CollectionFormData {
   royaltyBps: string
 }
 
+type SaveStatus = "saving" | "saved" | "idle"
+
 export default function CreateSolanaCollectionPage() {
+  const draftId = "solana-draft"
   const [currentStep, setCurrentStep] = useState(1)
   const [formData, setFormData] = useState<CollectionFormData>({
     name: "",
@@ -32,10 +38,72 @@ export default function CreateSolanaCollectionPage() {
     imageUrl: "",
     supply: "10000",
     mintPrice: "0.1",
-    royaltyBps: "500", // 5%
+    royaltyBps: "500",
   })
   const [collectionImage, setCollectionImage] = useState<File | null>(null)
   const [nftAssets, setNftAssets] = useState<FileList | null>(null)
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle")
+  const [lastSaved, setLastSaved] = useState<number | null>(null)
+
+  const [isLoading, setIsLoading] = useState(true)
+  const [showPaymentModal, setShowPaymentModal] = useState(false)
+  const debouncedFormData = useDebounce(formData, 1000)
+
+  useEffect(() => {
+    const autoSave = async () => {
+      if (!isLoading && (formData.name || formData.symbol || formData.description)) {
+        setSaveStatus("saving")
+        try {
+          await saveDraft(draftId, formData, collectionImage || undefined, nftAssets || undefined)
+          setSaveStatus("saved")
+          setLastSaved(Date.now())
+        } catch (error) {
+          console.error("Failed to save draft:", error)
+          setSaveStatus("idle")
+        }
+      }
+    }
+
+    autoSave()
+  }, [debouncedFormData, collectionImage, nftAssets, draftId, isLoading])
+
+  useEffect(() => {
+    const loadSavedDraft = async () => {
+      try {
+        const saved = await loadDraft(draftId)
+        if (saved) {
+          setFormData(saved.formData)
+
+          if (saved.collectionImage) {
+            setCollectionImage(saved.collectionImage)
+            setFormData(prev => ({...prev, imageUrl: URL.createObjectURL(saved.collectionImage)}))
+          }
+
+          if (saved.nftAssets) {
+            const dataTransfer = new DataTransfer()
+            saved.nftAssets.forEach((file: File) => dataTransfer.items.add(file))
+            setNftAssets(dataTransfer.files)
+          }
+
+          setLastSaved(saved.lastUpdated)
+          setSaveStatus("saved")
+        }
+      } catch (error) {
+        console.error("Failed to load draft:", error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    if (typeof window !== 'undefined') {
+      loadSavedDraft()
+    }
+  }, [])
+
+  const formatTime = useCallback((timestamp: number) => {
+    const date = new Date(timestamp)
+    return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+  }, [])
 
   const steps = [
     { id: 1, title: "Basic Info", description: "Collection details" },
@@ -75,10 +143,40 @@ export default function CreateSolanaCollectionPage() {
     }
   }
 
+  const handleDeployClick = () => {
+    setShowPaymentModal(true)
+  }
+
+  const handlePaymentSuccess = async (signature: string) => {
+    console.log("Payment successful:", signature)
+    setShowPaymentModal(false)
+    // TODO: Call backend to upload to Arweave and generate config
+  }
+
   const progress = (currentStep / 3) * 100
 
   return (
     <div className="container mx-auto px-4 py-24">
+      {/* Save Status */}
+      {(saveStatus === "saving" || saveStatus === "saved") && (
+        <div className="fixed top-20 right-6 z-50 bg-background border rounded-lg shadow-lg px-4 py-2 flex items-center gap-2">
+          {saveStatus === "saving" ? (
+            <>
+              <Clock className="h-4 w-4 text-muted-foreground animate-pulse" />
+              <span className="text-sm text-muted-foreground">Saving…</span>
+            </>
+          ) : (
+            <>
+              <Check className="h-4 w-4 text-green-600" />
+              <span className="text-sm text-muted-foreground">
+                All changes saved
+                {lastSaved && ` • ${formatTime(lastSaved)}`}
+              </span>
+            </>
+          )}
+        </div>
+      )}
+
       {/* Header */}
       <div className="mb-8">
         <Button variant="ghost" asChild className="mb-4">
@@ -477,12 +575,6 @@ export default function CreateSolanaCollectionPage() {
                     <h4 className="font-semibold">Deployment Steps</h4>
                     <div className="space-y-2">
                       <div className="flex items-center gap-2">
-                        <CheckCircle className="h-4 w-4 text-green-600" />
-                        <span className="text-sm">
-                          Save draft to canister
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
                         <div className="h-4 w-4 rounded-full border-2 border-muted" />
                         <span className="text-sm">Upload to Arweave</span>
                       </div>
@@ -514,13 +606,13 @@ export default function CreateSolanaCollectionPage() {
               {currentStep < 3 ? (
                 <Button onClick={handleNext}>Next</Button>
               ) : (
-                <>
-                  <Button variant="outline">Save Draft</Button>
-                  <Button className="bg-purple-600 hover:bg-purple-700">
-                    <Rocket className="mr-2 h-4 w-4" />
-                    Deploy Collection
-                  </Button>
-                </>
+                <Button
+                  onClick={handleDeployClick}
+                  className="bg-purple-600 hover:bg-purple-700"
+                >
+                  <Rocket className="mr-2 h-4 w-4" />
+                  Deploy Collection
+                </Button>
               )}
             </div>
           </div>
@@ -590,6 +682,14 @@ export default function CreateSolanaCollectionPage() {
           </Card>
         </div>
       </div>
+
+      {/* Payment Modal */}
+      <PaymentModal
+        open={showPaymentModal}
+        onClose={() => setShowPaymentModal(false)}
+        onSuccess={handlePaymentSuccess}
+        collectionName={formData.name || "Your Collection"}
+      />
     </div>
   )
 }
