@@ -1,6 +1,13 @@
 use ic_stable_structures::StableBTreeMap;
 use std::cell::RefCell;
-use crate::types::{Collection, CreateCollectionArgs, Blockchain};
+use crate::types::{
+    Collection, CreateCollectionArgs, Blockchain, CollectionStatus,
+    ChainData, SolanaCollectionData, SolanaDeploymentStage,
+    ICPCollectionData, ICPDeploymentStage,
+    EthereumCollectionData, EthereumDeploymentStage,
+    BitcoinCollectionData, BitcoinDeploymentStage,
+    UpdateCollectionStatusArgs, UpdateSolanaStageArgs
+};
 use super::memory::{get_memory, COLLECTIONS_MEMORY_ID};
 use candid::Principal;
 
@@ -12,6 +19,30 @@ thread_local! {
 pub fn add_collection(args: CreateCollectionArgs, creator: Principal) -> Result<String, String> {
     let collection_id = generate_collection_id(&args.blockchain, &args.name);
 
+    let chain_data = match args.blockchain {
+        Blockchain::Solana => ChainData::Solana(SolanaCollectionData {
+            deployment_stage: SolanaDeploymentStage::FilesUploading,
+            candy_machine_address: None,
+            collection_mint: None,
+            arweave_manifest_url: None,
+            files_uploaded: false,
+            metadata_created: false,
+        }),
+        Blockchain::ICP => ChainData::ICP(ICPCollectionData {
+            deployment_stage: ICPDeploymentStage::CanisterCreating,
+            canister_id: None,
+        }),
+        Blockchain::Ethereum => ChainData::Ethereum(EthereumCollectionData {
+            deployment_stage: EthereumDeploymentStage::ContractDeploying,
+            contract_address: None,
+            chain_id: 1,
+        }),
+        Blockchain::Bitcoin => ChainData::Bitcoin(BitcoinCollectionData {
+            deployment_stage: BitcoinDeploymentStage::InscriptionsCreating,
+            inscription_ids: vec![],
+        }),
+    };
+
     let collection = Collection {
         id: collection_id.clone(),
         blockchain: args.blockchain,
@@ -21,7 +52,6 @@ pub fn add_collection(args: CreateCollectionArgs, creator: Principal) -> Result<
         description: args.description,
         image_url: args.image_url,
         banner_url: args.banner_url,
-        contract_address: None,
         total_supply: args.total_supply,
         floor_price: 0,
         total_volume: 0,
@@ -29,6 +59,8 @@ pub fn add_collection(args: CreateCollectionArgs, creator: Principal) -> Result<
         listed_count: 0,
         royalty_bps: args.royalty_bps,
         metadata: args.metadata,
+        status: CollectionStatus::Draft,
+        chain_data,
         created_at: ic_cdk::api::time(),
         updated_at: ic_cdk::api::time(),
     };
@@ -41,7 +73,7 @@ pub fn add_collection(args: CreateCollectionArgs, creator: Principal) -> Result<
 }
 
 pub fn get_collection(collection_id: &str) -> Option<Collection> {
-    COLLECTIONS.with(|c| c.borrow().get(collection_id))
+    COLLECTIONS.with(|c| c.borrow().get(&collection_id.to_string()))
 }
 
 pub fn get_all_collections(page: u32, limit: u32) -> Vec<Collection> {
@@ -50,7 +82,7 @@ pub fn get_all_collections(page: u32, limit: u32) -> Vec<Collection> {
             .iter()
             .skip((page * limit) as usize)
             .take(limit as usize)
-            .map(|(_, collection)| collection)
+            .map(|entry| entry.value())
             .collect()
     })
 }
@@ -59,10 +91,10 @@ pub fn get_collections_by_blockchain(blockchain: &Blockchain, page: u32, limit: 
     COLLECTIONS.with(|c| {
         c.borrow()
             .iter()
-            .filter(|(_, collection)| &collection.blockchain == blockchain)
+            .filter(|entry| &entry.value().blockchain == blockchain)
             .skip((page * limit) as usize)
             .take(limit as usize)
-            .map(|(_, collection)| collection)
+            .map(|entry| entry.value())
             .collect()
     })
 }
@@ -77,7 +109,7 @@ pub fn update_collection_stats(
     COLLECTIONS.with(|c| {
         let mut collections = c.borrow_mut();
 
-        if let Some(mut collection) = collections.get(collection_id) {
+        if let Some(mut collection) = collections.get(&collection_id.to_string()) {
             if let Some(fp) = floor_price {
                 collection.floor_price = fp;
             }
@@ -97,6 +129,80 @@ pub fn update_collection_stats(
         } else {
             Err("Collection not found".to_string())
         }
+    })
+}
+
+pub fn update_collection_status(args: UpdateCollectionStatusArgs) -> Result<(), String> {
+    COLLECTIONS.with(|c| {
+        let mut collections = c.borrow_mut();
+
+        if let Some(mut collection) = collections.get(&args.collection_id) {
+            collection.status = args.status;
+            collection.updated_at = ic_cdk::api::time();
+            collections.insert(args.collection_id, collection);
+            Ok(())
+        } else {
+            Err("Collection not found".to_string())
+        }
+    })
+}
+
+pub fn update_solana_stage(args: UpdateSolanaStageArgs) -> Result<(), String> {
+    COLLECTIONS.with(|c| {
+        let mut collections = c.borrow_mut();
+
+        if let Some(mut collection) = collections.get(&args.collection_id) {
+            if let ChainData::Solana(ref mut data) = collection.chain_data {
+                data.deployment_stage = args.stage;
+                if let Some(addr) = args.candy_machine_address {
+                    data.candy_machine_address = Some(addr);
+                }
+                if let Some(mint) = args.collection_mint {
+                    data.collection_mint = Some(mint);
+                }
+                if let Some(url) = args.arweave_manifest_url {
+                    data.arweave_manifest_url = Some(url);
+                }
+                if let Some(uploaded) = args.files_uploaded {
+                    data.files_uploaded = uploaded;
+                }
+                if let Some(created) = args.metadata_created {
+                    data.metadata_created = created;
+                }
+                collection.updated_at = ic_cdk::api::time();
+                collections.insert(args.collection_id, collection);
+                Ok(())
+            } else {
+                Err("Collection is not a Solana collection".to_string())
+            }
+        } else {
+            Err("Collection not found".to_string())
+        }
+    })
+}
+
+pub fn get_user_collections(creator: &Principal, page: u32, limit: u32) -> Vec<Collection> {
+    COLLECTIONS.with(|c| {
+        c.borrow()
+            .iter()
+            .filter(|entry| &entry.value().creator == creator)
+            .skip((page * limit) as usize)
+            .take(limit as usize)
+            .map(|entry| entry.value())
+            .collect()
+    })
+}
+
+pub fn get_draft_collections(creator: &Principal) -> Vec<Collection> {
+    COLLECTIONS.with(|c| {
+        c.borrow()
+            .iter()
+            .filter(|entry| {
+                let col = entry.value();
+                &col.creator == creator && col.status == CollectionStatus::Draft
+            })
+            .map(|entry| entry.value())
+            .collect()
     })
 }
 

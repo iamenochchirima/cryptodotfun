@@ -37,6 +37,10 @@ impl Storable for Offer {
         candid::decode_one(&bytes).unwrap()
     }
 
+    fn into_bytes(self) -> Vec<u8> {
+        candid::encode_one(&self).unwrap()
+    }
+
     const BOUND: Bound = Bound::Bounded {
         max_size: 512,
         is_fixed_size: false,

@@ -42,3 +42,15 @@ pub fn get_user_listings(page: u32, limit: u32) -> Vec<Listing> {
 pub fn get_collection_listing_count(collection_id: String) -> u32 {
     state::get_collection_listing_count(&collection_id)
 }
+
+#[query]
+pub fn get_user_collections(page: u32, limit: u32) -> Vec<Collection> {
+    let caller = ic_cdk::caller();
+    state::get_user_collections(&caller, page, limit)
+}
+
+#[query]
+pub fn get_my_draft_collections() -> Vec<Collection> {
+    let caller = ic_cdk::caller();
+    state::get_draft_collections(&caller)
+}

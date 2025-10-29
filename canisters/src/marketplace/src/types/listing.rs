@@ -40,6 +40,10 @@ impl Storable for Listing {
         candid::decode_one(&bytes).unwrap()
     }
 
+    fn into_bytes(self) -> Vec<u8> {
+        candid::encode_one(&self).unwrap()
+    }
+
     const BOUND: Bound = Bound::Bounded {
         max_size: 1024,
         is_fixed_size: false,

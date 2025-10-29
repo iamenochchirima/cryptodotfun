@@ -61,13 +61,13 @@ pub fn get_collection_listings(
     LISTINGS.with(|l| {
         l.borrow()
             .range(prefix.clone()..)
-            .take_while(|(key, _)| key.starts_with(&prefix))
-            .filter(|(_, listing)| {
-                status.as_ref().map_or(true, |s| &listing.status == s)
+            .take_while(|entry| entry.key().starts_with(&prefix))
+            .filter(|entry| {
+                status.as_ref().map_or(true, |s| &entry.value().status == s)
             })
             .skip((page * limit) as usize)
             .take(limit as usize)
-            .map(|(_, listing)| listing)
+            .map(|entry| entry.value())
             .collect()
     })
 }
@@ -76,10 +76,10 @@ pub fn get_user_listings(seller: &Principal, page: u32, limit: u32) -> Vec<Listi
     LISTINGS.with(|l| {
         l.borrow()
             .iter()
-            .filter(|(_, listing)| &listing.seller == seller)
+            .filter(|entry| &entry.value().seller == seller)
             .skip((page * limit) as usize)
             .take(limit as usize)
-            .map(|(_, listing)| listing)
+            .map(|entry| entry.value())
             .collect()
     })
 }
@@ -123,7 +123,7 @@ pub fn get_collection_listing_count(collection_id: &str) -> u32 {
     LISTINGS.with(|l| {
         l.borrow()
             .range(prefix.clone()..)
-            .take_while(|(key, _)| key.starts_with(&prefix))
+            .take_while(|entry| entry.key().starts_with(&prefix))
             .count() as u32
     })
 }

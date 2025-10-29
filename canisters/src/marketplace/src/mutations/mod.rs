@@ -23,7 +23,6 @@ pub fn update_listing(args: UpdateListingArgs, collection_id: String) -> Result<
 pub fn cancel_listing(collection_id: String, listing_id: String) -> Result<(), String> {
     let caller = ic_cdk::caller();
 
-    // Verify caller is the seller
     if let Some(listing) = state::get_listing(&collection_id, &listing_id) {
         if listing.seller != caller {
             return Err("Not authorized".to_string());
@@ -39,5 +38,33 @@ pub fn cancel_listing(collection_id: String, listing_id: String) -> Result<(), S
         )
     } else {
         Err("Listing not found".to_string())
+    }
+}
+
+#[update]
+pub fn update_collection_status(args: UpdateCollectionStatusArgs) -> Result<(), String> {
+    let caller = ic_cdk::caller();
+
+    if let Some(collection) = state::get_collection(&args.collection_id) {
+        if collection.creator != caller {
+            return Err("Not authorized".to_string());
+        }
+        state::update_collection_status(args)
+    } else {
+        Err("Collection not found".to_string())
+    }
+}
+
+#[update]
+pub fn update_solana_stage(args: UpdateSolanaStageArgs) -> Result<(), String> {
+    let caller = ic_cdk::caller();
+
+    if let Some(collection) = state::get_collection(&args.collection_id) {
+        if collection.creator != caller {
+            return Err("Not authorized".to_string());
+        }
+        state::update_solana_stage(args)
+    } else {
+        Err("Collection not found".to_string())
     }
 }
