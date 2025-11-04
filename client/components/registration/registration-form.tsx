@@ -21,7 +21,6 @@ export default function RegistrationForm({ isModal = false, onComplete }: Regist
   const dispatch = useAppDispatch()
   const router = useRouter()
 
-  // Reset registration form on component mount if not in modal
   useEffect(() => {
     if (!isModal) {
       dispatch(resetRegistration())
@@ -41,7 +40,6 @@ export default function RegistrationForm({ isModal = false, onComplete }: Regist
     }
   }, [isCompleted, router, isModal, onComplete])
 
-  // Render the current step (skipping wallet connection step)
   const renderStep = () => {
     switch (currentStep) {
       case 0:

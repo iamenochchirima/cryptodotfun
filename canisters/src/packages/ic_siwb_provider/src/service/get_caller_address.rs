@@ -21,7 +21,7 @@ fn get_caller_address(network: Option<String>) -> Result<String, String> {
         Ok(())
     })?;
 
-    let principal = ic_cdk::caller();
+    let principal = msg_caller()();
     get_address(
         ByteBuf::from(principal.as_slice().to_vec()),
         network.map_or_else(|| "bitcoin".to_string(), |n| n),

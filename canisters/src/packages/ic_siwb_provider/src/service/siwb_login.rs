@@ -96,7 +96,7 @@ fn manage_principal_address_mappings(principal: &Blob<29>, address: &AddressScri
 
 #[inline]
 pub fn controller_guard() -> Result<(), String> {
-    match is_controller(&ic_cdk::caller()) {
+    match is_controller(&msg_caller()()) {
         true => Ok(()),
         false => {
             ic_cdk::api::trap("Only the controller can call this function");

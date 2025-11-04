@@ -6,7 +6,6 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks"
 import { resetRegistration } from "@/lib/redux/features/registration/registrationSlice"
 import RegistrationForm from "./registration-form"
 import { useAuth } from "@/providers/auth-context"
-import { set } from "react-hook-form"
 
 interface RegistrationModalProps {
   isOpen: boolean
@@ -24,13 +23,11 @@ export default function RegistrationModal({ isOpen, onClose, onComplete }: Regis
     if (isCompleted && backendActor) {
       const getUser = async () => {
         try {
-          // Call the backend to get the user data
           const user = await backendActor.get_user()
           if ("Ok" in user) {
             setUser(user.Ok)
             onClose()
           } else {
-            // No user data, keep the modal open
             console.warn("No user data found, keeping registration modal open.")
           }
         } catch (error) {
@@ -59,7 +56,6 @@ export default function RegistrationModal({ isOpen, onClose, onComplete }: Regis
       })
 
       return () => {
-        // Restore scroll position when modal closes
         document.body.style.position = ""
         document.body.style.top = ""
         document.body.style.width = ""

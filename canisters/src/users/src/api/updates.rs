@@ -1,11 +1,11 @@
 use ic_cdk::{ update };
-use ic_cdk::api::{ time };
+use ic_cdk::api::{ msg_caller, time };
 use types::user::{AddUserArgs, Interest, User};
 use crate::USERS;
 
 #[update]
 pub async fn add_user(args: AddUserArgs) -> Result<(), String> {
-    let caller = ic_cdk::caller();
+    let caller = msg_caller();
     
     let existing_user = USERS.with(|users| {
         users.borrow().get(&caller)

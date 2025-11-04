@@ -1,67 +1,19 @@
-type Blockchain = variant { ICP; Ethereum; Solana; Bitcoin };
-
-type CollectionStatus = variant { Draft; Active; Paused; Minting; Completed };
-
-type SolanaDeploymentStage = variant {
-  FilesUploading;
-  FilesUploaded;
-  MetadataCreating;
-  MetadataCreated;
-  CandyMachineDeploying;
-  Deployed;
-};
-
-type ICPDeploymentStage = variant {
-  CanisterCreating;
-  CanisterDeploying;
-  Deployed;
-};
-
-type EthereumDeploymentStage = variant {
-  ContractDeploying;
-  Deployed;
-};
-
-type BitcoinDeploymentStage = variant {
-  InscriptionsCreating;
-  Deployed;
-};
-
-type SolanaCollectionData = record {
-  deployment_stage : SolanaDeploymentStage;
-  candy_machine_address : opt text;
-  collection_mint : opt text;
-  arweave_manifest_url : opt text;
-  files_uploaded : bool;
-  metadata_created : bool;
-};
-
-type ICPCollectionData = record {
-  deployment_stage : ICPDeploymentStage;
-  canister_id : opt principal;
-};
-
-type EthereumCollectionData = record {
-  deployment_stage : EthereumDeploymentStage;
-  contract_address : opt text;
-  chain_id : nat64;
-};
-
 type BitcoinCollectionData = record {
   deployment_stage : BitcoinDeploymentStage;
   inscription_ids : vec text;
 };
-
+type BitcoinDeploymentStage = variant { InscriptionsCreating; Deployed };
+type Blockchain = variant { ICP; Ethereum; Solana; Bitcoin };
 type ChainData = variant {
-  Solana : SolanaCollectionData;
   ICP : ICPCollectionData;
   Ethereum : EthereumCollectionData;
+  Solana : SolanaCollectionData;
   Bitcoin : BitcoinCollectionData;
 };
-
 type Collection = record {
   id : text;
   floor_price : nat64;
+  status : CollectionStatus;
   updated_at : nat64;
   creator : principal;
   image_url : text;
@@ -74,13 +26,12 @@ type Collection = record {
   blockchain : Blockchain;
   listed_count : nat32;
   total_volume : nat64;
+  chain_data : ChainData;
   total_supply : nat64;
   symbol : text;
   royalty_bps : nat16;
-  status : CollectionStatus;
-  chain_data : ChainData;
 };
-
+type CollectionStatus = variant { Minting; Paused; Active; Draft; Completed };
 type CreateCollectionArgs = record {
   image_url : text;
   metadata : vec record { text; text };
@@ -92,22 +43,6 @@ type CreateCollectionArgs = record {
   symbol : text;
   royalty_bps : nat16;
 };
-
-type UpdateCollectionStatusArgs = record {
-  collection_id : text;
-  status : CollectionStatus;
-};
-
-type UpdateSolanaStageArgs = record {
-  collection_id : text;
-  stage : SolanaDeploymentStage;
-  candy_machine_address : opt text;
-  collection_mint : opt text;
-  arweave_manifest_url : opt text;
-  files_uploaded : opt bool;
-  metadata_created : opt bool;
-};
-
 type CreateListingArgs = record {
   nft_id : text;
   nft_metadata : NftMetadata;
@@ -117,7 +52,22 @@ type CreateListingArgs = record {
   price : nat64;
   expires_at : opt nat64;
 };
-
+type EthereumCollectionData = record {
+  chain_id : nat64;
+  deployment_stage : EthereumDeploymentStage;
+  contract_address : opt text;
+};
+type EthereumDeploymentStage = variant { ContractDeploying; Deployed };
+type ICPCollectionData = record {
+  canister_id : opt principal;
+  deployment_stage : ICPDeploymentStage;
+};
+type ICPDeploymentStage = variant {
+  CanisterDeploying;
+  CanisterCreating;
+  Deployed;
+};
+type InitArgs = record { admin : principal };
 type Listing = record {
   id : text;
   nft_id : text;
@@ -134,28 +84,49 @@ type Listing = record {
   expires_at : opt nat64;
   listed_at : nat64;
 };
-
 type ListingStatus = variant { Sold; Active; Cancelled; Expired };
-
 type NftAttribute = record { trait_type : text; value : text };
-
 type NftMetadata = record {
   image_url : text;
   name : text;
   attributes : vec NftAttribute;
 };
-
+type Result = variant { Ok; Err : text };
+type Result_1 = variant { Ok : text; Err : text };
+type SolanaCollectionData = record {
+  files_uploaded : bool;
+  metadata_created : bool;
+  arweave_manifest_url : opt text;
+  collection_mint : opt text;
+  candy_machine_address : opt text;
+  deployment_stage : SolanaDeploymentStage;
+};
+type SolanaDeploymentStage = variant {
+  CandyMachineDeploying;
+  MetadataCreated;
+  FilesUploaded;
+  Deployed;
+  FilesUploading;
+  MetadataCreating;
+};
+type UpdateCollectionStatusArgs = record {
+  status : CollectionStatus;
+  collection_id : text;
+};
 type UpdateListingArgs = record {
   status : opt ListingStatus;
   listing_id : text;
   price : opt nat64;
 };
-
-type InitArgs = record { admin : principal };
-
-type Result = variant { Ok; Err : text };
-type Result_1 = variant { Ok : text; Err : text };
-
+type UpdateSolanaStageArgs = record {
+  files_uploaded : opt bool;
+  metadata_created : opt bool;
+  arweave_manifest_url : opt text;
+  collection_id : text;
+  collection_mint : opt text;
+  stage : SolanaDeploymentStage;
+  candy_machine_address : opt text;
+};
 service : (InitArgs) -> {
   cancel_listing : (text, text) -> (Result);
   create_collection : (CreateCollectionArgs) -> (Result_1);
@@ -163,13 +134,17 @@ service : (InitArgs) -> {
   get_all_collections : (nat32, nat32) -> (vec Collection) query;
   get_collection : (text) -> (opt Collection) query;
   get_collection_listing_count : (text) -> (nat32) query;
-  get_collection_listings : (text, nat32, nat32, opt ListingStatus) -> (vec Listing) query;
-  get_collections_by_blockchain : (Blockchain, nat32, nat32) -> (vec Collection) query;
+  get_collection_listings : (text, nat32, nat32, opt ListingStatus) -> (
+      vec Listing,
+    ) query;
+  get_collections_by_blockchain : (Blockchain, nat32, nat32) -> (
+      vec Collection,
+    ) query;
   get_listing : (text, text) -> (opt Listing) query;
-  get_user_listings : (nat32, nat32) -> (vec Listing) query;
-  get_user_collections : (nat32, nat32) -> (vec Collection) query;
   get_my_draft_collections : () -> (vec Collection) query;
-  update_listing : (UpdateListingArgs, text) -> (Result);
+  get_user_collections : (nat32, nat32) -> (vec Collection) query;
+  get_user_listings : (nat32, nat32) -> (vec Listing) query;
   update_collection_status : (UpdateCollectionStatusArgs) -> (Result);
+  update_listing : (UpdateListingArgs, text) -> (Result);
   update_solana_stage : (UpdateSolanaStageArgs) -> (Result);
 }

@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef } from 'react';
 import { ActorSubclass } from '@dfinity/agent';
-import { _SERVICE as BACKEND_SERVICE, User } from '../idls/users/users.did';
-import { _SERVICE as IDENTITY_CERTIFIER_SERVICE } from '../idls/identity_certifier/identity_certifier.did';
+import { _SERVICE as BACKEND_SERVICE, User } from '../declarations/users/users.did';
+import { _SERVICE as IDENTITY_CERTIFIER_SERVICE } from '../declarations/identity_certifier/identity_certifier.did';
 import { apiInitAuth, apiMe, apiVerifyIdentity, apiLogout } from '@/services/AuthService';
 import { SessionData } from '../providers/useSessionData';
 

@@ -2,6 +2,7 @@ import { SessionData } from "@/providers/useSessionData"
 import { Actor, ActorSubclass } from "@dfinity/agent"
 import { createSlice, createAsyncThunk, type PayloadAction } from "@reduxjs/toolkit"
 import { WalletType } from "@/providers/types"
+import { BACKEND_SERVICE } from "@/constants/canisters-config"
 
 interface CompleteRegistrationParams {
   sessionData: SessionData | null
@@ -13,7 +14,6 @@ interface CompleteRegistrationParams {
   interests: string[];
   agreedToTerms: boolean;
 }
-import { _SERVICE as BACKEND_SERVICE } from "@/idls/users/users.did"
 
 export interface RegistrationState {
   currentStep: number

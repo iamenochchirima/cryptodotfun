@@ -1,3 +1,4 @@
+use canister_uuid::get_uuid;
 use ic_stable_structures::StableBTreeMap;
 use std::cell::RefCell;
 use crate::types::{Listing, CreateListingArgs, ListingStatus, UpdateListingArgs};
@@ -9,13 +10,12 @@ thread_local! {
         RefCell::new(StableBTreeMap::init(get_memory(LISTINGS_MEMORY_ID)));
 }
 
-// Composite key format: "collection_id:listing_id"
 fn make_listing_key(collection_id: &str, listing_id: &str) -> String {
     format!("{}:{}", collection_id, listing_id)
 }
 
-pub fn add_listing(args: CreateListingArgs, seller: Principal, blockchain: crate::types::Blockchain) -> Result<String, String> {
-    let listing_id = generate_listing_id();
+pub async fn add_listing(args: CreateListingArgs, seller: Principal, blockchain: crate::types::Blockchain) -> Result<String, String> {
+    let listing_id = get_uuid().await;
     let key = make_listing_key(&args.collection_id, &listing_id);
 
     let listing = Listing {
@@ -39,7 +39,6 @@ pub fn add_listing(args: CreateListingArgs, seller: Principal, blockchain: crate
         l.borrow_mut().insert(key, listing);
     });
 
-    // Update collection listed count
     super::collections::update_collection_stats(&args.collection_id, None, None, None, None).ok();
 
     Ok(listing_id)
@@ -126,15 +125,4 @@ pub fn get_collection_listing_count(collection_id: &str) -> u32 {
             .take_while(|entry| entry.key().starts_with(&prefix))
             .count() as u32
     })
-}
-
-fn generate_listing_id() -> String {
-    use std::collections::hash_map::DefaultHasher;
-    use std::hash::{Hash, Hasher};
-
-    let mut hasher = DefaultHasher::new();
-    ic_cdk::api::time().hash(&mut hasher);
-    ic_cdk::caller().hash(&mut hasher);
-
-    format!("listing_{:x}", hasher.finish())
 }

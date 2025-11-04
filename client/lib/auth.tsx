@@ -20,7 +20,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
 
   useEffect(() => {
-    // Mock authentication check. Replace with actual authentication logic.
     const storedAuth = localStorage.getItem("isAuthenticated")
     if (storedAuth === "true") {
       setIsAuthenticated(true)

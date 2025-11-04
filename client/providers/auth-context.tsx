@@ -1,12 +1,6 @@
 "use client";
 import React, { useState, useEffect, createContext, useContext, ReactNode } from "react";
 import { Actor, ActorSubclass, HttpAgent } from "@dfinity/agent";
-import {
-  _SERVICE as BACKEND_SERVICE,
-  User,
-} from "../idls/users/users.did";
-import { _SERVICE as IDENTITY_CERTIFIER_SERVICE } from "../idls/identity_certifier/identity_certifier.did";
-
 import { SessionData, useSessionData } from "./useSessionData";
 import { WalletType } from "./types";
 import { AuthClient } from "@dfinity/auth-client";
@@ -18,9 +12,10 @@ import { useSiwbIdentity } from 'ic-use-siwb-identity';
 import { useAccount, useDisconnect } from "wagmi";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { host, network } from "@/constants/urls";
-import { identityCertifierCanisterId, usersCanisterId, usersIDL, identityCertifierIDL } from "@/constants/canisters-config";
+import { identityCertifierCanisterId, usersCanisterId, usersIDL, identityCertifierIDL, BACKEND_SERVICE, IDENTITY_CERTIFIER_SERVICE } from "@/constants/canisters-config";
 import { apiLogout } from "@/services/AuthService";
 import { useServerAuth } from "../hooks/useServerAuth";
+import { User } from "../../canisters/src/declarations/users/users.did";
 
 interface AuthContextType {
   login: (walletType: WalletType) => Promise<void>;
@@ -502,7 +497,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   );
 };
 
-// Hook to use the auth context
 export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
   if (!context) {

@@ -91,6 +91,5 @@ service : (InitArgs) -> {
   query_collections : (CollectionQueryArgs) -> (PaginatedCollections) query;
   // Update collection metadata (only for Draft status)
   update_collection : (UpdateCollectionArgs) -> (Result_1);
-  // Update collection deployment status (called by frontend after uploading/deploying)
   update_collection_status : (UpdateCollectionStatusArgs) -> (Result_1);
 }

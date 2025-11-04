@@ -1,5 +1,5 @@
 use candid::Principal;
-use ic_cdk::query;
+use ic_cdk::{api::msg_caller, query};
 
 use types::solana::{
     SolanaCollection, PaginatedCollections, SolanaMarketplaceStats,
@@ -17,7 +17,7 @@ pub fn get_collection_by_id(collection_id: String) -> Result<SolanaCollection, S
 
 #[query]
 pub fn get_user_collections(owner: Option<Principal>) -> Vec<SolanaCollection> {
-    let owner_principal = owner.unwrap_or_else(|| ic_cdk::caller());
+    let owner_principal = owner.unwrap_or_else(|| msg_caller());
 
     let collection_ids = get_collections_by_owner(&owner_principal);
 

@@ -1,8 +1,14 @@
-export { idlFactory as icSiwsIDL } from "../idls/ic_siws_provider/ic_siws_provider.did.js";
-export { idlFactory as icSiweIDL } from "../idls/ic_siwe_provider/ic_siwe_provider.did.js";
-export { idlFactory as icSiwbIDL } from "../idls/ic_siwb_provider/ic_siwb_provider.did.js";
-export { idlFactory as usersIDL } from "../idls/users/users.did.js";
-export { idlFactory as identityCertifierIDL } from "../idls/identity_certifier/identity_certifier.did.js";
+export type { _SERVICE as BACKEND_SERVICE } from "../declarations/users/users.did";
+export type { _SERVICE as IDENTITY_CERTIFIER_SERVICE } from "../declarations/identity_certifier/identity_certifier.did";
+export  type { _SERVICE as MARKETPLACE_SERVICE } from "../declarations/marketplace/marketplace.did";
+
+export { idlFactory as icSiwsIDL } from "../declarations/ic_siws_provider/ic_siws_provider.did.js";
+export { idlFactory as icSiweIDL } from "../declarations/ic_siwe_provider/ic_siwe_provider.did.js";
+export { idlFactory as icSiwbIDL } from "../declarations/ic_siwb_provider/ic_siwb_provider.did.js";
+export { idlFactory as usersIDL } from "../declarations/users/users.did.js";
+export { idlFactory as marketplaceIDL } from "../declarations/marketplace/marketplace.did.js";
+
+export { idlFactory as identityCertifierIDL } from "../declarations/identity_certifier/identity_certifier.did.js";
 
 const network = process.env.NEXT_PUBLIC_ENVIRONMENT || "local";
 
@@ -16,41 +22,44 @@ let prodConfig: CanisterConfigType = {};
 let localConfig: CanisterConfigType = {};
 
 try {
-  prodConfig = require('../../canisters/canister_ids.json');
+  prodConfig = require("../../canisters/canister_ids.json");
 } catch (error) {
-  console.warn('Production canister config not found, using fallback');
+  console.warn("Production canister config not found, using fallback");
 }
 
 try {
   if (network === "local") {
-    localConfig = require('../../canisters/.dfx/local/canister_ids.json');
+    localConfig = require("../../canisters/.dfx/local/canister_ids.json");
   }
 } catch (error) {
-  console.warn('Local canister config not found, using fallback');
+  console.warn("Local canister config not found, using fallback");
 }
 
 export function getCanisterId(key: string): string {
   if (network === "ic") {
     const config: CanisterConfigType = prodConfig;
     if (config[key]) {
-      return config[key]['ic'];
+      return config[key]["ic"];
     } else {
-      console.error(`Canister ID for key "${key}" not found in production config.`);
+      console.error(
+        `Canister ID for key "${key}" not found in production config.`
+      );
       return "";
     }
   } else {
     const config: CanisterConfigType = localConfig;
     if (config[key]) {
-      return config[key]['local'];
+      return config[key]["local"];
     } else {
-      console.error(`Canister ID for key "${key}" not found in local configuration.`);
+      console.error(
+        `Canister ID for key "${key}" not found in local configuration.`
+      );
       return "";
     }
   }
 }
 
 type Env = "ic" | "local";
-
 
 interface CanisterConfig {
   usersCanisterId: string;
@@ -59,29 +68,31 @@ interface CanisterConfig {
   icSiwbProviderCanisterId: string;
   identityCertifierCanisterId: string;
   internetIdentityCanisterId: string;
-
+  marketplaceCanisterId: string;
 }
 
 const productionCanisters: CanisterConfig = {
-  usersCanisterId: getCanisterId('users'),
-  icSiweProviderCanisterId: getCanisterId('ic_siwe_provider'),
-  icSiwsProviderCanisterId: getCanisterId('ic_siws_provider'),
-  icSiwbProviderCanisterId: getCanisterId('ic_siwb_provider'),
-  identityCertifierCanisterId: getCanisterId('identity_certifier'),
-  internetIdentityCanisterId: getCanisterId('internet_identity'),
+  usersCanisterId: getCanisterId("users"),
+  icSiweProviderCanisterId: getCanisterId("ic_siwe_provider"),
+  icSiwsProviderCanisterId: getCanisterId("ic_siws_provider"),
+  icSiwbProviderCanisterId: getCanisterId("ic_siwb_provider"),
+  identityCertifierCanisterId: getCanisterId("identity_certifier"),
+  internetIdentityCanisterId: getCanisterId("internet_identity"),
+  marketplaceCanisterId: getCanisterId("marketplace"),
 };
 
 const localCanisters: CanisterConfig = {
-  usersCanisterId: getCanisterId('users'),
-  icSiweProviderCanisterId: getCanisterId('ic_siwe_provider'),
-  icSiwsProviderCanisterId: getCanisterId('ic_siws_provider'),
-  icSiwbProviderCanisterId: getCanisterId('ic_siwb_provider'),
-  identityCertifierCanisterId: getCanisterId('identity_certifier'),
-  internetIdentityCanisterId: getCanisterId('internet_identity'),
+  usersCanisterId: getCanisterId("users"),
+  icSiweProviderCanisterId: getCanisterId("ic_siwe_provider"),
+  icSiwsProviderCanisterId: getCanisterId("ic_siws_provider"),
+  icSiwbProviderCanisterId: getCanisterId("ic_siwb_provider"),
+  identityCertifierCanisterId: getCanisterId("identity_certifier"),
+  internetIdentityCanisterId: getCanisterId("internet_identity"),
+  marketplaceCanisterId: getCanisterId("marketplace"),
 };
 
 const canisterConfigs: Record<Env, CanisterConfig> = {
-  ic:  productionCanisters,
+  ic: productionCanisters,
   local: localCanisters,
 };
 
@@ -92,4 +103,5 @@ export const {
   icSiwbProviderCanisterId,
   internetIdentityCanisterId,
   identityCertifierCanisterId,
+  marketplaceCanisterId,
 } = canisterConfigs[network as Env];

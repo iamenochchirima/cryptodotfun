@@ -34,7 +34,6 @@ import AuthGuard from "@/components/auth-guard"
 import { useAuth } from "@/providers/auth-context"
 import { WalletType } from "@/providers/types"
 
-// Mock activity data
 const recentActivity = [
   {
     id: 1,

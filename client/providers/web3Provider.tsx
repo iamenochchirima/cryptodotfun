@@ -10,7 +10,7 @@ import { useState } from 'react'
 import { AuthProvider } from './auth-context'
 import {
   _SERVICE as siwbService,
-} from "../idls/ic_siwb_provider/ic_siwb_provider.did";
+} from "../declarations/ic_siwb_provider/ic_siwb_provider.did";
 import { SiwbIdentityProvider } from 'ic-use-siwb-identity'
 
 import { host } from '@/constants/urls'

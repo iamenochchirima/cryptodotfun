@@ -1,4 +1,5 @@
-use ic_cdk_macros::query;
+use ic_cdk::api::msg_caller;
+use ic_cdk::query;
 use crate::types::*;
 use crate::state;
 
@@ -34,7 +35,7 @@ pub fn get_collection_listings(
 
 #[query]
 pub fn get_user_listings(page: u32, limit: u32) -> Vec<Listing> {
-    let caller = ic_cdk::caller();
+    let caller = msg_caller();
     state::get_user_listings(&caller, page, limit)
 }
 
@@ -45,12 +46,12 @@ pub fn get_collection_listing_count(collection_id: String) -> u32 {
 
 #[query]
 pub fn get_user_collections(page: u32, limit: u32) -> Vec<Collection> {
-    let caller = ic_cdk::caller();
+    let caller = msg_caller();
     state::get_user_collections(&caller, page, limit)
 }
 
 #[query]
 pub fn get_my_draft_collections() -> Vec<Collection> {
-    let caller = ic_cdk::caller();
+    let caller = msg_caller();
     state::get_draft_collections(&caller)
 }

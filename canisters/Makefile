@@ -94,7 +94,12 @@ deploy-backend:
 	dfx generate treasury
 	dfx generate marketplace
 
-deploy-all: create-canisters deploy-provider deploy-backend  deploy-frontend
+generate:
+	dfx generate
+	mkdir -p ../client/declarations
+	rsync -av --delete src/declarations/ ../client/declarations/
+
+deploy-all: create-canisters deploy-provider deploy-backend deploy-frontend generate
 
 run-frontend:
 	pnpm install
@@ -182,40 +187,6 @@ reinstall-providers-live:
 		  runtime_features = null; \
 	    } \
 	)" --network ic
-
-# 	dfx canister install ic_siwe_provider --mode reinstall --argument "( \
-# 	    record { \
-# 	        domain = \"cryptodotfun.com\"; \
-# 	        uri = \"https://cryptodotfun.com\"; \
-# 	        salt = \"salt\"; \
-# 	        chain_id = opt 1; \
-# 	        scheme = opt \"https\"; \
-# 	        statement = opt \"Login to the CryptoDotFun\"; \
-# 	        sign_in_expires_in = opt 300000000000; /* 5 minutes */ \
-# 	        session_expires_in = opt 604800000000000; /* 1 week */ \
-# 	        targets = opt vec { \
-# 	            \"$$(dfx canister id ic_siwe_provider --network ic)\"; \
-# 				\"$$(dfx canister id users --network ic)\"; \
-# 	        }; \
-# 	    } \
-# 	)" --network ic
-
-# 	dfx canister install ic_siwb_provider --mode reinstall --argument "( \
-# 		record { \
-# 			domain = \"cryptodotfun.com\"; \
-# 			uri = \"https://cryptodotfun.com\"; \
-# 			salt = \"123456\"; \
-# 			network = opt \"mainnet\"; \
-# 			scheme = opt \"https\"; \
-# 			statement = opt \"Login to the CryptoDotFun\"; \
-# 			sign_in_expires_in = opt 1500000000000; \
-# 			session_expires_in = opt 604800000000000; \
-# 			targets = opt vec { \	
-# 				\"$$(dfx canister id ic_siwb_provider --network ic)\"; \
-# 				\"$$(dfx canister id users --network ic)\"; \
-# 			}; \
-# 		} \
-# 	)" --network ic
 
 
 reinstall-all-live: reinstall-providers-live 

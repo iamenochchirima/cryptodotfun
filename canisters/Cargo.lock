@@ -1140,6 +1140,7 @@ name = "marketplace"
 version = "0.1.0"
 dependencies = [
  "candid",
+ "canister_uuid",
  "ic-cdk",
  "ic-cdk-macros",
  "ic-stable-structures 0.7.2",

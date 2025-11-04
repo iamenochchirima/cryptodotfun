@@ -1,6 +1,5 @@
-use ic_cdk::api::time;
+use ic_cdk::api::{msg_caller, time};
 use ic_cdk_macros::update;
-use ic_cdk::caller;
 use canister_uuid::uuid::get_uuid;
 
 use types::solana::{
@@ -15,7 +14,7 @@ use crate::state::{
 
 #[update]
 pub async fn create_collection(args: CreateCollectionArgs) -> Result<CreateCollectionResponse, String> {
-    let owner = caller();
+    let owner = msg_caller();
 
     if args.name.is_empty() {
         return Err("Collection name cannot be empty".to_string());
@@ -72,10 +71,9 @@ pub async fn create_collection(args: CreateCollectionArgs) -> Result<CreateColle
     })
 }
 
-/// Update collection deployment status (called by frontend after uploading/deploying)
 #[update]
 pub fn update_collection_status(args: UpdateCollectionStatusArgs) -> Result<(), String> {
-    let caller_principal = caller();
+    let caller_principal = msg_caller();
 
     // Get existing collection
     let mut collection = get_collection(&args.collection_id)
@@ -113,7 +111,7 @@ pub fn update_collection_status(args: UpdateCollectionStatusArgs) -> Result<(), 
 /// Update collection metadata (only for Draft status)
 #[update]
 pub fn update_collection(args: UpdateCollectionArgs) -> Result<(), String> {
-    let caller_principal = caller();
+    let caller_principal = msg_caller();
 
     // Get existing collection
     let mut collection = get_collection(&args.collection_id)
@@ -151,7 +149,7 @@ pub fn update_collection(args: UpdateCollectionArgs) -> Result<(), String> {
 /// Delete a collection (only if in Draft status)
 #[update]
 pub fn delete_collection(collection_id: String) -> Result<(), String> {
-    let caller_principal = caller();
+    let caller_principal = msg_caller();
 
     // Get existing collection
     let collection = get_collection(&collection_id)

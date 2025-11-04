@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, use } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -15,6 +15,8 @@ import { PreviewFilesModal } from "@/components/solana/PreviewFilesModal"
 import { saveDraft, loadDraft } from "@/lib/storage/draftStorage"
 import { useDebounce } from "@/hooks/useDebounce"
 import { PaymentModal } from "@/components/nft/PaymentModal"
+import { useAuth } from "@/providers/auth-context"
+import { getMarketplaceActor } from "@/providers/actors/marketplace"
 
 interface CollectionFormData {
   name: string
@@ -29,6 +31,7 @@ interface CollectionFormData {
 type SaveStatus = "saving" | "saved" | "idle"
 
 export default function CreateSolanaCollectionPage() {
+    const { identity} = useAuth()
   const draftId = "solana-draft"
   const [currentStep, setCurrentStep] = useState(1)
   const [formData, setFormData] = useState<CollectionFormData>({
@@ -99,6 +102,19 @@ export default function CreateSolanaCollectionPage() {
       loadSavedDraft()
     }
   }, [])
+
+  useEffect(() => {
+    if (identity) {
+      queryMarketplace()
+    }
+  }, [identity])
+
+  const queryMarketplace = async () => {
+console.log("Getting info")
+    const actor = await  getMarketplaceActor(identity)
+    const res = await actor.get_user_collections(0, 0)
+    console.log("Market res :", res)
+  }
 
   const formatTime = useCallback((timestamp: number) => {
     const date = new Date(timestamp)

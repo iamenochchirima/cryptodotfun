@@ -1,11 +1,11 @@
-use ic_cdk::query;
+use ic_cdk::{api::msg_caller, query};
 use types::user::User;
 use crate::USERS;
 
 
 #[query]
 pub fn get_user() -> Result<User, String> {
-    let caller = ic_cdk::caller();
+    let caller = msg_caller();
     let user = USERS.with(|s| s.borrow().get(&caller));
     match user {
         Some(record) => Ok(record.clone()),
