@@ -10,18 +10,15 @@ deploy-provider:
           chain_id = opt \"mainnet\"; \
 	        scheme = opt \"http\"; \
 	        statement = opt \"Login to CryptoDotFun\"; \
-	        sign_in_expires_in = opt 300000000000; /* 5 minutes */ \
-	        session_expires_in = opt 604800000000000; /* 1 week */ \
-	        targets = opt vec { \
-	            \"$$(dfx canister id ic_siws_provider)\"; \
-	            \"$$(dfx canister id users)\"; \
-				\"$$(dfx canister id identity_certifier)\"; \
-				\"$$(dfx canister id marketplace)\"; \
-	        }; \
+	        sign_in_expires_in = opt 300000000000; \
+	        session_expires_in = opt 604800000000000; \
+	        targets = null; \
           runtime_features = null; \
 	    } \
 	)"
 	dfx generate ic_siws_provider
+	mkdir -p ../client/declarations
+	rsync -av src/declarations/ic_siws_provider/ ../client/declarations/ic_siws_provider/
 	dfx deploy ic_siwe_provider --argument "( \
 	    record { \
 	        domain = \"127.0.0.1\"; \
@@ -30,17 +27,14 @@ deploy-provider:
 	        chain_id = opt 1; \
 	        scheme = opt \"http\"; \
 	        statement = opt \"Login to CryptoDotFun\"; \
-	        sign_in_expires_in = opt 300000000000; /* 5 minutes */ \
-	        session_expires_in = opt 604800000000000; /* 1 week */ \
-	        targets = opt vec { \
-	            \"$$(dfx canister id ic_siwe_provider)\"; \
-	            \"$$(dfx canister id users)\"; \
-				\"$$(dfx canister id identity_certifier)\"; \
-				\"$$(dfx canister id marketplace)\"; \
-	        }; \
+	        sign_in_expires_in = opt 300000000000; \
+	        session_expires_in = opt 604800000000000; \
+	        targets = null; \
 	    } \
 	)"
 	dfx generate ic_siwe_provider
+	mkdir -p ../client/declarations
+	rsync -av src/declarations/ic_siwe_provider/ ../client/declarations/ic_siwe_provider/
 	dfx deploy ic_siwb_provider --argument "( \
 		record { \
 			domain = \"127.0.0.1\"; \
@@ -51,15 +45,12 @@ deploy-provider:
 			statement = opt \"Login to the CryptoDotFun\"; \
 			sign_in_expires_in = opt 1500000000000; \
 			session_expires_in = opt 604800000000000; \
-			targets = opt vec { \
-				\"$$(dfx canister id ic_siwb_provider)\"; \
-				\"$$(dfx canister id users)\"; \
-				\"$$(dfx canister id identity_certifier)\"; \
-				\"$$(dfx canister id marketplace)\"; \
-			}; \
+			targets = null; \
 		} \
 	)"
 	dfx generate ic_siwb_provider
+	mkdir -p ../client/declarations
+	rsync -av src/declarations/ic_siwb_provider/ ../client/declarations/ic_siwb_provider/
 
 upgrade-provider:
 	dfx canister install ic_siws_provider --mode upgrade --upgrade-unchanged --argument "( \
@@ -72,12 +63,7 @@ upgrade-provider:
 	        statement = opt \"Login to the CryptoDotFun\"; \
 	        sign_in_expires_in = opt 300000000000; /* 5 minutes */ \
 	        session_expires_in = opt 604800000000000; /* 1 week */ \
-	        targets = opt vec { \
-	            \"$$(dfx canister id ic_siws_provider)\"; \
-				\"$$(dfx canister id users)\"; \
-				\"$$(dfx canister id identity_certifier)\"; \
-				\"$$(dfx canister id marketplace)\"; \
-	        }; \
+	        targets = null; \
           runtime_features = null; \
 	    } \
 	)"
@@ -89,12 +75,8 @@ deploy-frontend:
 deploy-backend:
 	dfx deploy users
 	dfx deploy identity_certifier --argument '(principal "o4jpg-z2hcz-bf2oe-zziee-bsw4t-jgecg-boagp-segn6-pdznr-u6bdc-zae")'
-	dfx deploy icp_market --yes --argument '(record { admin = principal "o4jpg-z2hcz-bf2oe-zziee-bsw4t-jgecg-boagp-segn6-pdznr-u6bdc-zae"; collection_creation_fee = 0; marketplace_fee_percentage = 250 })'
-	dfx deploy sol_market --yes --argument '(record { admin = principal "o4jpg-z2hcz-bf2oe-zziee-bsw4t-jgecg-boagp-segn6-pdznr-u6bdc-zae" })'
 	dfx deploy treasury
 	dfx deploy marketplace --yes --argument '(record { admin = principal "o4jpg-z2hcz-bf2oe-zziee-bsw4t-jgecg-boagp-segn6-pdznr-u6bdc-zae" })'
-	dfx generate icp_market
-	dfx generate sol_market
 	dfx generate users
 	dfx generate treasury
 	dfx generate marketplace
@@ -121,18 +103,6 @@ deploy-treasury:
 	dfx generate treasury
 	mkdir -p ../client/declarations
 	rsync -av src/declarations/treasury/ ../client/declarations/treasury/
-
-deploy-icp-market:
-	dfx deploy icp_market --yes --argument '(record { admin = principal "o4jpg-z2hcz-bf2oe-zziee-bsw4t-jgecg-boagp-segn6-pdznr-u6bdc-zae"; collection_creation_fee = 0; marketplace_fee_percentage = 250 })'
-	dfx generate icp_market
-	mkdir -p ../client/declarations
-	rsync -av src/declarations/icp_market/ ../client/declarations/icp_market/
-
-deploy-sol-market:
-	dfx deploy sol_market --yes --argument '(record { admin = principal "o4jpg-z2hcz-bf2oe-zziee-bsw4t-jgecg-boagp-segn6-pdznr-u6bdc-zae" })'
-	dfx generate sol_market
-	mkdir -p ../client/declarations
-	rsync -av src/declarations/sol_market/ ../client/declarations/sol_market/
 
 deploy-identity-certifier:
 	dfx deploy identity_certifier --argument '(principal "o4jpg-z2hcz-bf2oe-zziee-bsw4t-jgecg-boagp-segn6-pdznr-u6bdc-zae")'
@@ -164,12 +134,9 @@ deploy-providers-live:
 		  	chain_id = opt \"mainnet\"; \
 	        scheme = opt \"https\"; \
 	        statement = opt \"Login to the CryptoDotFun\"; \
-	        sign_in_expires_in = opt 300000000000; /* 5 minutes */ \
-	        session_expires_in = opt 604800000000000; /* 1 week */ \
-	        targets = opt vec { \
-	            \"$$(dfx canister id ic_siws_provider --network ic)\"; \
-				\"$$(dfx canister id users --network ic)\"; \
-	        }; \
+	        sign_in_expires_in = opt 300000000000; \
+	        session_expires_in = opt 604800000000000; \
+	        targets = null; \
 		  runtime_features = null; \
 	    } \
 	)" --network ic
@@ -182,12 +149,9 @@ deploy-providers-live:
 	        chain_id = opt 1; \
 	        scheme = opt \"https\"; \
 	        statement = opt \"Login to the CryptoDotFun\"; \
-	        sign_in_expires_in = opt 300000000000; /* 5 minutes */ \
-	        session_expires_in = opt 604800000000000; /* 1 week */ \
-	        targets = opt vec { \
-	            \"$$(dfx canister id ic_siwe_provider --network ic)\"; \
-				\"$$(dfx canister id users --network ic)\"; \
-	        }; \
+	        sign_in_expires_in = opt 300000000000; \
+	        session_expires_in = opt 604800000000000; \
+	        targets = null; \
 	    } \
 	)" --network ic
 
@@ -201,10 +165,7 @@ deploy-providers-live:
 			statement = opt \"Login to the CryptoDotFun\"; \
 			sign_in_expires_in = opt 1500000000000; \
 			session_expires_in = opt 604800000000000; \
-			targets = opt vec { \
-				\"$$(dfx canister id ic_siwb_provider --network ic)\"; \
-				\"$$(dfx canister id users --network ic)\"; \
-			}; \
+			targets = null; \
 		} \
 	)" --network ic	
 	
@@ -219,12 +180,9 @@ reinstall-providers-live:
 		  	chain_id = opt \"mainnet\"; \
 	        scheme = opt \"https\"; \
 	        statement = opt \"Login to the CryptoDotFun\"; \
-	        sign_in_expires_in = opt 300000000000; /* 5 minutes */ \
-	        session_expires_in = opt 604800000000000; /* 1 week */ \
-	        targets = opt vec { \
-	            \"$$(dfx canister id ic_siws_provider --network ic)\"; \
-				\"$$(dfx canister id users --network ic)\"; \
-	        }; \
+	        sign_in_expires_in = opt 300000000000; \
+	        session_expires_in = opt 604800000000000; \
+	        targets = null; \
 		  runtime_features = null; \
 	    } \
 	)" --network ic
