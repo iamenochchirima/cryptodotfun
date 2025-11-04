@@ -17,6 +17,8 @@ import { useDebounce } from "@/hooks/useDebounce"
 import { PaymentModal } from "@/components/nft/PaymentModal"
 import { useAuth } from "@/providers/auth-context"
 import { getMarketplaceActor } from "@/providers/actors/marketplace"
+import { uploadToStorage, StorageProvider } from "@/lib/storage"
+import { useWallet } from "@solana/wallet-adapter-react"
 
 interface CollectionFormData {
   name: string
@@ -26,12 +28,21 @@ interface CollectionFormData {
   supply: string
   mintPrice: string
   royaltyBps: string
+  goLiveDate: string
+  maxPerWallet: string
+  whitelistEnabled: string
+  collectionId?: string
+  deploymentStage?: string
+  arweaveManifestUrl?: string
+  candyMachineAddress?: string
 }
 
 type SaveStatus = "saving" | "saved" | "idle"
 
 export default function CreateSolanaCollectionPage() {
-    const { identity, usersActor} = useAuth()
+  const { identity, usersActor } = useAuth()
+  const { wallet, publicKey, connected } = useWallet()
+
   const draftId = "solana-draft"
   const [currentStep, setCurrentStep] = useState(1)
   const [formData, setFormData] = useState<CollectionFormData>({
@@ -42,13 +53,19 @@ export default function CreateSolanaCollectionPage() {
     supply: "10000",
     mintPrice: "0.1",
     royaltyBps: "500",
+    goLiveDate: "",
+    maxPerWallet: "10",
+    whitelistEnabled: "false",
   })
   const [collectionImage, setCollectionImage] = useState<File | null>(null)
   const [nftAssets, setNftAssets] = useState<FileList | null>(null)
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle")
   const [lastSaved, setLastSaved] = useState<number | null>(null)
+  const [storageProvider, setStorageProvider] = useState<StorageProvider>("nft-storage")
 
   const [isLoading, setIsLoading] = useState(true)
+  const [isUploading, setIsUploading] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState("")
   const [showPaymentModal, setShowPaymentModal] = useState(false)
   const debouncedFormData = useDebounce(formData, 1000)
 
@@ -129,7 +146,16 @@ export default function CreateSolanaCollectionPage() {
     { id: 3, title: "Review", description: "Verify & deploy" },
   ]
 
-  const handleNext = () => {
+  const handleNext = async () => {
+    if (currentStep === 2) {
+      try {
+        await handleArweaveUpload()
+      } catch (error) {
+        console.error("Failed to upload to Arweave:", error)
+        return
+      }
+    }
+
     if (currentStep < 3) {
       setCurrentStep(currentStep + 1)
     }
@@ -165,17 +191,136 @@ export default function CreateSolanaCollectionPage() {
     setShowPaymentModal(true)
   }
 
+  const handleArweaveUpload = async () => {
+    if (!collectionImage || !nftAssets) {
+      console.error("Missing required data for upload")
+      return
+    }
+
+    try {
+      setIsUploading(true)
+      setUploadProgress("Initializing upload...")
+      console.log(`Using ${storageProvider} for upload...`)
+      console.log("Wallet object:", wallet)
+      console.log("Wallet adapter:", wallet?.adapter)
+      console.log("Connected:", connected)
+      console.log("PublicKey:", publicKey)
+
+      if (storageProvider === "arweave" && !connected) {
+        throw new Error("Please connect your Solana wallet first")
+      }
+
+      setUploadProgress("Uploading collection image and NFT assets...")
+      const result = await uploadToStorage(
+        storageProvider,
+        collectionImage,
+        nftAssets,
+        {
+          name: formData.name,
+          symbol: formData.symbol,
+          description: formData.description,
+          supply: parseInt(formData.supply),
+        },
+        storageProvider === "arweave" ? wallet?.adapter : undefined,
+        storageProvider === "nft-storage" ? process.env.NEXT_PUBLIC_NFT_STORAGE_API_KEY : undefined
+      )
+
+      const { collectionImageUrl, manifestUrl } = result
+      const actor = await getMarketplaceActor(identity)
+
+      setUploadProgress("Saving collection to canister...")
+      const createResult = await actor.create_collection({
+        blockchain: { Solana: null },
+        name: formData.name,
+        symbol: formData.symbol,
+        description: formData.description,
+        image_url: collectionImageUrl,
+        banner_url: [],
+        total_supply: BigInt(formData.supply),
+        royalty_bps: parseInt(formData.royaltyBps),
+        metadata: [
+          ["mint_price", formData.mintPrice],
+          ["go_live_date", formData.goLiveDate || ""],
+          ["max_per_wallet", formData.maxPerWallet],
+          ["whitelist_enabled", formData.whitelistEnabled],
+          ["arweave_manifest_url", manifestUrl]
+        ]
+      })
+
+      if ('Err' in createResult) {
+        throw new Error(createResult.Err)
+      }
+
+      const collectionId = createResult.Ok
+
+      setUploadProgress("Updating deployment stage...")
+      await actor.update_solana_stage({
+        collection_id: collectionId,
+        stage: { FilesUploaded: null },
+        arweave_manifest_url: [manifestUrl],
+        files_uploaded: [true],
+        metadata_created: [true],
+        candy_machine_address: [],
+        collection_mint: []
+      })
+
+      setFormData(prev => ({
+        ...prev,
+        collectionId,
+        arweaveManifestUrl: manifestUrl,
+        imageUrl: collectionImageUrl,
+        deploymentStage: "FilesUploaded"
+      }))
+
+      setUploadProgress("Upload complete!")
+      console.log("Collection created with Arweave data:", collectionId)
+      console.log("Manifest URL:", manifestUrl)
+    } catch (error) {
+      console.error("Arweave upload failed:", error)
+      throw error
+    } finally {
+      setIsUploading(false)
+      setUploadProgress("")
+    }
+  }
+
   const handlePaymentSuccess = async (signature: string) => {
     console.log("Payment successful:", signature)
     setShowPaymentModal(false)
-    // TODO: Call backend to upload to Arweave and generate config
+
+    try {
+      if (!formData.collectionId || !formData.arweaveManifestUrl) {
+        console.error("Missing collection ID or manifest URL")
+        return
+      }
+
+      const actor = await getMarketplaceActor(identity)
+
+      await actor.update_solana_stage({
+        collection_id: formData.collectionId,
+        stage: { CandyMachineDeploying: null },
+        arweave_manifest_url: [formData.arweaveManifestUrl],
+        files_uploaded: [true],
+        metadata_created: [true],
+        candy_machine_address: [],
+        collection_mint: []
+      })
+
+      setFormData(prev => ({
+        ...prev,
+        deploymentStage: "CandyMachineDeploying"
+      }))
+
+      console.log("Candy Machine deployment initiated")
+    } catch (error) {
+      console.error("Deployment failed:", error)
+    }
   }
 
   const progress = (currentStep / 3) * 100
 
   return (
     <div className="container mx-auto px-4 py-24">
-      {/* Save Status */}
       {(saveStatus === "saving" || saveStatus === "saved") && (
         <div className="fixed top-20 right-6 z-50 bg-background border rounded-lg shadow-lg px-4 py-2 flex items-center gap-2">
           {saveStatus === "saving" ? (
@@ -195,7 +340,6 @@ export default function CreateSolanaCollectionPage() {
         </div>
       )}
 
-      {/* Header */}
       <div className="mb-8">
         <Button variant="ghost" asChild className="mb-4">
           <Link href="/nft/marketplace">
@@ -398,6 +542,59 @@ export default function CreateSolanaCollectionPage() {
                     </p>
                   </div>
 
+                  <div className="border-t pt-6 mt-6">
+                    <h3 className="text-lg font-semibold mb-4">Candy Machine Settings</h3>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="goLiveDate">Go Live Date & Time</Label>
+                        <Input
+                          id="goLiveDate"
+                          type="datetime-local"
+                          value={formData.goLiveDate}
+                          onChange={(e) => handleInputChange("goLiveDate", e.target.value)}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          When minting will start
+                        </p>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="maxPerWallet">Max Per Wallet</Label>
+                        <Input
+                          id="maxPerWallet"
+                          type="number"
+                          min="1"
+                          max="100"
+                          placeholder="10"
+                          value={formData.maxPerWallet}
+                          onChange={(e) => handleInputChange("maxPerWallet", e.target.value)}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Limit per wallet address
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2 mt-4">
+                      <div className="flex items-center gap-2">
+                        <input
+                          id="whitelistEnabled"
+                          type="checkbox"
+                          checked={formData.whitelistEnabled === "true"}
+                          onChange={(e) => handleInputChange("whitelistEnabled", e.target.checked.toString())}
+                          className="h-4 w-4"
+                        />
+                        <Label htmlFor="whitelistEnabled" className="cursor-pointer">
+                          Enable Whitelist
+                        </Label>
+                      </div>
+                      <p className="text-xs text-muted-foreground ml-6">
+                        Only whitelisted wallets can mint
+                      </p>
+                    </div>
+                  </div>
+
                   <div className="bg-blue-50 dark:bg-blue-950/20 p-4 rounded-lg">
                     <div className="flex items-start gap-3">
                       <Info className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
@@ -415,9 +612,40 @@ export default function CreateSolanaCollectionPage() {
                 </div>
               )}
 
-              {/* Step 2: Assets */}
               {currentStep === 2 && (
                 <div className="space-y-6">
+                  <div className="space-y-4">
+                    <Label>Storage Provider</Label>
+                    <Select value={storageProvider} onValueChange={(value) => setStorageProvider(value as StorageProvider)}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="nft-storage">
+                          <div className="flex items-center justify-between w-full">
+                            <span>NFT.Storage (IPFS)</span>
+                            <Badge variant="secondary" className="ml-2 bg-green-100 text-green-900 dark:bg-green-900 dark:text-green-100">
+                              FREE
+                            </Badge>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="arweave">
+                          <div className="flex items-center justify-between w-full">
+                            <span>Arweave (Irys)</span>
+                            <Badge variant="secondary" className="ml-2">
+                              Permanent
+                            </Badge>
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">
+                      {storageProvider === "nft-storage"
+                        ? "Free IPFS storage via NFT.Storage"
+                        : "Permanent Arweave storage (~$0.01/MB)"}
+                    </p>
+                  </div>
+
                   <div className="space-y-4">
                     <Label>Collection Image</Label>
                     <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center">
@@ -532,19 +760,30 @@ export default function CreateSolanaCollectionPage() {
                       <Info className="h-5 w-5 text-purple-600 mt-0.5 flex-shrink-0" />
                       <div className="text-sm">
                         <div className="font-medium text-purple-900 dark:text-purple-100 mb-1">
-                          Arweave Storage
+                          {storageProvider === "arweave" ? "Arweave Storage" : "NFT.Storage"}
                         </div>
                         <div className="text-purple-700 dark:text-purple-200">
-                          All assets will be uploaded to Arweave for permanent,
-                          decentralized storage. Estimated cost: ~$5-8 for 1GB
+                          {storageProvider === "arweave"
+                            ? "All assets will be uploaded to Arweave for permanent, decentralized storage. Estimated cost: ~$5-8 for 1GB"
+                            : "Free IPFS storage backed by Filecoin. Files stored permanently on IPFS."}
                         </div>
                       </div>
                     </div>
                   </div>
+
+                  {isUploading && uploadProgress && (
+                    <div className="bg-blue-50 dark:bg-blue-950/20 p-4 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <Upload className="h-5 w-5 text-blue-600 animate-spin" />
+                        <div className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                          {uploadProgress}
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
-              {/* Step 3: Review */}
               {currentStep === 3 && (
                 <div className="space-y-6">
                   <div className="text-center py-8">
@@ -611,17 +850,30 @@ export default function CreateSolanaCollectionPage() {
             </CardContent>
           </Card>
 
-          {/* Navigation Buttons */}
           <div className="flex justify-between mt-6">
             <Button
               variant="outline"
               onClick={handlePrevious}
-              disabled={currentStep === 1}
+              disabled={currentStep === 1 || isUploading}
             >
               Previous
             </Button>
             <div className="flex gap-2">
-              {currentStep < 3 ? (
+              {currentStep === 2 ? (
+                <Button onClick={handleNext} disabled={isUploading}>
+                  {isUploading ? (
+                    <>
+                      <Upload className="mr-2 h-4 w-4 animate-spin" />
+                      Uploading...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="mr-2 h-4 w-4" />
+                      Upload
+                    </>
+                  )}
+                </Button>
+              ) : currentStep < 3 ? (
                 <Button onClick={handleNext}>Next</Button>
               ) : (
                 <Button
@@ -636,7 +888,6 @@ export default function CreateSolanaCollectionPage() {
           </div>
         </div>
 
-        {/* Preview Sidebar */}
         <div className="lg:col-span-1">
           <Card className="sticky top-24">
             <CardHeader>
@@ -701,7 +952,6 @@ export default function CreateSolanaCollectionPage() {
         </div>
       </div>
 
-      {/* Payment Modal */}
       <PaymentModal
         open={showPaymentModal}
         onClose={() => setShowPaymentModal(false)}
