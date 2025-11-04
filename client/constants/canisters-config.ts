@@ -1,4 +1,4 @@
-export type { _SERVICE as BACKEND_SERVICE } from "../declarations/users/users.did";
+export type { _SERVICE as USERS_SERVICE } from "../declarations/users/users.did";
 export type { _SERVICE as IDENTITY_CERTIFIER_SERVICE } from "../declarations/identity_certifier/identity_certifier.did";
 export  type { _SERVICE as MARKETPLACE_SERVICE } from "../declarations/marketplace/marketplace.did";
 

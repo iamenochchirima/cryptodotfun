@@ -1,5 +1,5 @@
 use candid::{candid_method, Principal};
-use ic_cdk::api::is_controller;
+use ic_cdk::api::{is_controller, msg_caller};
 use ic_cdk::update;
 
 use ic_siwb::login::{BtcSignature, LoginDetails, SignMessageType};
@@ -96,7 +96,7 @@ fn manage_principal_address_mappings(principal: &Blob<29>, address: &AddressScri
 
 #[inline]
 pub fn controller_guard() -> Result<(), String> {
-    match is_controller(&msg_caller()()) {
+    match is_controller(&msg_caller()) {
         true => Ok(()),
         false => {
             ic_cdk::api::trap("Only the controller can call this function");

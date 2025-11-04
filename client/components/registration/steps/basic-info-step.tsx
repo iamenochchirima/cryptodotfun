@@ -20,7 +20,7 @@ import { useDebounce } from "@/hooks/use-debounce"
 import { useAuth } from "@/providers/auth-context"
 
 export default function BasicInfoStep() {
-  const {backendActor} = useAuth()
+  const {usersActor} = useAuth()
   const dispatch = useAppDispatch()
   const { email, username, loading, usernameAvailable, emailAvailable } = useAppSelector((state) => state.registration)
 
@@ -43,21 +43,21 @@ export default function BasicInfoStep() {
       debouncedUsername && 
       debouncedUsername.length >= 3 && 
       /^[a-zA-Z0-9_]+$/.test(debouncedUsername) && 
-      backendActor
+      usersActor
     ) {
-      dispatch(checkUsernameAvailability({ username: debouncedUsername, backendActor }))
+      dispatch(checkUsernameAvailability({ username: debouncedUsername, usersActor }))
     }
-  }, [debouncedUsername, dispatch, backendActor])
+  }, [debouncedUsername, dispatch, usersActor])
 
   useEffect(() => {
     if (
       debouncedEmail && 
       validateEmail(debouncedEmail) && 
-      backendActor
+      usersActor
     ) {
-      dispatch(checkEmailAvailability({ email: debouncedEmail, backendActor }))
+      dispatch(checkEmailAvailability({ email: debouncedEmail, usersActor }))
     }
-  }, [debouncedEmail, dispatch, backendActor])
+  }, [debouncedEmail, dispatch, usersActor])
 
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newEmail = e.target.value

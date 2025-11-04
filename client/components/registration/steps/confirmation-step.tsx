@@ -32,7 +32,7 @@ const interestLabels: Record<string, string> = {
 }
 
 export default function ConfirmationStep() {
-  const { sessionData, backendActor } = useAuth()
+  const { sessionData, usersActor } = useAuth()
   const dispatch = useAppDispatch()
   const { email, username, referralSource, referralCode, interests, agreedToTerms, loading } =
     useAppSelector((state) => state.registration)
@@ -55,7 +55,7 @@ export default function ConfirmationStep() {
     dispatch(
       completeRegistration({
         sessionData,
-        backendActor,
+        usersActor,
         email,
         username,
         referralSource,

@@ -1,4 +1,4 @@
-use ic_cdk::query;
+use ic_cdk::{api::msg_caller, query};
 use serde_bytes::ByteBuf;
 
 use crate::SETTINGS;
@@ -21,7 +21,7 @@ fn get_caller_address(network: Option<String>) -> Result<String, String> {
         Ok(())
     })?;
 
-    let principal = msg_caller()();
+    let principal = msg_caller();
     get_address(
         ByteBuf::from(principal.as_slice().to_vec()),
         network.map_or_else(|| "bitcoin".to_string(), |n| n),

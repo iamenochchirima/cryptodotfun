@@ -2,11 +2,11 @@ import { SessionData } from "@/providers/useSessionData"
 import { Actor, ActorSubclass } from "@dfinity/agent"
 import { createSlice, createAsyncThunk, type PayloadAction } from "@reduxjs/toolkit"
 import { WalletType } from "@/providers/types"
-import { BACKEND_SERVICE } from "@/constants/canisters-config"
+import { USERS_SERVICE } from "@/constants/canisters-config"
 
 interface CompleteRegistrationParams {
   sessionData: SessionData | null
-  backendActor: ActorSubclass<BACKEND_SERVICE> | null;
+  usersActor: ActorSubclass<USERS_SERVICE> | null;
   email: string | null;
   username: string;
   referralSource: string;
@@ -49,15 +49,15 @@ const initialState: RegistrationState = {
 
 export const checkUsernameAvailability = createAsyncThunk(
   "registration/checkUsername", 
-  async ({ username, backendActor }: { username: string; backendActor: any }) => {
+  async ({ username, usersActor }: { username: string; usersActor: any }) => {
     
-    if (!backendActor) {
+    if (!usersActor) {
       console.error("Backend actor not available")
       return false
     }
 
     try {
-      const available = await backendActor.is_username_available(username)
+      const available = await usersActor.is_username_available(username)
       return available
     } catch (error) {
       console.error("Error checking username availability:", error)
@@ -68,15 +68,15 @@ export const checkUsernameAvailability = createAsyncThunk(
 
 export const checkEmailAvailability = createAsyncThunk(
   "registration/checkEmail", 
-  async ({ email, backendActor }: { email: string; backendActor: any }) => {
+  async ({ email, usersActor }: { email: string; usersActor: any }) => {
     
-    if (!backendActor) {
+    if (!usersActor) {
       console.error("Backend actor not available")
       return false
     }
 
     try {
-      const inUse = await backendActor.is_email_in_use(email)
+      const inUse = await usersActor.is_email_in_use(email)
       return !inUse // Return true if email is available (not in use)
     } catch (error) {
       console.error("Error checking email availability:", error)
@@ -91,7 +91,7 @@ export const completeRegistration = createAsyncThunk(
   async (params: CompleteRegistrationParams) => {
     console.log("Completing registration with params:", params)
     
-    if (!params.backendActor) {
+    if (!params.usersActor) {
       throw new Error("Backend actor not available")
     }
 
@@ -131,7 +131,7 @@ export const completeRegistration = createAsyncThunk(
       }
 
       // Call the backend canister to add the user
-      const userResult = await params.backendActor.add_user({
+      const userResult = await params.usersActor.add_user({
         username: params.username,
         email: params.email ? [params.email] : [],
         referral_source: params.referralSource ? [params.referralSource] : [], 

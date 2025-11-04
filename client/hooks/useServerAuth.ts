@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef } from 'react';
 import { ActorSubclass } from '@dfinity/agent';
-import { _SERVICE as BACKEND_SERVICE, User } from '../declarations/users/users.did';
+import { _SERVICE as USERS_SERVICE, User } from '../declarations/users/users.did';
 import { _SERVICE as IDENTITY_CERTIFIER_SERVICE } from '../declarations/identity_certifier/identity_certifier.did';
 import { apiInitAuth, apiMe, apiVerifyIdentity, apiLogout } from '@/services/AuthService';
 import { SessionData } from '../providers/useSessionData';
@@ -30,7 +30,7 @@ interface ApiVerifyResponse {
 
 interface UseServerAuthProps {
   identityCertifierActor: ActorSubclass<IDENTITY_CERTIFIER_SERVICE> | null;
-  backendActor: ActorSubclass<BACKEND_SERVICE> | null;
+  usersActor: ActorSubclass<USERS_SERVICE> | null;
   sessionData: SessionData | null;
   updateSessionData: (data: SessionData) => void;
 }
@@ -44,7 +44,7 @@ interface ServerAuthState {
 
 export const useServerAuth = ({
   identityCertifierActor,
-  backendActor,
+  usersActor,
   sessionData,
   updateSessionData
 }: UseServerAuthProps) => {
@@ -77,7 +77,7 @@ export const useServerAuth = ({
 
   // Check if user already has a valid server session
   const checkExistingSession = useCallback(async (): Promise<boolean> => {
-    if (!backendActor) return false;
+    if (!usersActor) return false;
 
     try {
       const meResponse = await apiMe() as ApiMeResponse;
@@ -87,7 +87,7 @@ export const useServerAuth = ({
         
         if (meResponse.principal === currentPrincipal) {
           // Get user data
-          const userData = await backendActor.get_user();
+          const userData = await usersActor.get_user();
           if ("Ok" in userData) {
             setUser(userData.Ok);
             
@@ -112,11 +112,11 @@ export const useServerAuth = ({
     }
     
     return false;
-  }, [backendActor, sessionData, updateSessionData]);
+  }, [usersActor, sessionData, updateSessionData]);
 
   // Perform server authentication flow
   const authenticateWithServer = useCallback(async (): Promise<boolean> => {
-    if (!identityCertifierActor || !backendActor || !sessionData) {
+    if (!identityCertifierActor || !usersActor || !sessionData) {
       setError('Required actors or session data not available');
       return false;
     }
@@ -189,7 +189,7 @@ export const useServerAuth = ({
 
       // Step 5: Get user data and update session
       console.log('Getting user data...');
-      const userData = await backendActor.get_user();
+      const userData = await usersActor.get_user();
       
       if ("Ok" in userData) {
         setUser(userData.Ok);
@@ -231,7 +231,7 @@ export const useServerAuth = ({
       authInProgress.current = false;
       setAuthenticating(false);
     }
-  }, [identityCertifierActor, backendActor, sessionData, updateSessionData, checkExistingSession]);
+  }, [identityCertifierActor, usersActor, sessionData, updateSessionData, checkExistingSession]);
 
   // Reset authentication state
   const resetAuth = useCallback(() => {

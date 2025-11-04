@@ -15,15 +15,15 @@ interface RegistrationModalProps {
 
 export default function RegistrationModal({ isOpen, onClose, onComplete }: RegistrationModalProps) {
   const dispatch = useAppDispatch()
-  const { logout, backendActor, setUser } = useAuth()
+  const { logout, usersActor, setUser } = useAuth()
   const { isCompleted } = useAppSelector((state) => state.registration)
 
 
   useEffect(() => {
-    if (isCompleted && backendActor) {
+    if (isCompleted && usersActor) {
       const getUser = async () => {
         try {
-          const user = await backendActor.get_user()
+          const user = await usersActor.get_user()
           if ("Ok" in user) {
             setUser(user.Ok)
             onClose()

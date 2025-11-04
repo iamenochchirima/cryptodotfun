@@ -31,7 +31,7 @@ interface CollectionFormData {
 type SaveStatus = "saving" | "saved" | "idle"
 
 export default function CreateSolanaCollectionPage() {
-    const { identity} = useAuth()
+    const { identity, usersActor} = useAuth()
   const draftId = "solana-draft"
   const [currentStep, setCurrentStep] = useState(1)
   const [formData, setFormData] = useState<CollectionFormData>({
@@ -104,13 +104,15 @@ export default function CreateSolanaCollectionPage() {
   }, [])
 
   useEffect(() => {
-    if (identity) {
+    if (identity && usersActor) {
       queryMarketplace()
     }
-  }, [identity])
+  }, [usersActor, identity])
 
   const queryMarketplace = async () => {
-console.log("Getting info")
+
+    const data = await usersActor?.get_users();
+    console.log("Backend users :", data)
     const actor = await  getMarketplaceActor(identity)
     const res = await actor.get_user_collections(0, 0)
     console.log("Market res :", res)

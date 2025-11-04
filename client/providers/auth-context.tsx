@@ -12,7 +12,7 @@ import { useSiwbIdentity } from 'ic-use-siwb-identity';
 import { useAccount, useDisconnect } from "wagmi";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { host, network } from "@/constants/urls";
-import { identityCertifierCanisterId, usersCanisterId, usersIDL, identityCertifierIDL, BACKEND_SERVICE, IDENTITY_CERTIFIER_SERVICE } from "@/constants/canisters-config";
+import { identityCertifierCanisterId, usersCanisterId, usersIDL, identityCertifierIDL, USERS_SERVICE, IDENTITY_CERTIFIER_SERVICE } from "@/constants/canisters-config";
 import { apiLogout } from "@/services/AuthService";
 import { useServerAuth } from "../hooks/useServerAuth";
 import { User } from "../../canisters/src/declarations/users/users.did";
@@ -27,7 +27,7 @@ interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   fetchingUser: boolean;
-  backendActor: ActorSubclass<BACKEND_SERVICE> | null;
+  usersActor: ActorSubclass<USERS_SERVICE> | null;
   identityCertifierActor: ActorSubclass<IDENTITY_CERTIFIER_SERVICE> | null;
   setUser: (user: User | null) => void;
   serverAuthError: string | null;
@@ -74,8 +74,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     useSessionData();
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [principalId, setPrincipalId] = useState<string | null>(null);
-  const [backendActor, setBackendActor] =
-    useState<ActorSubclass<BACKEND_SERVICE> | null>(null);
+  const [usersActor, setUsersActor] =
+    useState<ActorSubclass<USERS_SERVICE> | null>(null);
   const [identityCertifierActor, setIdentityCertifierActor] = useState<ActorSubclass<IDENTITY_CERTIFIER_SERVICE> | null>(null);
 
   const {
@@ -90,13 +90,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setUser
   } = useServerAuth({
     identityCertifierActor,
-    backendActor,
+    usersActor,
     sessionData,
     updateSessionData
   });
 
   useEffect(() => {
-    if (!isAuthenticated || !identityCertifierActor || !sessionData || !backendActor) {
+    if (!isAuthenticated || !identityCertifierActor || !sessionData || !usersActor) {
       return;
     }
 
@@ -111,7 +111,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, [
     isAuthenticated, 
     !!identityCertifierActor, 
-    !!backendActor, 
+    !!usersActor, 
     sessionData?.isBackendAuthenticated,
     isServerAuthenticating,
     isServerAuthenticated,
@@ -205,7 +205,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setIdentity(null);
     setPrincipalId(null);
     setIsAuthenticated(false);
-    setBackendActor(null);
+    setUsersActor(null);
     setUser(null);
     deleteSessionData();
   };
@@ -261,11 +261,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           });
         }
         setPrincipalId(identity.getPrincipal().toText());
-        const _backendActor = Actor.createActor<BACKEND_SERVICE>(usersIDL, {
+        const _backendActor = Actor.createActor<USERS_SERVICE>(usersIDL, {
           agent,
           canisterId: usersCanisterId,
         });
-        setBackendActor(_backendActor);
+        setUsersActor(_backendActor);
         const _identityCertifierActor = Actor.createActor<IDENTITY_CERTIFIER_SERVICE>(identityCertifierIDL, {
           agent,
           canisterId: identityCertifierCanisterId,
@@ -302,11 +302,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         });
       }
 
-      const _backendActor = Actor.createActor<BACKEND_SERVICE>(usersIDL, {
+      const _backendActor = Actor.createActor<USERS_SERVICE>(usersIDL, {
         agent,
         canisterId: usersCanisterId,
       });
-      setBackendActor(_backendActor);
+      setUsersActor(_backendActor);
       const _identityCertifierActor = Actor.createActor<IDENTITY_CERTIFIER_SERVICE>(identityCertifierIDL, {
         agent,
         canisterId: identityCertifierCanisterId,
@@ -337,11 +337,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         console.log("Error fetching root key: ", err);
       });
     }
-    const _backendActor = Actor.createActor<BACKEND_SERVICE>(usersIDL, {
+    const _backendActor = Actor.createActor<USERS_SERVICE>(usersIDL, {
       agent,
       canisterId: usersCanisterId,
     });
-    setBackendActor(_backendActor);
+    setUsersActor(_backendActor);
     const _identityCertifierActor = Actor.createActor<IDENTITY_CERTIFIER_SERVICE>(identityCertifierIDL, {
       agent,
       canisterId: identityCertifierCanisterId,
@@ -367,11 +367,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         console.log("Error fetching root key: ", err);
       });
     }
-    const _backendActor = Actor.createActor<BACKEND_SERVICE>(usersIDL, {
+    const _backendActor = Actor.createActor<USERS_SERVICE>(usersIDL, {
       agent,
       canisterId: usersCanisterId,
     });
-    setBackendActor(_backendActor);
+    setUsersActor(_backendActor);
     const _identityCertifierActor = Actor.createActor<IDENTITY_CERTIFIER_SERVICE>(identityCertifierIDL, {
       agent,
       canisterId: identityCertifierCanisterId,
@@ -398,11 +398,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           console.log("Error fetching root key: ", err);
         });
       }
-      const _backendActor = Actor.createActor<BACKEND_SERVICE>(usersIDL, {
+      const _backendActor = Actor.createActor<USERS_SERVICE>(usersIDL, {
         agent,
         canisterId: usersCanisterId,
       });
-      setBackendActor(_backendActor);
+      setUsersActor(_backendActor);
       const _identityCertifierActor = Actor.createActor<IDENTITY_CERTIFIER_SERVICE>(identityCertifierIDL, {
         agent,
         canisterId: identityCertifierCanisterId,
@@ -482,7 +482,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     sessionData,
     user,
     isAuthenticated,
-    backendActor,
+    usersActor,
     identityCertifierActor,
     fetchingUser: isServerAuthenticating,
     setUser,

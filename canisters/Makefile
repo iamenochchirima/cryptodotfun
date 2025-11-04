@@ -16,6 +16,7 @@ deploy-provider:
 	            \"$$(dfx canister id ic_siws_provider)\"; \
 	            \"$$(dfx canister id users)\"; \
 				\"$$(dfx canister id identity_certifier)\"; \
+				\"$$(dfx canister id marketplace)\"; \
 	        }; \
           runtime_features = null; \
 	    } \
@@ -35,6 +36,7 @@ deploy-provider:
 	            \"$$(dfx canister id ic_siwe_provider)\"; \
 	            \"$$(dfx canister id users)\"; \
 				\"$$(dfx canister id identity_certifier)\"; \
+				\"$$(dfx canister id marketplace)\"; \
 	        }; \
 	    } \
 	)"
@@ -53,6 +55,7 @@ deploy-provider:
 				\"$$(dfx canister id ic_siwb_provider)\"; \
 				\"$$(dfx canister id users)\"; \
 				\"$$(dfx canister id identity_certifier)\"; \
+				\"$$(dfx canister id marketplace)\"; \
 			}; \
 		} \
 	)"
@@ -72,6 +75,8 @@ upgrade-provider:
 	        targets = opt vec { \
 	            \"$$(dfx canister id ic_siws_provider)\"; \
 				\"$$(dfx canister id users)\"; \
+				\"$$(dfx canister id identity_certifier)\"; \
+				\"$$(dfx canister id marketplace)\"; \
 	        }; \
           runtime_features = null; \
 	    } \
@@ -98,6 +103,42 @@ generate:
 	dfx generate
 	mkdir -p ../client/declarations
 	rsync -av --delete src/declarations/ ../client/declarations/
+
+deploy-marketplace:
+	dfx deploy marketplace --yes --argument '(record { admin = principal "o4jpg-z2hcz-bf2oe-zziee-bsw4t-jgecg-boagp-segn6-pdznr-u6bdc-zae" })'
+	dfx generate marketplace
+	mkdir -p ../client/declarations
+	rsync -av src/declarations/marketplace/ ../client/declarations/marketplace/
+
+deploy-users:
+	dfx deploy users
+	dfx generate users
+	mkdir -p ../client/declarations
+	rsync -av src/declarations/users/ ../client/declarations/users/
+
+deploy-treasury:
+	dfx deploy treasury
+	dfx generate treasury
+	mkdir -p ../client/declarations
+	rsync -av src/declarations/treasury/ ../client/declarations/treasury/
+
+deploy-icp-market:
+	dfx deploy icp_market --yes --argument '(record { admin = principal "o4jpg-z2hcz-bf2oe-zziee-bsw4t-jgecg-boagp-segn6-pdznr-u6bdc-zae"; collection_creation_fee = 0; marketplace_fee_percentage = 250 })'
+	dfx generate icp_market
+	mkdir -p ../client/declarations
+	rsync -av src/declarations/icp_market/ ../client/declarations/icp_market/
+
+deploy-sol-market:
+	dfx deploy sol_market --yes --argument '(record { admin = principal "o4jpg-z2hcz-bf2oe-zziee-bsw4t-jgecg-boagp-segn6-pdznr-u6bdc-zae" })'
+	dfx generate sol_market
+	mkdir -p ../client/declarations
+	rsync -av src/declarations/sol_market/ ../client/declarations/sol_market/
+
+deploy-identity-certifier:
+	dfx deploy identity_certifier --argument '(principal "o4jpg-z2hcz-bf2oe-zziee-bsw4t-jgecg-boagp-segn6-pdznr-u6bdc-zae")'
+	dfx generate identity_certifier
+	mkdir -p ../client/declarations
+	rsync -av src/declarations/identity_certifier/ ../client/declarations/identity_certifier/
 
 deploy-all: create-canisters deploy-provider deploy-backend deploy-frontend generate
 

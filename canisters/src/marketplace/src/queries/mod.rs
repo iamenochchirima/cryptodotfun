@@ -1,5 +1,6 @@
 use ic_cdk::api::msg_caller;
 use ic_cdk::query;
+use ic_cdk::println;
 use crate::types::*;
 use crate::state;
 
@@ -47,6 +48,7 @@ pub fn get_collection_listing_count(collection_id: String) -> u32 {
 #[query]
 pub fn get_user_collections(page: u32, limit: u32) -> Vec<Collection> {
     let caller = msg_caller();
+    println!("User principal : {}",caller.to_text());
     state::get_user_collections(&caller, page, limit)
 }
 
