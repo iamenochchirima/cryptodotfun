@@ -39,6 +39,7 @@ type CreateCollectionArgs = record {
   name : text;
   description : text;
   blockchain : Blockchain;
+  chain_data : ChainData;
   total_supply : nat64;
   symbol : text;
   royalty_bps : nat16;
@@ -96,7 +97,7 @@ type Result_1 = variant { Ok : text; Err : text };
 type SolanaCollectionData = record {
   files_uploaded : bool;
   metadata_created : bool;
-  arweave_manifest_url : opt text;
+  manifest_url : opt text;
   collection_mint : opt text;
   candy_machine_address : opt text;
   deployment_stage : SolanaDeploymentStage;
@@ -121,7 +122,7 @@ type UpdateListingArgs = record {
 type UpdateSolanaStageArgs = record {
   files_uploaded : opt bool;
   metadata_created : opt bool;
-  arweave_manifest_url : opt text;
+  manifest_url : opt text;
   collection_id : text;
   collection_mint : opt text;
   stage : SolanaDeploymentStage;

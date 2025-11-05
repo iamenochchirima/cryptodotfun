@@ -7,6 +7,7 @@ pub mod chains;
 pub mod queries;
 pub mod mutations;
 pub mod utils;
+pub mod solana;
 
 use types::*;
 

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback, use } from "react"
+import { useState, useEffect, useCallback } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -33,7 +33,7 @@ interface CollectionFormData {
   whitelistEnabled: string
   collectionId?: string
   deploymentStage?: string
-  arweaveManifestUrl?: string
+  manifestUrl?: string
   candyMachineAddress?: string
 }
 
@@ -147,11 +147,11 @@ export default function CreateSolanaCollectionPage() {
   ]
 
   const handleNext = async () => {
-    if (currentStep === 2) {
+    if (currentStep === 2 && !formData.manifestUrl) {
       try {
         await handleArweaveUpload()
       } catch (error) {
-        console.error("Failed to upload to Arweave:", error)
+        console.error("Failed to upload:", error)
         return
       }
     }
@@ -222,10 +222,21 @@ export default function CreateSolanaCollectionPage() {
           supply: parseInt(formData.supply),
         },
         storageProvider === "arweave" ? wallet?.adapter : undefined,
-        storageProvider === "nft-storage" ? process.env.NEXT_PUBLIC_NFT_STORAGE_API_KEY : undefined
+        storageProvider === "nft-storage" ? process.env.NEXT_PUBLIC_PINATA_JWT : undefined
       )
 
       const { collectionImageUrl, manifestUrl } = result
+
+      // Save upload results to draft immediately
+      const updatedFormData = {
+        ...formData,
+        imageUrl: collectionImageUrl,
+        manifestUrl: manifestUrl
+      }
+      setFormData(updatedFormData)
+      await saveDraft(draftId, updatedFormData, collectionImage || undefined, nftAssets || undefined)
+      console.log("Upload results saved to draft")
+
       const actor = await getMarketplaceActor(identity)
 
       setUploadProgress("Saving collection to canister...")
@@ -243,8 +254,17 @@ export default function CreateSolanaCollectionPage() {
           ["go_live_date", formData.goLiveDate || ""],
           ["max_per_wallet", formData.maxPerWallet],
           ["whitelist_enabled", formData.whitelistEnabled],
-          ["arweave_manifest_url", manifestUrl]
-        ]
+        ],
+        chain_data: {
+          Solana: {
+            deployment_stage: { FilesUploaded: null },
+            candy_machine_address: [],
+            collection_mint: [],
+            manifest_url: [manifestUrl],
+            files_uploaded: true,
+            metadata_created: true,
+          }
+        }
       })
 
       if ('Err' in createResult) {
@@ -253,21 +273,10 @@ export default function CreateSolanaCollectionPage() {
 
       const collectionId = createResult.Ok
 
-      setUploadProgress("Updating deployment stage...")
-      await actor.update_solana_stage({
-        collection_id: collectionId,
-        stage: { FilesUploaded: null },
-        arweave_manifest_url: [manifestUrl],
-        files_uploaded: [true],
-        metadata_created: [true],
-        candy_machine_address: [],
-        collection_mint: []
-      })
-
       setFormData(prev => ({
         ...prev,
         collectionId,
-        arweaveManifestUrl: manifestUrl,
+        manifestUrl: manifestUrl,
         imageUrl: collectionImageUrl,
         deploymentStage: "FilesUploaded"
       }))
@@ -289,7 +298,7 @@ export default function CreateSolanaCollectionPage() {
     setShowPaymentModal(false)
 
     try {
-      if (!formData.collectionId || !formData.arweaveManifestUrl) {
+      if (!formData.collectionId || !formData.manifestUrl) {
         console.error("Missing collection ID or manifest URL")
         return
       }
@@ -299,7 +308,7 @@ export default function CreateSolanaCollectionPage() {
       await actor.update_solana_stage({
         collection_id: formData.collectionId,
         stage: { CandyMachineDeploying: null },
-        arweave_manifest_url: [formData.arweaveManifestUrl],
+        manifest_url: [formData.manifestUrl],
         files_uploaded: [true],
         metadata_created: [true],
         candy_machine_address: [],
@@ -623,9 +632,9 @@ export default function CreateSolanaCollectionPage() {
                       <SelectContent>
                         <SelectItem value="nft-storage">
                           <div className="flex items-center justify-between w-full">
-                            <span>NFT.Storage (IPFS)</span>
+                            <span>Pinata (IPFS)</span>
                             <Badge variant="secondary" className="ml-2 bg-green-100 text-green-900 dark:bg-green-900 dark:text-green-100">
-                              FREE
+                              1GB Free
                             </Badge>
                           </div>
                         </SelectItem>
@@ -641,7 +650,7 @@ export default function CreateSolanaCollectionPage() {
                     </Select>
                     <p className="text-xs text-muted-foreground">
                       {storageProvider === "nft-storage"
-                        ? "Free IPFS storage via NFT.Storage"
+                        ? "1GB free IPFS storage via Pinata (more available)"
                         : "Permanent Arweave storage (~$0.01/MB)"}
                     </p>
                   </div>
@@ -659,6 +668,12 @@ export default function CreateSolanaCollectionPage() {
                             />
                           </div>
                           <p className="text-sm font-medium">{collectionImage.name}</p>
+                          {formData.imageUrl?.startsWith("https://gateway.pinata.cloud") && (
+                            <Badge variant="secondary" className="bg-green-100 text-green-900 dark:bg-green-900 dark:text-green-100">
+                              <CheckCircle className="h-3 w-3 mr-1" />
+                              Uploaded to IPFS
+                            </Badge>
+                          )}
                           <Button
                             variant="outline"
                             size="sm"
@@ -755,17 +770,41 @@ export default function CreateSolanaCollectionPage() {
                     </div>
                   </div>
 
+                  {formData.manifestUrl && (
+                    <div className="bg-green-50 dark:bg-green-950/20 p-4 rounded-lg">
+                      <div className="flex items-start gap-3">
+                        <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
+                        <div className="text-sm">
+                          <div className="font-medium text-green-900 dark:text-green-100 mb-1">
+                            Files Already Uploaded
+                          </div>
+                          <div className="text-green-700 dark:text-green-200 mb-2">
+                            Your collection files have been uploaded to IPFS. You can proceed to the next step or re-upload if needed.
+                          </div>
+                          <a
+                            href={formData.manifestUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-green-600 hover:underline break-all"
+                          >
+                            View Manifest: {formData.manifestUrl}
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="bg-purple-50 dark:bg-purple-950/20 p-4 rounded-lg">
                     <div className="flex items-start gap-3">
                       <Info className="h-5 w-5 text-purple-600 mt-0.5 flex-shrink-0" />
                       <div className="text-sm">
                         <div className="font-medium text-purple-900 dark:text-purple-100 mb-1">
-                          {storageProvider === "arweave" ? "Arweave Storage" : "NFT.Storage"}
+                          {storageProvider === "arweave" ? "Arweave Storage" : "Pinata IPFS Storage"}
                         </div>
                         <div className="text-purple-700 dark:text-purple-200">
                           {storageProvider === "arweave"
                             ? "All assets will be uploaded to Arweave for permanent, decentralized storage. Estimated cost: ~$5-8 for 1GB"
-                            : "Free IPFS storage backed by Filecoin. Files stored permanently on IPFS."}
+                            : "IPFS storage via Pinata. 1GB free tier, files remain available as long as pinned."}
                         </div>
                       </div>
                     </div>
@@ -860,19 +899,35 @@ export default function CreateSolanaCollectionPage() {
             </Button>
             <div className="flex gap-2">
               {currentStep === 2 ? (
-                <Button onClick={handleNext} disabled={isUploading}>
-                  {isUploading ? (
-                    <>
-                      <Upload className="mr-2 h-4 w-4 animate-spin" />
-                      Uploading...
-                    </>
-                  ) : (
-                    <>
-                      <Upload className="mr-2 h-4 w-4" />
-                      Upload
-                    </>
+                <>
+                  {formData.manifestUrl && (
+                    <Button onClick={handleNext} disabled={isUploading}>
+                      Next
+                    </Button>
                   )}
-                </Button>
+                  <Button
+                    onClick={formData.manifestUrl ? handleArweaveUpload : handleNext}
+                    disabled={isUploading}
+                    variant={formData.manifestUrl ? "outline" : "default"}
+                  >
+                    {isUploading ? (
+                      <>
+                        <Upload className="mr-2 h-4 w-4 animate-spin" />
+                        Uploading...
+                      </>
+                    ) : formData.manifestUrl ? (
+                      <>
+                        <Upload className="mr-2 h-4 w-4" />
+                        Re-upload
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="mr-2 h-4 w-4" />
+                        Upload
+                      </>
+                    )}
+                  </Button>
+                </>
               ) : currentStep < 3 ? (
                 <Button onClick={handleNext}>Next</Button>
               ) : (

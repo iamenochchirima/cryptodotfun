@@ -27,7 +27,7 @@ pub struct SolanaCollectionData {
     pub deployment_stage: SolanaDeploymentStage,
     pub candy_machine_address: Option<String>,
     pub collection_mint: Option<String>,
-    pub arweave_manifest_url: Option<String>,
+    pub manifest_url: Option<String>,
     pub files_uploaded: bool,
     pub metadata_created: bool,
 }
@@ -133,6 +133,7 @@ pub struct CreateCollectionArgs {
     pub total_supply: u64,
     pub royalty_bps: u16,
     pub metadata: Vec<(String, String)>,
+    pub chain_data: ChainData,
 }
 
 #[derive(CandidType, Serialize, Deserialize, Clone, Debug)]
@@ -155,7 +156,7 @@ pub struct UpdateSolanaStageArgs {
     pub stage: SolanaDeploymentStage,
     pub candy_machine_address: Option<String>,
     pub collection_mint: Option<String>,
-    pub arweave_manifest_url: Option<String>,
+    pub manifest_url: Option<String>,
     pub files_uploaded: Option<bool>,
     pub metadata_created: Option<bool>,
 }

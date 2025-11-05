@@ -1,6 +1,6 @@
 import { StorageProvider, UploadResult } from "./types"
 import { ArweaveUploader } from "./arweave"
-import { NFTStorageUploader } from "./nft-storage"
+import { PinataUploader } from "./pinata"
 
 export type { StorageProvider, UploadResult }
 
@@ -15,7 +15,7 @@ export async function uploadToStorage(
     supply: number
   },
   wallet?: any,
-  nftStorageApiKey?: string
+  pinataApiKey?: string
 ): Promise<UploadResult> {
   if (provider === "arweave") {
     if (!wallet) {
@@ -25,10 +25,11 @@ export async function uploadToStorage(
     await uploader.initialize(wallet)
     return uploader.uploadCollection(collectionImage, nftAssets, collectionData)
   } else {
-    if (!nftStorageApiKey) {
-      throw new Error("API key required for NFT.Storage")
+    if (!pinataApiKey) {
+      throw new Error("API key required for Pinata")
     }
-    const uploader = new NFTStorageUploader(nftStorageApiKey)
+    const uploader = new PinataUploader(pinataApiKey)
+    await uploader.initialize()
     return uploader.uploadCollection(collectionImage, nftAssets, collectionData)
   }
 }

@@ -1,177 +1,122 @@
-import { WebIrys } from "@irys/sdk"
-import { StorageUploader, UploadResult, NFTMetadata } from "./types"
+"use client";
+
+import { Buffer } from "buffer";
+import { WebUploader } from "@irys/web-upload";
+import { WebSolana } from "@irys/web-upload-solana";
+import type { StorageUploader, UploadResult, NFTMetadata } from "./types";
+
+// NOTE: We intentionally keep this 'any' because the package types can resolve to BaseWebIrys
+// which declares Node-centric overloads. At runtime, the web build accepts Blob/Uint8Array fine.
+type AnyIrys = any;
 
 export class ArweaveUploader implements StorageUploader {
-  private irys: WebIrys | null = null
+  private uploader: AnyIrys | null = null;
 
-  async initialize(wallet: any) {
-    if (!wallet) {
-      throw new Error("Wallet is required for Arweave uploads")
+  async initialize(_: any) {
+    if (typeof window === "undefined") {
+      throw new Error("Browser environment required");
+    }
+    // @ts-ignore
+    const provider = window.solana;
+    if (!provider?.publicKey) {
+      throw new Error("Connect your Solana wallet (Phantom, etc.)");
     }
 
-    console.log("Initializing Irys with Solana wallet...")
-    console.log("Wallet adapter passed:", wallet)
-
-    // For WebIrys with Solana, we need to check if we should use window.solana directly
-    let provider;
-
-    if (typeof window !== 'undefined') {
-      // @ts-ignore
-      provider = window.solana
-
-      if (!provider) {
-        throw new Error("No Solana wallet provider found. Please install Phantom or another Solana wallet.")
-      }
-
-      console.log("Using wallet provider:", provider)
-      console.log("Provider publicKey:", provider.publicKey?.toString())
-      console.log("Provider isPhantom:", provider.isPhantom)
-      console.log("Provider methods:", Object.keys(provider).filter(k => typeof provider[k] === 'function'))
-
-      if (!provider.publicKey) {
-        throw new Error("Wallet not connected. Please connect your wallet first.")
-      }
-
-      // Check what transaction methods are available
-      console.log("Has signTransaction:", typeof provider.signTransaction)
-      console.log("Has signAndSendTransaction:", typeof provider.signAndSendTransaction)
-      console.log("Has sendTransaction:", typeof provider.sendTransaction)
-
-      // Ensure the provider has the necessary methods
-      if (!provider.signTransaction && !provider.signAndSendTransaction) {
-        throw new Error("Wallet provider doesn't support transaction signing")
-      }
-
-      // Irys expects sendTransaction, but Phantom uses signAndSendTransaction
-      // Create a wrapper if needed
-      if (!provider.sendTransaction && provider.signAndSendTransaction) {
-        console.log("Wrapping signAndSendTransaction as sendTransaction")
-        provider.sendTransaction = provider.signAndSendTransaction.bind(provider)
-      }
-    } else {
-      throw new Error("Window object not available")
-    }
-
-    console.log("Creating WebIrys instance...")
-    this.irys = new WebIrys({
-      network: "devnet",
-      token: "solana",
-      wallet: { name: "solana", provider },
-      config: { providerUrl: "https://api.devnet.solana.com" },
-    })
-
-    console.log("Calling irys.ready()...")
     try {
-      await this.irys.ready()
-      console.log("Irys initialized successfully")
+      this.uploader = await WebUploader(WebSolana)
+        .withProvider(provider)
+        .withRpc("https://api.devnet.solana.com")
+        .devnet()
+        .build();
 
-      // Check balance but don't auto-fund for now due to RPC issues
-      try {
-        const balance = await this.irys.getLoadedBalance()
-        console.log("Irys balance:", balance.toString())
-
-        if (balance.toNumber() === 0) {
-          console.warn("⚠️ Irys account has zero balance.")
-          console.log("Note: Uploads under 100 KiB are free on Irys devnet")
-          console.log("For larger uploads, fund manually: const fundTx = await irys.fund(irys.utils.toAtomic(0.1))")
-        }
-      } catch (balanceError) {
-        console.warn("Could not check Irys balance:", balanceError)
-        console.log("Continuing anyway - uploads under 100 KiB are free")
-      }
-    } catch (error: any) {
-      console.error("Error during Irys initialization:", error)
-      throw new Error(`Failed to initialize Irys: ${error.message}`)
+      console.log("Irys ready:", this.uploader.address);
+    } catch (e: any) {
+      throw new Error(`Irys init failed: ${e?.message ?? String(e)}`);
     }
+  }
+
+  // ---- Helpers ----
+  private ensureFile(file: File | null | undefined, name = "file"): File {
+    if (!file) throw new Error(`${name} is missing`);
+    if (!file.size) throw new Error(`${name} is empty`);
+    return file;
+  }
+
+  private async fileToBuffer(file: File): Promise<Buffer> {
+    return Buffer.from(await file.arrayBuffer());
+  }
+
+  private objectToBuffer(obj: unknown): Buffer {
+    return Buffer.from(JSON.stringify(obj));
   }
 
   async uploadCollection(
     collectionImage: File,
     nftAssets: FileList,
     collectionData: {
-      name: string
-      symbol: string
-      description: string
-      supply: number
+      name: string;
+      symbol: string;
+      description: string;
+      supply: number;
     }
   ): Promise<UploadResult> {
-    if (!this.irys) {
-      throw new Error("Arweave uploader not initialized")
-    }
+    if (!this.uploader) throw new Error("Uploader not initialized");
 
-    console.log("Uploading collection image to Arweave...")
-    console.log("Collection image file:", collectionImage)
-    console.log("File type:", collectionImage.type)
-    console.log("File size:", collectionImage.size)
-
-    // Convert File to Buffer for WebIrys
-    // WebIrys has issues with File objects directly, need to convert to Buffer
-    const arrayBuffer = await collectionImage.arrayBuffer()
-    const buffer = Buffer.from(arrayBuffer)
-    console.log("Converted to Buffer, length:", buffer.length)
-
-    const collectionImageTx = await this.irys.upload(buffer, {
+    // ---- 1) Collection image upload ----
+    const collFile = this.ensureFile(collectionImage, "collectionImage");
+    const collReceipt = await this.uploader.upload(await this.fileToBuffer(collFile), {
       tags: [
-        { name: "Content-Type", value: collectionImage.type },
+        { name: "Content-Type", value: collFile.type || "image/png" },
         { name: "App-Name", value: "CryptoDotFun" },
         { name: "Type", value: "collection-image" },
       ],
-    })
-    const collectionImageUrl = `https://arweave.net/${collectionImageTx.id}`
-    console.log("Collection image:", collectionImageUrl)
+    });
+    const collectionImageUrl = `https://gateway.irys.xyz/${collReceipt.id}`;
 
-    console.log("Uploading NFT images...")
-    const nftImageUrls: string[] = []
+    // ---- 2) NFT images ----
+    const nftImageUrls: string[] = [];
     for (let i = 0; i < nftAssets.length; i++) {
-      const file = nftAssets[i]
-      console.log(`Uploading NFT image ${i}:`, file.name, file.size)
-
-      const arrayBuffer = await file.arrayBuffer()
-      const buffer = Buffer.from(arrayBuffer)
-
-      const tx = await this.irys.upload(buffer, {
+      const file = this.ensureFile(nftAssets.item(i), `nftAsset[${i}]`);
+      const receipt = await this.uploader.upload(await this.fileToBuffer(file), {
         tags: [
-          { name: "Content-Type", value: file.type },
+          { name: "Content-Type", value: file.type || "image/png" },
           { name: "App-Name", value: "CryptoDotFun" },
           { name: "Type", value: "nft-image" },
-          { name: "Index", value: i.toString() },
+          { name: "Index", value: String(i) },
         ],
-      })
-      const url = `https://arweave.net/${tx.id}`
-      nftImageUrls.push(url)
-      console.log(`Image ${i} uploaded:`, url)
+      });
+      nftImageUrls.push(`https://gateway.irys.xyz/${receipt.id}`);
     }
 
-    console.log("Uploading metadata...")
-    const metadataUrls: string[] = []
+    // ---- 3) Per-NFT metadata ----
+    const metadataUrls: string[] = [];
     for (let i = 0; i < nftImageUrls.length; i++) {
+      const srcFile = this.ensureFile(nftAssets.item(i), `nftAsset[${i}]`);
+
       const metadata: NFTMetadata = {
-        name: `${collectionData.name} #${i}`,
+        name: `${collectionData.name} #${i + 1}`,
         symbol: collectionData.symbol,
         description: collectionData.description,
         image: nftImageUrls[i],
         attributes: [],
         properties: {
-          files: [{ uri: nftImageUrls[i], type: nftAssets[i].type }],
+          files: [{ uri: nftImageUrls[i], type: srcFile.type || "image/png" }],
           category: "image",
         },
-      }
+      };
 
-      const metadataJson = JSON.stringify(metadata)
-      const metadataTx = await this.irys.upload(metadataJson, {
+      const receipt = await this.uploader.upload(this.objectToBuffer(metadata), {
         tags: [
           { name: "Content-Type", value: "application/json" },
           { name: "App-Name", value: "CryptoDotFun" },
           { name: "Type", value: "nft-metadata" },
-          { name: "Index", value: i.toString() },
+          { name: "Index", value: String(i) },
         ],
-      })
-      const url = `https://arweave.net/${metadataTx.id}`
-      metadataUrls.push(url)
-      console.log(`Metadata ${i}:`, url)
+      });
+      metadataUrls.push(`https://gateway.irys.xyz/${receipt.id}`);
     }
 
-    console.log("Uploading manifest...")
+    // ---- 4) Collection manifest ----
     const manifest = {
       name: collectionData.name,
       symbol: collectionData.symbol,
@@ -179,29 +124,24 @@ export class ArweaveUploader implements StorageUploader {
       image: collectionImageUrl,
       seller_fee_basis_points: 500,
       properties: {
-        files: metadataUrls.map((url) => ({
-          uri: url,
-          type: "application/json",
-        })),
+        files: metadataUrls.map((u) => ({ uri: u, type: "application/json" })),
         category: "image",
       },
-    }
+    };
 
-    const manifestJson = JSON.stringify(manifest)
-    const manifestTx = await this.irys.upload(manifestJson, {
+    const manifestReceipt = await this.uploader.upload(this.objectToBuffer(manifest), {
       tags: [
         { name: "Content-Type", value: "application/json" },
         { name: "App-Name", value: "CryptoDotFun" },
         { name: "Type", value: "manifest" },
       ],
-    })
-    const manifestUrl = `https://arweave.net/${manifestTx.id}`
-    console.log("Manifest:", manifestUrl)
+    });
+    const manifestUrl = `https://gateway.irys.xyz/${manifestReceipt.id}`;
 
     return {
       collectionImageUrl,
       manifestUrl,
       nftMetadataUrls: metadataUrls,
-    }
+    };
   }
 }

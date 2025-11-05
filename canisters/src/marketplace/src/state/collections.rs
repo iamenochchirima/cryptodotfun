@@ -2,11 +2,7 @@ use ic_stable_structures::StableBTreeMap;
 use std::cell::RefCell;
 use crate::types::{
     Collection, CreateCollectionArgs, Blockchain, CollectionStatus,
-    ChainData, SolanaCollectionData, SolanaDeploymentStage,
-    ICPCollectionData, ICPDeploymentStage,
-    EthereumCollectionData, EthereumDeploymentStage,
-    BitcoinCollectionData, BitcoinDeploymentStage,
-    UpdateCollectionStatusArgs, UpdateSolanaStageArgs
+    ChainData, UpdateCollectionStatusArgs, UpdateSolanaStageArgs
 };
 use super::memory::{get_memory, COLLECTIONS_MEMORY_ID};
 use candid::Principal;
@@ -18,30 +14,6 @@ thread_local! {
 
 pub fn add_collection(args: CreateCollectionArgs, creator: Principal) -> Result<String, String> {
     let collection_id = generate_collection_id(&args.blockchain, &args.name);
-
-    let chain_data = match args.blockchain {
-        Blockchain::Solana => ChainData::Solana(SolanaCollectionData {
-            deployment_stage: SolanaDeploymentStage::FilesUploading,
-            candy_machine_address: None,
-            collection_mint: None,
-            arweave_manifest_url: None,
-            files_uploaded: false,
-            metadata_created: false,
-        }),
-        Blockchain::ICP => ChainData::ICP(ICPCollectionData {
-            deployment_stage: ICPDeploymentStage::CanisterCreating,
-            canister_id: None,
-        }),
-        Blockchain::Ethereum => ChainData::Ethereum(EthereumCollectionData {
-            deployment_stage: EthereumDeploymentStage::ContractDeploying,
-            contract_address: None,
-            chain_id: 1,
-        }),
-        Blockchain::Bitcoin => ChainData::Bitcoin(BitcoinCollectionData {
-            deployment_stage: BitcoinDeploymentStage::InscriptionsCreating,
-            inscription_ids: vec![],
-        }),
-    };
 
     let collection = Collection {
         id: collection_id.clone(),
@@ -60,7 +32,7 @@ pub fn add_collection(args: CreateCollectionArgs, creator: Principal) -> Result<
         royalty_bps: args.royalty_bps,
         metadata: args.metadata,
         status: CollectionStatus::Draft,
-        chain_data,
+        chain_data: args.chain_data,
         created_at: ic_cdk::api::time(),
         updated_at: ic_cdk::api::time(),
     };
@@ -160,8 +132,8 @@ pub fn update_solana_stage(args: UpdateSolanaStageArgs) -> Result<(), String> {
                 if let Some(mint) = args.collection_mint {
                     data.collection_mint = Some(mint);
                 }
-                if let Some(url) = args.arweave_manifest_url {
-                    data.arweave_manifest_url = Some(url);
+                if let Some(url) = args.manifest_url {
+                    data.manifest_url = Some(url);
                 }
                 if let Some(uploaded) = args.files_uploaded {
                     data.files_uploaded = uploaded;
