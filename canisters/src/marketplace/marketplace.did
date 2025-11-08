@@ -32,6 +32,7 @@ type Collection = record {
   royalty_bps : nat16;
 };
 type CollectionStatus = variant { Minting; Paused; Active; Draft; Completed };
+type CommitmentLevel = variant { finalized; confirmed; processed };
 type CreateCollectionArgs = record {
   image_url : text;
   metadata : vec record { text; text };
@@ -53,12 +54,18 @@ type CreateListingArgs = record {
   price : nat64;
   expires_at : opt nat64;
 };
+type Ed25519KeyName = variant {
+  MainnetTestKey1;
+  LocalDevelopment;
+  MainnetProdKey1;
+};
 type EthereumCollectionData = record {
   chain_id : nat64;
   deployment_stage : EthereumDeploymentStage;
   contract_address : opt text;
 };
 type EthereumDeploymentStage = variant { ContractDeploying; Deployed };
+type HttpHeader = record { value : text; name : text };
 type ICPCollectionData = record {
   canister_id : opt principal;
   deployment_stage : ICPDeploymentStage;
@@ -68,7 +75,13 @@ type ICPDeploymentStage = variant {
   CanisterCreating;
   Deployed;
 };
-type InitArgs = record { admin : principal };
+type InitArgs = record {
+  admin : principal;
+  solana_commitment_level : opt CommitmentLevel;
+  ed25519_key_name : opt Ed25519KeyName;
+  solana_network : opt SolanaNetwork;
+  sol_rpc_canister_id : opt principal;
+};
 type Listing = record {
   id : text;
   nft_id : text;
@@ -94,6 +107,7 @@ type NftMetadata = record {
 };
 type Result = variant { Ok; Err : text };
 type Result_1 = variant { Ok : text; Err : text };
+type RpcEndpoint = record { url : text; headers : opt vec HttpHeader };
 type SolanaCollectionData = record {
   files_uploaded : bool;
   metadata_created : bool;
@@ -109,6 +123,13 @@ type SolanaDeploymentStage = variant {
   Deployed;
   FilesUploading;
   MetadataCreating;
+};
+type SolanaNetwork = variant { Mainnet; Custom : RpcEndpoint; Devnet };
+type TokenAmount = record {
+  decimals : nat8;
+  uiAmount : opt float64;
+  uiAmountString : text;
+  amount : text;
 };
 type UpdateCollectionStatusArgs = record {
   status : CollectionStatus;
@@ -129,10 +150,14 @@ type UpdateSolanaStageArgs = record {
   candy_machine_address : opt text;
 };
 service : (InitArgs) -> {
+  associated_token_account : (opt principal, text) -> (text);
   cancel_listing : (text, text) -> (Result);
+  create_associated_token_account : (opt principal, text) -> (text);
   create_collection : (CreateCollectionArgs) -> (Result_1);
   create_listing : (CreateListingArgs, Blockchain) -> (Result_1);
+  create_nonce_account : (opt principal) -> (text);
   get_all_collections : (nat32, nat32) -> (vec Collection) query;
+  get_balance : (opt text) -> (nat);
   get_collection : (text) -> (opt Collection) query;
   get_collection_listing_count : (text) -> (nat32) query;
   get_collection_listings : (text, nat32, nat32, opt ListingStatus) -> (
@@ -143,8 +168,15 @@ service : (InitArgs) -> {
     ) query;
   get_listing : (text, text) -> (opt Listing) query;
   get_my_draft_collections : () -> (vec Collection) query;
+  get_nonce : (opt text) -> (text);
+  get_spl_token_balance : (opt text, text) -> (TokenAmount);
   get_user_collections : (nat32, nat32) -> (vec Collection) query;
   get_user_listings : (nat32, nat32) -> (vec Listing) query;
+  nonce_account : (opt principal) -> (text);
+  send_sol : (opt principal, text, nat) -> (text);
+  send_sol_with_durable_nonce : (opt principal, text, nat) -> (text);
+  send_spl_token : (opt principal, text, text, nat) -> (text);
+  solana_account : (opt principal) -> (text);
   update_collection_status : (UpdateCollectionStatusArgs) -> (Result);
   update_listing : (UpdateListingArgs, text) -> (Result);
   update_solana_stage : (UpdateSolanaStageArgs) -> (Result);

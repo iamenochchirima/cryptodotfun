@@ -1,9 +1,6 @@
-use basic_solana::{
-    client, solana_wallet::SolanaWallet, spl::transfer_instruction_with_program_id,
-    state::init_state, validate_caller_not_anonymous, InitArg,
-};
+use super::{client, solana_wallet::SolanaWallet, spl::transfer_instruction_with_program_id, validate_caller_not_anonymous};
 use candid::{Nat, Principal};
-use ic_cdk::{init, post_upgrade, update};
+use ic_cdk::update;
 use num::ToPrimitive;
 use sol_rpc_client::nonce::nonce_from_account;
 use sol_rpc_types::{GetAccountInfoEncoding, GetAccountInfoParams, TokenAmount};
@@ -17,18 +14,6 @@ use spl_associated_token_account_interface::{
     instruction::create_associated_token_account_idempotent,
 };
 use std::str::FromStr;
-
-#[init]
-pub fn init(init_arg: InitArg) {
-    init_state(init_arg)
-}
-
-#[post_upgrade]
-fn post_upgrade(init_arg: Option<InitArg>) {
-    if let Some(init_arg) = init_arg {
-        init_state(init_arg)
-    }
-}
 
 #[update]
 pub async fn solana_account(owner: Option<Principal>) -> String {
@@ -343,25 +328,4 @@ async fn get_account_owner(account: &Pubkey) -> Pubkey {
         .unwrap_or_else(|| panic!("Account not found for pubkey `{account}`"))
         .owner;
     Pubkey::from_str(&owner).unwrap()
-}
-
-fn main() {}
-
-#[test]
-fn check_candid_interface_compatibility() {
-    use candid_parser::utils::{service_equal, CandidSource};
-
-    candid::export_service!();
-
-    let new_interface = __export_service();
-
-    // check the public interface against the actual one
-    let old_interface = std::path::PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").unwrap())
-        .join("basic_solana.did");
-
-    service_equal(
-        CandidSource::Text(dbg!(&new_interface)),
-        CandidSource::File(old_interface.as_path()),
-    )
-    .unwrap();
 }

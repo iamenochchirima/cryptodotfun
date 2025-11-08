@@ -2,11 +2,11 @@
 name = "sol_rpc_client"
 version = "3.0.0"
 description = "Client to interact with the SOL RPC canister"
-authors.workspace = true
-edition.workspace = true
-repository.workspace = true
-homepage.workspace = true
-license.workspace = true
+authors = ["DFINITY"]
+edition = "2021"
+repository = "https://github.com/dfinity/sol-rpc-canister"
+homepage = "https://github.com/dfinity/sol-rpc-canister#readme"
+license = "Apache-2.0"
 readme = "README.md"
 include = ["src", "Cargo.toml", "CHANGELOG.md", "LICENSE", "README.md"]
 

@@ -1,8 +1,14 @@
 use crate::OverrideProvider;
 use candid::{CandidType, Principal};
-use canlog::LogFilter;
 use serde::{Deserialize, Serialize};
 use strum::EnumIter;
+
+/// Log filter for controlling log output
+#[derive(Clone, Debug, CandidType, Deserialize, Serialize)]
+pub enum LogFilter {
+    ShowAll,
+    HideAll,
+}
 
 /// The installation args for the Solana RPC canister.
 #[derive(Clone, Debug, Default, CandidType, Deserialize)]
