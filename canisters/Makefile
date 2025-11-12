@@ -169,7 +169,58 @@ deploy-providers-live:
 		} \
 	)" --network ic	
 	
-deploy-all-live: deploy-providers-live deploy-backend 
+deploy-all-live: deploy-providers-live deploy-backend
+
+reinstall-providers:
+	dfx canister install ic_siws_provider --mode reinstall --argument "( \
+	    record { \
+			domain = \"localhost:3000\"; \
+	        uri = \"http://localhost:3000\"; \
+	        salt = \"salt\"; \
+          	chain_id = opt \"mainnet\"; \
+	        scheme = opt \"http\"; \
+	        statement = opt \"Login to CryptoDotFun\"; \
+	        sign_in_expires_in = opt 300000000000; \
+	        session_expires_in = opt 604800000000000; \
+	        targets = null; \
+          runtime_features = null; \
+	    } \
+	)"
+	dfx generate ic_siws_provider
+	mkdir -p ../client/declarations
+	rsync -av src/declarations/ic_siws_provider/ ../client/declarations/ic_siws_provider/
+	dfx canister install ic_siwe_provider --mode reinstall --argument "( \
+	    record { \
+	        domain = \"127.0.0.1\"; \
+	        uri = \"http://127.0.0.1:3000\"; \
+	        salt = \"salt\"; \
+	        chain_id = opt 1; \
+	        scheme = opt \"http\"; \
+	        statement = opt \"Login to CryptoDotFun\"; \
+	        sign_in_expires_in = opt 300000000000; \
+	        session_expires_in = opt 604800000000000; \
+	        targets = null; \
+	    } \
+	)"
+	dfx generate ic_siwe_provider
+	mkdir -p ../client/declarations
+	rsync -av src/declarations/ic_siwe_provider/ ../client/declarations/ic_siwe_provider/
+	dfx canister install ic_siwb_provider --mode reinstall --argument "( \
+		record { \
+			domain = \"127.0.0.1\"; \
+			uri = \"http://127.0.0.1:5173\"; \
+			salt = \"123456\"; \
+			network = opt \"testnet\"; \
+			scheme = opt \"http\"; \
+			statement = opt \"Login to the CryptoDotFun\"; \
+			sign_in_expires_in = opt 1500000000000; \
+			session_expires_in = opt 604800000000000; \
+			targets = null; \
+		} \
+	)"
+	dfx generate ic_siwb_provider
+	mkdir -p ../client/declarations
+	rsync -av src/declarations/ic_siwb_provider/ ../client/declarations/ic_siwb_provider/
 
 reinstall-providers-live:
 	dfx canister install ic_siws_provider --mode reinstall --argument "( \
@@ -186,7 +237,32 @@ reinstall-providers-live:
 		  runtime_features = null; \
 	    } \
 	)" --network ic
-
+	dfx canister install ic_siwe_provider --mode reinstall --argument "( \
+	    record { \
+	        domain = \"cryptodotfun.com\"; \
+	        uri = \"https://cryptodotfun.com\"; \
+	        salt = \"salt\"; \
+	        chain_id = opt 1; \
+	        scheme = opt \"https\"; \
+	        statement = opt \"Login to the CryptoDotFun\"; \
+	        sign_in_expires_in = opt 300000000000; \
+	        session_expires_in = opt 604800000000000; \
+	        targets = null; \
+	    } \
+	)" --network ic
+	dfx canister install ic_siwb_provider --mode reinstall --argument "( \
+		record { \
+			domain = \"cryptodotfun.com\"; \
+			uri = \"https://cryptodotfun.com\"; \
+			salt = \"123456\"; \
+			network = opt \"mainnet\"; \
+			scheme = opt \"https\"; \
+			statement = opt \"Login to the CryptoDotFun\"; \
+			sign_in_expires_in = opt 1500000000000; \
+			session_expires_in = opt 604800000000000; \
+			targets = null; \
+		} \
+	)" --network ic
 
 reinstall-all-live: reinstall-providers-live 
 
