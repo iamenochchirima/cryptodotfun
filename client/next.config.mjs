@@ -10,10 +10,14 @@ const nextConfig = {
     unoptimized: true,
   },
   async rewrites() {
+    const apiBase = process.env.NEXT_PUBLIC_ENVIRONMENT === 'ic'
+      ? 'https://icp0.io'
+      : 'http://127.0.0.1:4943';
+
     return [
       {
         source: '/api/:path*',
-        destination: 'http://127.0.0.1:4943/api/:path*',
+        destination: `${apiBase}/api/:path*`,
       },
     ]
   },

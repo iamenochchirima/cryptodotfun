@@ -2,11 +2,12 @@ use ic_cdk::api::msg_caller;
 use ic_cdk::update;
 use crate::types::*;
 use crate::state;
+use crate::solana::candy_machine;
 
 #[update]
-pub fn create_collection(args: CreateCollectionArgs) -> Result<String, String> {
+pub async fn create_collection(args: CreateCollectionArgs) -> Result<String, String> {
     let caller = msg_caller();
-    state::add_collection(args, caller)
+   return state::add_collection(args, caller).await;
 }
 
 #[update]
@@ -68,4 +69,38 @@ pub fn update_solana_stage(args: UpdateSolanaStageArgs) -> Result<(), String> {
     } else {
         Err("Collection not found".to_string())
     }
+}
+
+#[update]
+pub async fn deploy_candy_machine(
+    collection_id: String,
+    user_wallet_address: String,
+) -> Result<String, String> {
+    let caller = msg_caller();
+
+    let collection = state::get_collection(&collection_id)
+        .ok_or("Collection not found")?;
+
+    if collection.creator != caller {
+        return Err("Not authorized".to_string());
+    }
+
+    let candy_machine_address = candy_machine::deploy_candy_machine_for_user(
+        collection_id.clone(),
+        user_wallet_address.clone(),
+    ).await?;
+
+    state::update_solana_stage(UpdateSolanaStageArgs {
+        collection_id,
+        stage: SolanaDeploymentStage::Deployed,
+        candy_machine_address: Some(candy_machine_address.clone()),
+        candy_machine_authority: Some(user_wallet_address),
+        collection_mint: None,
+        manifest_url: None,
+        candy_machine_config: None,
+        files_uploaded: None,
+        metadata_created: None,
+    })?;
+
+    Ok(candy_machine_address)
 }

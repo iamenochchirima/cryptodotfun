@@ -31,3 +31,4 @@ solana-signature.workspace = true
 solana-system-interface = { workspace = true, features = ["bincode"] }
 solana-transaction = { workspace = true, features = ["bincode"] }
 spl-associated-token-account-interface.workspace = true
+borsh = { version = "1.5", default-features = false }

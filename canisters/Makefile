@@ -92,6 +92,9 @@ deploy-marketplace:
 	mkdir -p ../client/declarations
 	rsync -av src/declarations/marketplace/ ../client/declarations/marketplace/
 
+deploy-marketplace-live:
+	dfx deploy marketplace --yes --argument '(record { admin = principal "o4jpg-z2hcz-bf2oe-zziee-bsw4t-jgecg-boagp-segn6-pdznr-u6bdc-zae" })' --network ic
+
 deploy-users:
 	dfx deploy users
 	dfx generate users

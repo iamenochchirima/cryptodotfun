@@ -1,4 +1,5 @@
 use ic_stable_structures::StableBTreeMap;
+use canister_uuid::get_uuid;
 use std::cell::RefCell;
 use crate::types::{
     Collection, CreateCollectionArgs, Blockchain, CollectionStatus,
@@ -12,8 +13,8 @@ thread_local! {
         RefCell::new(StableBTreeMap::init(get_memory(COLLECTIONS_MEMORY_ID)));
 }
 
-pub fn add_collection(args: CreateCollectionArgs, creator: Principal) -> Result<String, String> {
-    let collection_id = generate_collection_id(&args.blockchain, &args.name);
+pub async fn add_collection(args: CreateCollectionArgs, creator: Principal) -> Result<String, String> {
+    let collection_id = get_uuid().await;
 
     let collection = Collection {
         id: collection_id.clone(),
@@ -141,6 +142,12 @@ pub fn update_solana_stage(args: UpdateSolanaStageArgs) -> Result<(), String> {
                 if let Some(created) = args.metadata_created {
                     data.metadata_created = created;
                 }
+                if let Some(authority) = args.candy_machine_authority {
+                    data.candy_machine_authority = Some(authority);
+                }
+                if let Some(config) = args.candy_machine_config {
+                    data.candy_machine_config = Some(config);
+                }
                 collection.updated_at = ic_cdk::api::time();
                 collections.insert(args.collection_id, collection);
                 Ok(())
@@ -176,16 +183,4 @@ pub fn get_draft_collections(creator: &Principal) -> Vec<Collection> {
             .map(|entry| entry.value())
             .collect()
     })
-}
-
-fn generate_collection_id(blockchain: &Blockchain, name: &str) -> String {
-    use std::collections::hash_map::DefaultHasher;
-    use std::hash::{Hash, Hasher};
-
-    let mut hasher = DefaultHasher::new();
-    blockchain.as_str().hash(&mut hasher);
-    name.hash(&mut hasher);
-    ic_cdk::api::time().hash(&mut hasher);
-
-    format!("{}_{:x}", blockchain.as_str(), hasher.finish())
 }

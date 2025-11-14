@@ -20,6 +20,7 @@ export interface CollectionDraft {
   status: DraftStatus;
   created_at: string;
   updated_at: string;
+  canister_record_id?: string; 
 }
 
 export interface CreateDraftRequest {
@@ -46,4 +47,5 @@ export interface UpdateDraftRequest {
   collection_image_url?: string;
   metadata?: Record<string, any>;
   status?: DraftStatus;
+  canister_record_id?: string; 
 }

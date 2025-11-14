@@ -4,6 +4,13 @@ type BitcoinCollectionData = record {
 };
 type BitcoinDeploymentStage = variant { InscriptionsCreating; Deployed };
 type Blockchain = variant { ICP; Ethereum; Solana; Bitcoin };
+type CandyMachineConfig = record {
+  seller_fee_basis_points : nat16;
+  items_available : nat64;
+  go_live_date : opt nat64;
+  price : nat64;
+  symbol : text;
+};
 type ChainData = variant {
   ICP : ICPCollectionData;
   Ethereum : EthereumCollectionData;
@@ -112,9 +119,11 @@ type SolanaCollectionData = record {
   files_uploaded : bool;
   metadata_created : bool;
   manifest_url : opt text;
+  candy_machine_config : opt CandyMachineConfig;
   collection_mint : opt text;
   candy_machine_address : opt text;
   deployment_stage : SolanaDeploymentStage;
+  candy_machine_authority : opt text;
 };
 type SolanaDeploymentStage = variant {
   CandyMachineDeploying;
@@ -145,9 +154,11 @@ type UpdateSolanaStageArgs = record {
   metadata_created : opt bool;
   manifest_url : opt text;
   collection_id : text;
+  candy_machine_config : opt CandyMachineConfig;
   collection_mint : opt text;
   stage : SolanaDeploymentStage;
   candy_machine_address : opt text;
+  candy_machine_authority : opt text;
 };
 service : (InitArgs) -> {
   associated_token_account : (opt principal, text) -> (text);

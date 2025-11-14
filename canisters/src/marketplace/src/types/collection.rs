@@ -30,6 +30,17 @@ pub struct SolanaCollectionData {
     pub manifest_url: Option<String>,
     pub files_uploaded: bool,
     pub metadata_created: bool,
+    pub candy_machine_authority: Option<String>,
+    pub candy_machine_config: Option<CandyMachineConfig>,
+}
+
+#[derive(CandidType, Serialize, Deserialize, Clone, Debug)]
+pub struct CandyMachineConfig {
+    pub price: u64, 
+    pub go_live_date: Option<u64>, 
+    pub items_available: u64, 
+    pub seller_fee_basis_points: u16,
+    pub symbol: String,
 }
 
 #[derive(CandidType, Serialize, Deserialize, Clone, Debug, PartialEq)]
@@ -159,4 +170,6 @@ pub struct UpdateSolanaStageArgs {
     pub manifest_url: Option<String>,
     pub files_uploaded: Option<bool>,
     pub metadata_created: Option<bool>,
+    pub candy_machine_authority: Option<String>,
+    pub candy_machine_config: Option<CandyMachineConfig>,
 }

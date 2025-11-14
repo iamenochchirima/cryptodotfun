@@ -19,6 +19,7 @@ import { useAuth } from "@/providers/auth-context"
 import { getMarketplaceActor } from "@/providers/actors/marketplace"
 import { uploadToStorage, StorageProvider } from "@/lib/storage"
 import { useWallet } from "@solana/wallet-adapter-react"
+import { toast } from "sonner"
 
 interface CollectionFormData {
   name: string
@@ -35,6 +36,7 @@ interface CollectionFormData {
   deploymentStage?: string
   manifestUrl?: string
   candyMachineAddress?: string
+  canisterRecordId?: string 
 }
 
 type SaveStatus = "saving" | "saved" | "idle"
@@ -156,6 +158,71 @@ export default function CreateSolanaCollectionPage() {
       }
     }
 
+    if (currentStep === 2 && formData.manifestUrl && !formData.canisterRecordId) {
+      try {
+        setIsUploading(true)
+        setUploadProgress("Creating collection record...")
+
+        const actor = await getMarketplaceActor(identity)
+
+        const createResult = await actor.create_collection({
+          blockchain: { Solana: null },
+          name: formData.name,
+          symbol: formData.symbol,
+          description: formData.description,
+          image_url: formData.imageUrl,
+          banner_url: [],
+          total_supply: BigInt(formData.supply),
+          royalty_bps: parseInt(formData.royaltyBps),
+          metadata: [
+            ["mint_price", formData.mintPrice || "0"],
+            ["go_live_date", formData.goLiveDate || ""],
+            ["max_per_wallet", formData.maxPerWallet || "10"],
+            ["whitelist_enabled", formData.whitelistEnabled || "false"],
+          ],
+          chain_data: {
+            Solana: {
+              deployment_stage: { FilesUploaded: null },
+              candy_machine_address: [],
+              collection_mint: [],
+              manifest_url: [formData.manifestUrl],
+              files_uploaded: true,
+              metadata_created: true,
+              candy_machine_authority: [],
+              candy_machine_config: [],
+            }
+          }
+        })
+
+        if ('Err' in createResult) {
+          throw new Error(createResult.Err)
+        }
+
+        const canisterRecordId = createResult.Ok
+
+        const updatedFormData = {
+          ...formData,
+          canisterRecordId,
+          collectionId: canisterRecordId,
+          deploymentStage: "FilesUploaded"
+        }
+        setFormData(updatedFormData)
+
+        await saveDraft(draftId, updatedFormData, collectionImage || undefined, nftAssets || undefined)
+
+        console.log("Collection record created:", canisterRecordId)
+      } catch (error) {
+        console.error("Failed to create collection record:", error)
+        toast.error("Failed to create collection record", {
+          description: error instanceof Error ? error.message : "Please try again"
+        })
+        return
+      } finally {
+        setIsUploading(false)
+        setUploadProgress("")
+      }
+    }
+
     if (currentStep < 3) {
       setCurrentStep(currentStep + 1)
     }
@@ -227,7 +294,6 @@ export default function CreateSolanaCollectionPage() {
 
       const { collectionImageUrl, manifestUrl } = result
 
-      // Save upload results to draft immediately
       const updatedFormData = {
         ...formData,
         imageUrl: collectionImageUrl,
@@ -235,55 +301,9 @@ export default function CreateSolanaCollectionPage() {
       }
       setFormData(updatedFormData)
       await saveDraft(draftId, updatedFormData, collectionImage || undefined, nftAssets || undefined)
-      console.log("Upload results saved to draft")
-
-      const actor = await getMarketplaceActor(identity)
-
-      setUploadProgress("Saving collection to canister...")
-      const createResult = await actor.create_collection({
-        blockchain: { Solana: null },
-        name: formData.name,
-        symbol: formData.symbol,
-        description: formData.description,
-        image_url: collectionImageUrl,
-        banner_url: [],
-        total_supply: BigInt(formData.supply),
-        royalty_bps: parseInt(formData.royaltyBps),
-        metadata: [
-          ["mint_price", formData.mintPrice],
-          ["go_live_date", formData.goLiveDate || ""],
-          ["max_per_wallet", formData.maxPerWallet],
-          ["whitelist_enabled", formData.whitelistEnabled],
-        ],
-        chain_data: {
-          Solana: {
-            deployment_stage: { FilesUploaded: null },
-            candy_machine_address: [],
-            collection_mint: [],
-            manifest_url: [manifestUrl],
-            files_uploaded: true,
-            metadata_created: true,
-          }
-        }
-      })
-
-      if ('Err' in createResult) {
-        throw new Error(createResult.Err)
-      }
-
-      const collectionId = createResult.Ok
-
-      setFormData(prev => ({
-        ...prev,
-        collectionId,
-        manifestUrl: manifestUrl,
-        imageUrl: collectionImageUrl,
-        deploymentStage: "FilesUploaded"
-      }))
 
       setUploadProgress("Upload complete!")
-      console.log("Collection created with Arweave data:", collectionId)
-      console.log("Manifest URL:", manifestUrl)
+      console.log("Files uploaded. Manifest URL:", manifestUrl)
     } catch (error) {
       console.error("Arweave upload failed:", error)
       throw error
@@ -298,21 +318,23 @@ export default function CreateSolanaCollectionPage() {
     setShowPaymentModal(false)
 
     try {
-      if (!formData.collectionId || !formData.manifestUrl) {
-        console.error("Missing collection ID or manifest URL")
+      if (!formData.canisterRecordId || !formData.manifestUrl) {
+        console.error("Missing canister record ID or manifest URL")
         return
       }
 
       const actor = await getMarketplaceActor(identity)
 
       await actor.update_solana_stage({
-        collection_id: formData.collectionId,
+        collection_id: formData.canisterRecordId,
         stage: { CandyMachineDeploying: null },
         manifest_url: [formData.manifestUrl],
         files_uploaded: [true],
         metadata_created: [true],
         candy_machine_address: [],
-        collection_mint: []
+        collection_mint: [],
+        candy_machine_authority: [],
+        candy_machine_config: []
       })
 
       setFormData(prev => ({
@@ -871,16 +893,18 @@ export default function CreateSolanaCollectionPage() {
                     <h4 className="font-semibold">Deployment Steps</h4>
                     <div className="space-y-2">
                       <div className="flex items-center gap-2">
-                        <div className="h-4 w-4 rounded-full border-2 border-muted" />
-                        <span className="text-sm">Upload to Arweave</span>
+                        <CheckCircle className="h-4 w-4 text-green-600" />
+                        <span className="text-sm">Files uploaded to {storageProvider === "arweave" ? "Arweave" : "IPFS"}</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <div className="h-4 w-4 rounded-full border-2 border-muted" />
-                        <span className="text-sm">Deploy on Solana</span>
+                        <CheckCircle className="h-4 w-4 text-green-600" />
+                        <span className="text-sm">Collection record created</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <div className="h-4 w-4 rounded-full border-2 border-muted" />
-                        <span className="text-sm">Update collection info</span>
+                        <div className="h-4 w-4 rounded-full border-2 border-purple-600 flex items-center justify-center">
+                          <div className="h-2 w-2 rounded-full bg-purple-600" />
+                        </div>
+                        <span className="text-sm font-medium">Deploy Candy Machine on Solana</span>
                       </div>
                     </div>
                   </div>
