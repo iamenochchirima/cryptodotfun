@@ -20,6 +20,7 @@ import { getMarketplaceActor } from "@/providers/actors/marketplace"
 import { uploadToStorage, StorageProvider } from "@/lib/storage"
 import { useWallet } from "@solana/wallet-adapter-react"
 import { toast } from "sonner"
+import { createCandyMachineInstruction, deployCandyMachineViaCanister } from "@/lib/solana/candyMachine"
 
 interface CollectionFormData {
   name: string
@@ -69,6 +70,8 @@ export default function CreateSolanaCollectionPage() {
   const [isUploading, setIsUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState("")
   const [showPaymentModal, setShowPaymentModal] = useState(false)
+  const [isDeploying, setIsDeploying] = useState(false)
+  const [deploymentStep, setDeploymentStep] = useState<string>("")
   const debouncedFormData = useDebounce(formData, 1000)
 
   useEffect(() => {
@@ -254,8 +257,120 @@ export default function CreateSolanaCollectionPage() {
     }
   }
 
-  const handleDeployClick = () => {
-    setShowPaymentModal(true)
+  const handleDeployClick = async () => {
+    if (!connected || !publicKey) {
+      toast.error("Please connect your Solana wallet", {
+        description: "You need to connect your wallet to deploy the candy machine"
+      })
+      return
+    }
+
+    if (!formData.canisterRecordId) {
+      toast.error("Collection record not found", {
+        description: "Please go back and create the collection record first"
+      })
+      return
+    }
+
+    if (!formData.manifestUrl) {
+      toast.error("Manifest URL not found", {
+        description: "Please upload your NFT files first"
+      })
+      return
+    }
+
+    try {
+      setIsDeploying(true)
+      setDeploymentStep("Getting canister information...")
+
+      const actor = await getMarketplaceActor(identity)
+
+      // Get canister's Solana address
+      const canisterInfoResult = await actor.get_canister_solana_info()
+      if ('Err' in canisterInfoResult) {
+        throw new Error(canisterInfoResult.Err)
+      }
+      const canisterInfo = canisterInfoResult.Ok
+      const canisterPayerAddress = canisterInfo.main_solana_address
+
+      setDeploymentStep("Fetching collection Solana accounts...")
+
+      const collectionAccountsResult = await actor.get_collection_solana_accounts(formData.canisterRecordId)
+      if ('Err' in collectionAccountsResult) {
+        throw new Error(collectionAccountsResult.Err)
+      }
+      const collectionAccounts = collectionAccountsResult.Ok
+      const candyMachineAddress = collectionAccounts.candy_machine_address
+
+      setDeploymentStep("Building Candy Machine instruction...")
+
+      // Create candy machine instruction data (without blockhash)
+      const instructionData = await createCandyMachineInstruction({
+        collectionId: formData.canisterRecordId,
+        name: formData.name,
+        symbol: formData.symbol,
+        supply: parseInt(formData.supply),
+        mintPrice: parseFloat(formData.mintPrice),
+        goLiveDate: formData.goLiveDate,
+        royaltyBps: parseInt(formData.royaltyBps),
+        manifestUrl: formData.manifestUrl,
+        canisterPayerAddress,
+        candyMachineAddress,
+        network: 'devnet', // TODO: Make this configurable
+      })
+
+      setDeploymentStep("Sending to canister for deployment...")
+
+      // Send instruction to canister which will:
+      // 1. Fetch recent blockhash
+      // 2. Build complete transaction
+      // 3. Sign and send to Solana
+      const txSignature = await deployCandyMachineViaCanister(
+        actor,
+        formData.canisterRecordId,
+        instructionData
+      )
+
+      setDeploymentStep("Updating collection record...")
+
+      // Update collection with candy machine address
+      const updateResult = await actor.update_candy_machine_address(
+        formData.canisterRecordId,
+        candyMachineAddress
+      )
+
+      if ('Err' in updateResult) {
+        throw new Error(updateResult.Err)
+      }
+
+      // Update local state
+      const updatedFormData = {
+        ...formData,
+        candyMachineAddress,
+        deploymentStage: 'Deployed'
+      }
+      setFormData(updatedFormData)
+      await saveDraft(draftId, updatedFormData, collectionImage, nftAssets)
+
+      setDeploymentStep("Transferring authority to your wallet...")
+
+      // TODO: Transfer authority to user's wallet
+      // This would require implementing the transfer authority transaction
+
+      toast.success("Candy Machine deployed successfully!", {
+        description: `Transaction: ${txSignature.slice(0, 8)}...${txSignature.slice(-8)}`
+      })
+
+      setIsDeploying(false)
+      setDeploymentStep("")
+    } catch (error) {
+      console.error("Deployment failed:", error)
+      setIsDeploying(false)
+      setDeploymentStep("")
+      toast.error("Failed to deploy Candy Machine", {
+        description: error instanceof Error ? error.message : "Please try again"
+      })
+    }
   }
 
   const handleArweaveUpload = async () => {
@@ -957,10 +1072,20 @@ export default function CreateSolanaCollectionPage() {
               ) : (
                 <Button
                   onClick={handleDeployClick}
+                  disabled={isDeploying || !connected}
                   className="bg-purple-600 hover:bg-purple-700"
                 >
-                  <Rocket className="mr-2 h-4 w-4" />
-                  Deploy Collection
+                  {isDeploying ? (
+                    <>
+                      <Upload className="mr-2 h-4 w-4 animate-spin" />
+                      {deploymentStep || "Deploying..."}
+                    </>
+                  ) : (
+                    <>
+                      <Rocket className="mr-2 h-4 w-4" />
+                      Deploy Collection
+                    </>
+                  )}
                 </Button>
               )}
             </div>

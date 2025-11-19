@@ -16,6 +16,7 @@ serde_json.workspace = true
 serde_bytes.workspace = true
 canister_uuid = { path = "../uuid" }
 bs58.workspace = true
+bincode.workspace = true
 # Transitive dependency - required for WASM compatibility
 # See https://forum.dfinity.org/t/module-imports-function-wbindgen-describe-from-wbindgen-placeholder-that-is-not-exported-by-the-runtime/11545/8
 getrandom = { workspace = true, default-features = false, features = ["custom"] }

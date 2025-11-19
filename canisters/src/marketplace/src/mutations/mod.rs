@@ -72,9 +72,11 @@ pub fn update_solana_stage(args: UpdateSolanaStageArgs) -> Result<(), String> {
 }
 
 #[update]
-pub async fn deploy_candy_machine(
+pub async fn sign_and_send_solana_transaction(
     collection_id: String,
-    user_wallet_address: String,
+    serialized_message: Vec<u8>,
+    transaction_type: TransactionType,
+    user_wallet_address: Option<String>,
 ) -> Result<String, String> {
     let caller = msg_caller();
 
@@ -85,22 +87,91 @@ pub async fn deploy_candy_machine(
         return Err("Not authorized".to_string());
     }
 
-    let candy_machine_address = candy_machine::deploy_candy_machine_for_user(
+    let signature = candy_machine::sign_and_send_transaction(
         collection_id.clone(),
+        serialized_message,
+        transaction_type.clone(),
         user_wallet_address.clone(),
     ).await?;
+
+    match transaction_type {
+        TransactionType::CreateCandyMachine => {
+            // Update state to track candy machine creation
+            // Note: candy_machine_address will be set after we get it from the transaction
+            ic_cdk::println!("Candy Machine creation transaction sent: {}", signature);
+        }
+        TransactionType::TransferAuthority => {
+            if let Some(new_authority) = user_wallet_address {
+                state::update_solana_stage(UpdateSolanaStageArgs {
+                    collection_id: collection_id.clone(),
+                    stage: SolanaDeploymentStage::Deployed,
+                    candy_machine_address: None,
+                    candy_machine_authority: Some(new_authority),
+                    collection_mint: None,
+                    manifest_url: None,
+                    candy_machine_config: None,
+                    files_uploaded: None,
+                    metadata_created: None,
+                })?;
+            }
+        }
+        TransactionType::UpdateCandyMachine => {
+            ic_cdk::println!("Candy Machine update transaction sent: {}", signature);
+        }
+    }
+
+    Ok(signature)
+}
+
+/// Creates a Candy Machine from instruction data
+/// The canister will fetch the recent blockhash, build the transaction, sign, and send
+#[update]
+pub async fn create_candy_machine_from_instruction(
+    collection_id: String,
+    instruction_data: InstructionData,
+) -> Result<String, String> {
+    let caller = msg_caller();
+
+    let collection = state::get_collection(&collection_id)
+        .ok_or("Collection not found")?;
+
+    if collection.creator != caller {
+        return Err("Not authorized".to_string());
+    }
+
+    let signature = candy_machine::create_candy_machine_from_instruction(
+        collection_id.clone(),
+        instruction_data,
+    ).await?;
+
+    ic_cdk::println!("Candy Machine creation transaction sent: {}", signature);
+
+    Ok(signature)
+}
+
+#[update]
+pub fn update_candy_machine_address(
+    collection_id: String,
+    candy_machine_address: String,
+) -> Result<(), String> {
+    let caller = msg_caller();
+
+    let collection = state::get_collection(&collection_id)
+        .ok_or("Collection not found")?;
+
+    if collection.creator != caller {
+        return Err("Not authorized".to_string());
+    }
 
     state::update_solana_stage(UpdateSolanaStageArgs {
         collection_id,
         stage: SolanaDeploymentStage::Deployed,
-        candy_machine_address: Some(candy_machine_address.clone()),
-        candy_machine_authority: Some(user_wallet_address),
+        candy_machine_address: Some(candy_machine_address),
+        candy_machine_authority: None,
         collection_mint: None,
         manifest_url: None,
         candy_machine_config: None,
         files_uploaded: None,
         metadata_created: None,
-    })?;
-
-    Ok(candy_machine_address)
+    })
 }
