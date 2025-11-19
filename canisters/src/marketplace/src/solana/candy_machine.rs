@@ -34,8 +34,6 @@ pub async fn sign_and_send_transaction(
 
     let signatures = match transaction_type {
         TransactionType::CreateCandyMachine => {
-            // Use the canister wallet itself as the candy machine signer
-            // (same derivation as the payer)
             vec![
                 payer.sign_message(&message).await,
                 payer.sign_message(&message).await,
@@ -165,37 +163,56 @@ pub async fn create_candy_machine_from_instruction(
     let program_id = Pubkey::from_str(&instruction_data.program_id)
         .map_err(|e| format!("Invalid program ID: {:?}", e))?;
 
-    // Parse account metas and replace ALL signers with canister's payer
-    // The canister can only sign with its own keys, so any signer in the instruction
-    // that isn't already the payer needs to be replaced with the payer
+    // Parse account metas and ensure we only sign for keys we control
     let mut account_metas = Vec::new();
-    let mut replaced_signers = Vec::new();
+    let mut found_candy_machine = false;
 
     for account in instruction_data.accounts {
         let pubkey = Pubkey::from_str(&account.pubkey)
             .map_err(|e| format!("Invalid account pubkey: {:?}", e))?;
 
-        // If this account is marked as a signer but isn't the payer, replace it with the payer
-        let (final_pubkey, is_signer) = if account.is_signer && pubkey != payer_pubkey {
-            ic_cdk::println!(
-                "Replacing signer {} with canister payer (marking as non-signer since payer will sign once)",
-                bs58::encode(&pubkey.to_bytes()).into_string()
-            );
-            replaced_signers.push(bs58::encode(&pubkey.to_bytes()).into_string());
-            // Use payer pubkey, but mark as non-signer to avoid duplicate signatures
-            (payer_pubkey, false)
-        } else {
-            (pubkey, account.is_signer)
-        };
+        ic_cdk::println!(
+            "Account: {} - is_signer: {} - is_writable: {}",
+            bs58::encode(pubkey.to_bytes()).into_string(),
+            account.is_signer,
+            account.is_writable
+        );
 
+        if account.is_signer {
+            let is_payer = pubkey == payer_pubkey;
+            let is_candy_machine = pubkey == candy_machine_pubkey;
+
+            ic_cdk::println!(
+                "  Signer check: is_payer={}, is_candy_machine={}",
+                is_payer,
+                is_candy_machine
+            );
+
+            if !is_payer && !is_candy_machine {
+                return Err(format!(
+                    "Transaction requires signer {} that the canister cannot authorize. Payer={}, CandyMachine={}",
+                    bs58::encode(pubkey.to_bytes()).into_string(),
+                    bs58::encode(payer_pubkey.to_bytes()).into_string(),
+                    bs58::encode(candy_machine_pubkey.to_bytes()).into_string()
+                ));
+            }
+        }
+
+        if pubkey == candy_machine_pubkey {
+            found_candy_machine = true;
+        }
+
+        let final_pubkey = pubkey;
         account_metas.push(solana_instruction::AccountMeta {
             pubkey: final_pubkey,
-            is_signer,
+            is_signer: account.is_signer,
             is_writable: account.is_writable,
         });
     }
 
-    ic_cdk::println!("Replaced {} signer account(s) with canister payer", replaced_signers.len());
+    if !found_candy_machine {
+        return Err("Instruction data does not reference the derived candy machine account".to_string());
+    }
 
     // Create the instruction
     let instruction = Instruction {

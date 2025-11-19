@@ -1,7 +1,7 @@
 use ic_cdk::api::{msg_caller, canister_self};
 use ic_cdk::query;
 use ic_cdk::println;
-use candid::CandidType;
+use candid::{CandidType, Principal};
 use serde::{Deserialize, Serialize};
 use crate::types::*;
 use crate::state;
@@ -38,6 +38,16 @@ pub fn get_collection_listings(
 }
 
 #[query]
+pub fn get_creator_draft_collections(creator : Principal) -> Vec<Collection> {
+    state::get_draft_collections(&creator)
+}
+
+#[query]
+pub fn get_all_draft_collections(page: u32, limit: u32) -> Vec<Collection> {
+    state::get_all_draft_collections(page, limit)
+}
+
+#[query]
 pub fn get_user_listings(page: u32, limit: u32) -> Vec<Listing> {
     let caller = msg_caller();
     state::get_user_listings(&caller, page, limit)
@@ -62,18 +72,12 @@ pub fn get_my_draft_collections() -> Vec<Collection> {
 }
 
 #[query]
-pub fn get_canister_solana_info() -> Result<CanisterSolanaInfo, String> {
+pub async fn get_canister_solana_info() -> Result<CanisterSolanaInfo, String> {
     let canister_id = ic_cdk::id();
 
-    // Get the cached public key from config
-    let ed25519_public_key = state::config::get_ed25519_public_key()
-        .ok_or("Ed25519 public key not initialized. Call initialize_solana first.")?;
-
-    let pubkey_bytes: [u8; 32] = ed25519_public_key.public_key_bytes
-        .try_into()
-        .map_err(|_| "Invalid public key bytes")?;
-
-    let main_address = bs58::encode(&pubkey_bytes).into_string();
+    let wallet = SolanaWallet::new(canister_self()).await;
+    let payer_account = wallet.solana_account();
+    let main_address = payer_account.to_string();
 
     Ok(CanisterSolanaInfo {
         canister_id: canister_id.to_text(),

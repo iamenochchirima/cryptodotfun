@@ -184,3 +184,15 @@ pub fn get_draft_collections(creator: &Principal) -> Vec<Collection> {
             .collect()
     })
 }
+
+pub fn get_all_draft_collections(page: u32, limit: u32) -> Vec<Collection> {
+    COLLECTIONS.with(|c| {
+        c.borrow()
+            .iter()
+            .filter(|entry| entry.value().status == CollectionStatus::Draft)
+            .skip((page * limit) as usize)
+            .take(limit as usize)
+            .map(|entry| entry.value())
+            .collect()
+    })
+}

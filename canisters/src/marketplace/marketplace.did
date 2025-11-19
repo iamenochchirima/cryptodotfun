@@ -197,6 +197,7 @@ service : (InitArgs) -> {
   create_listing : (CreateListingArgs, Blockchain) -> (Result_1);
   create_nonce_account : (opt principal) -> (text);
   get_all_collections : (nat32, nat32) -> (vec Collection) query;
+  get_all_draft_collections : (nat32, nat32) -> (vec Collection) query;
   get_balance : (opt text) -> (nat);
   get_canister_solana_info : () -> (Result_2) query;
   get_collection : (text) -> (opt Collection) query;
@@ -208,6 +209,7 @@ service : (InitArgs) -> {
   get_collections_by_blockchain : (Blockchain, nat32, nat32) -> (
       vec Collection,
     ) query;
+  get_creator_draft_collections : (principal) -> (vec Collection) query;
   get_listing : (text, text) -> (opt Listing) query;
   get_my_draft_collections : () -> (vec Collection) query;
   get_nonce : (opt text) -> (text);

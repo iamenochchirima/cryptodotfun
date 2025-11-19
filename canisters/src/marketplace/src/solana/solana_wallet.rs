@@ -80,7 +80,6 @@ impl SolanaWallet {
             root_public_key,
         }
     }
-
     pub fn derive_account(&self, derivation_path: DerivationPath) -> SolanaAccount {
         SolanaAccount::new_derived_account(&self.root_public_key, derivation_path)
     }

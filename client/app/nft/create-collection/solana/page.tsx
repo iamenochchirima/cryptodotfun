@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -43,6 +44,7 @@ interface CollectionFormData {
 type SaveStatus = "saving" | "saved" | "idle"
 
 export default function CreateSolanaCollectionPage() {
+  const router = useRouter()
   const { identity, usersActor } = useAuth()
   const { wallet, publicKey, connected } = useWallet()
 
@@ -291,7 +293,6 @@ export default function CreateSolanaCollectionPage() {
         throw new Error(canisterInfoResult.Err)
       }
       const canisterInfo = canisterInfoResult.Ok
-      const canisterPayerAddress = canisterInfo.main_solana_address
 
       setDeploymentStep("Fetching collection Solana accounts...")
 
@@ -300,6 +301,7 @@ export default function CreateSolanaCollectionPage() {
         throw new Error(collectionAccountsResult.Err)
       }
       const collectionAccounts = collectionAccountsResult.Ok
+      const canisterPayerAddress = collectionAccounts.payer_address
       const candyMachineAddress = collectionAccounts.candy_machine_address
 
       setDeploymentStep("Building Candy Machine instruction...")
@@ -343,26 +345,25 @@ export default function CreateSolanaCollectionPage() {
         throw new Error(updateResult.Err)
       }
 
-      // Update local state
-      const updatedFormData = {
-        ...formData,
-        candyMachineAddress,
-        deploymentStage: 'Deployed'
+      setDeploymentStep("Finalizing deployment...")
+
+      // Remove the draft after successful deployment
+      if (draftId) {
+        localStorage.removeItem(`solana-collection-draft-${draftId}`)
       }
-      setFormData(updatedFormData)
-      await saveDraft(draftId, updatedFormData, collectionImage, nftAssets)
-
-      setDeploymentStep("Transferring authority to your wallet...")
-
-      // TODO: Transfer authority to user's wallet
-      // This would require implementing the transfer authority transaction
 
       toast.success("Candy Machine deployed successfully!", {
-        description: `Transaction: ${txSignature.slice(0, 8)}...${txSignature.slice(-8)}`
+        description: `Transaction: ${txSignature.slice(0, 8)}...${txSignature.slice(-8)}`,
+        duration: 5000,
       })
 
       setIsDeploying(false)
       setDeploymentStep("")
+
+      // Navigate to collection management page
+      setTimeout(() => {
+        router.push(`/collections/solana/manage/${formData.canisterRecordId}`)
+      }, 1000)
     } catch (error) {
       console.error("Deployment failed:", error)
       setIsDeploying(false)

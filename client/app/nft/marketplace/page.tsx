@@ -288,6 +288,12 @@ export default function NFTHubPage() {
           </div>
           <div className="flex items-center gap-3">
             <ModeToggle mode={viewMode} onModeChange={setViewMode} />
+            <Button variant="outline" asChild>
+              <Link href="/collections/my">
+                <Wallet className="mr-2 h-4 w-4" />
+                My Collections
+              </Link>
+            </Button>
             <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white" asChild>
               <Link href="/nft/create-collection">
                 <Plus className="mr-2 h-4 w-4" />
