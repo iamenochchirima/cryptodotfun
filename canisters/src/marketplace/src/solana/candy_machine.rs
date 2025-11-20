@@ -346,3 +346,195 @@ pub async fn create_candy_machine_from_instruction(
 
     Ok(signature.to_string())
 }
+
+/// Adds items to a candy machine using instruction data built on the frontend
+pub async fn add_items_to_candy_machine(
+    collection_id: String,
+    instruction_data: InstructionData,
+) -> Result<String, String> {
+    let collection = get_collection(&collection_id)
+        .ok_or("Collection not found")?;
+
+    let solana_data = match &collection.chain_data {
+        crate::types::ChainData::Solana(data) => data,
+        _ => return Err("Collection is not a Solana collection".to_string()),
+    };
+
+    if solana_data.candy_machine_address.is_none() {
+        return Err("Collection does not have a candy machine deployed".to_string());
+    }
+
+    ic_cdk::println!(
+        "Adding items to candy machine for collection {}",
+        collection_id
+    );
+
+    let canister_wallet = SolanaWallet::new(canister_self()).await;
+    let payer = canister_wallet.solana_account();
+    let candy_machine_account = canister_wallet.candy_machine_account(&collection_id);
+
+    let payer_pubkey = *payer.as_ref();
+    let candy_machine_pubkey = *candy_machine_account.as_ref();
+
+    ic_cdk::println!(
+        "Payer: {}, Candy Machine: {}",
+        bs58::encode(payer.as_ref()).into_string(),
+        bs58::encode(candy_machine_account.as_ref()).into_string()
+    );
+
+    let program_id = Pubkey::from_str(&instruction_data.program_id)
+        .map_err(|e| format!("Invalid program ID: {:?}", e))?;
+
+    let mut account_metas = Vec::new();
+    let mut found_candy_machine = false;
+
+    for account in instruction_data.accounts {
+        let pubkey = Pubkey::from_str(&account.pubkey)
+            .map_err(|e| format!("Invalid account pubkey: {:?}", e))?;
+
+        if account.is_signer {
+            let is_payer = pubkey == payer_pubkey;
+            let is_candy_machine = pubkey == candy_machine_pubkey;
+
+            if !is_payer && !is_candy_machine {
+                return Err(format!(
+                    "Transaction requires signer {} that the canister cannot authorize. Payer={}, CandyMachine={}",
+                    bs58::encode(pubkey.to_bytes()).into_string(),
+                    bs58::encode(payer_pubkey.to_bytes()).into_string(),
+                    bs58::encode(candy_machine_pubkey.to_bytes()).into_string()
+                ));
+            }
+        }
+
+        if pubkey == candy_machine_pubkey {
+            found_candy_machine = true;
+        }
+
+        account_metas.push(solana_instruction::AccountMeta {
+            pubkey,
+            is_signer: account.is_signer,
+            is_writable: account.is_writable,
+        });
+    }
+
+    if !found_candy_machine {
+        return Err("Instruction data does not reference the derived candy machine account".to_string());
+    }
+
+    let instruction = Instruction {
+        program_id,
+        accounts: account_metas,
+        data: instruction_data.data,
+    };
+
+    let blockhash = client()
+        .estimate_recent_blockhash()
+        .send()
+        .await
+        .map_err(|e| format!("Failed to get recent blockhash: {:?}", e))?;
+
+    let message = Message::new_with_blockhash(
+        &[instruction],
+        Some(payer.as_ref()),
+        &blockhash,
+    );
+
+    let num_signatures = message.header.num_required_signatures as usize;
+
+    ic_cdk::println!("Number of required signatures: {}", num_signatures);
+
+    let num_signed_writable = num_signatures
+        .saturating_sub(message.header.num_readonly_signed_accounts as usize);
+    let total_unsigned = message.account_keys.len().saturating_sub(num_signatures);
+    let num_unsigned_writable = total_unsigned
+        .saturating_sub(message.header.num_readonly_unsigned_accounts as usize);
+
+    for (index, key) in message.account_keys.iter().enumerate() {
+        let signer = index < num_signatures;
+        let writable = if signer {
+            index < num_signed_writable
+        } else {
+            let unsigned_index = index - num_signatures;
+            unsigned_index < num_unsigned_writable
+        };
+
+        ic_cdk::println!(
+            "Account {}: {} signer={} writable={}",
+            index,
+            bs58::encode(key).into_string(),
+            signer,
+            writable
+        );
+    }
+
+    let mut signatures = Vec::new();
+    for (index, signer) in message.account_keys.iter().take(num_signatures).enumerate() {
+        if signer == payer.as_ref() {
+            ic_cdk::println!("Signing as payer at position {}", index);
+            signatures.push(payer.sign_message(&message).await);
+        } else if signer == candy_machine_account.as_ref() {
+            ic_cdk::println!("Signing as candy machine at position {}", index);
+            signatures.push(candy_machine_account.sign_message(&message).await);
+        } else {
+            return Err(format!(
+                "Transaction requires signer {} that the canister cannot authorize",
+                bs58::encode(signer).into_string()
+            ));
+        }
+    }
+
+    let transaction = Transaction {
+        message,
+        signatures,
+    };
+
+    let multi_result = client()
+        .send_transaction(transaction)
+        .send()
+        .await;
+
+    let signature = match multi_result {
+        sol_rpc_types::MultiRpcResult::Consistent(result) => {
+            ic_cdk::println!("All RPC providers agree on transaction result");
+            result.map_err(|e| format!("Failed to send transaction: {}", e))?
+        }
+        sol_rpc_types::MultiRpcResult::Inconsistent(results) => {
+            ic_cdk::println!("RPC providers returned inconsistent results, using majority consensus");
+
+            let mut successes = Vec::new();
+            let mut failures = Vec::new();
+
+            for (source, result) in results.iter() {
+                match result {
+                    Ok(sig) => {
+                        ic_cdk::println!("Provider {:?} succeeded with signature: {}", source, sig);
+                        successes.push(sig.clone());
+                    }
+                    Err(e) => {
+                        ic_cdk::println!("Provider {:?} failed with error: {:?}", source, e);
+                        failures.push(e);
+                    }
+                }
+            }
+
+            if successes.len() >= 2 {
+                ic_cdk::println!(
+                    "Majority consensus: {} providers succeeded, using transaction",
+                    successes.len()
+                );
+                successes[0].clone()
+            } else {
+                return Err(format!(
+                    "Transaction failed consensus: {} successes, {} failures. Errors: {:?}",
+                    successes.len(),
+                    failures.len(),
+                    failures
+                ));
+            }
+        }
+    };
+
+    ic_cdk::println!("Items added transaction sent: {}", signature);
+
+    Ok(signature.to_string())
+}

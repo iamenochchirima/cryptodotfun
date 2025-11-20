@@ -87,11 +87,14 @@ export default function MyCollectionsPage() {
     const blockchain = getBlockchainName(collection.blockchain)
     const status = getStatusLabel(collection.status)
 
-    if (status === 'Draft') {
+    const hasCandyMachine = 'Solana' in collection.chain_data &&
+                           collection.chain_data.Solana.candy_machine_address?.[0]
+
+    if (status === 'Draft' && !hasCandyMachine) {
       if (blockchain === 'Solana') {
-        router.push(`/nft/create-collection/solana?draftId=${collection.id}`)
+        router.push('/nft/create-collection/solana')
       } else if (blockchain === 'ICP') {
-        router.push(`/nft/create-collection/icp?draftId=${collection.id}`)
+        router.push('/nft/create-collection/icp')
       }
     } else {
       if (blockchain === 'Solana') {

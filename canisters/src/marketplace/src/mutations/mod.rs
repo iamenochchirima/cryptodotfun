@@ -175,3 +175,25 @@ pub fn update_candy_machine_address(
         metadata_created: None,
     })
 }
+
+/// Adds items to a candy machine from the collection manifest
+/// This is an admin/owner function that:
+/// 1. Fetches the manifest from the stored URL
+/// 2. Generates metadata for each NFT item
+/// 3. Sends transactions to add items to the candy machine
+#[update]
+pub async fn add_items_to_candy_machine(
+    collection_id: String,
+    instruction_data: InstructionData,
+) -> Result<String, String> {
+    let caller = msg_caller();
+
+    let collection = state::get_collection(&collection_id)
+        .ok_or("Collection not found")?;
+
+    if collection.creator != caller {
+        return Err("Not authorized".to_string());
+    }
+
+    candy_machine::add_items_to_candy_machine(collection_id, instruction_data).await
+}

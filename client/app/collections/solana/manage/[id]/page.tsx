@@ -9,84 +9,48 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Loader2, ExternalLink, Copy, CheckCircle2 } from "lucide-react"
 import { toast } from "sonner"
-
-interface CandyMachineInfo {
-  address: string
-  itemsAvailable: number
-  itemsRedeemed: number
-  authority: string
-  goLiveDate?: string
-}
-
-interface CollectionData {
-  id: string
-  name: string
-  symbol: string
-  description: string
-  image_url: string
-  total_supply: bigint
-  creator: { toString: () => string }
-  chain_data: {
-    Solana?: {
-      candy_machine_address?: string[]
-      collection_mint?: string[]
-      manifest_url?: string[]
-    }
-  }
-}
+import { Collection } from "@/declarations/marketplace/marketplace.did"
 
 export default function ManageSolanaCollectionPage() {
   const params = useParams()
   const router = useRouter()
-  const { isAuthenticated, principal } = useAuth()
+  const { isAuthenticated, identity } = useAuth()
   const collectionId = params.id as string
 
-  const [collection, setCollection] = useState<CollectionData | null>(null)
-  const [candyMachineInfo, setCandyMachineInfo] = useState<CandyMachineInfo | null>(null)
+  const [collection, setCollection] = useState<Collection | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [copied, setCopied] = useState(false)
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      router.push('/login')
+    if (!isAuthenticated || !collectionId || !identity) {
       return
     }
 
     loadCollectionData()
-  }, [isAuthenticated, collectionId])
+  }, [isAuthenticated, collectionId, identity])
 
   const loadCollectionData = async () => {
+    if (!identity) {
+      return
+    }
     try {
       setIsLoading(true)
-      const actor = await getMarketplaceActor()
+      const actor = await getMarketplaceActor(identity)
 
       const result = await actor.get_collection(collectionId)
       if (!result || result.length === 0) {
         throw new Error("Collection not found")
       }
 
-      const collectionData = result[0] as CollectionData
+      const collectionData = result[0]
 
-      // Verify user is the creator
-      if (collectionData.creator?.toString() !== principal?.toString()) {
+      if (collectionData.creator.toString() !== identity.getPrincipal().toString()) {
         toast.error("You don't have permission to manage this collection")
         router.push('/collections')
         return
       }
 
       setCollection(collectionData)
-
-      // TODO: Fetch candy machine info from Solana
-      // For now, just use the address from collection data
-      const solanaData = collectionData.chain_data.Solana
-      if (solanaData?.candy_machine_address?.[0]) {
-        setCandyMachineInfo({
-          address: solanaData.candy_machine_address[0],
-          itemsAvailable: Number(collectionData.total_supply),
-          itemsRedeemed: 0,
-          authority: "Loading...",
-        })
-      }
     } catch (error) {
       console.error("Failed to load collection:", error)
       toast.error("Failed to load collection data")
@@ -126,6 +90,11 @@ export default function ManageSolanaCollectionPage() {
     )
   }
 
+  const solanaData = 'Solana' in collection.chain_data ? collection.chain_data.Solana : null
+  const candyMachineAddress = solanaData?.candy_machine_address?.[0] || null
+  const candyMachineAuthority = solanaData?.candy_machine_authority?.[0] || null
+  const collectionMint = solanaData?.collection_mint?.[0] || null
+
   return (
     <div className="container mx-auto py-8 space-y-6">
       {/* Header */}
@@ -147,7 +116,7 @@ export default function ManageSolanaCollectionPage() {
       </div>
 
       {/* Candy Machine Info */}
-      {candyMachineInfo && (
+      {candyMachineAddress && (
         <Card>
           <CardHeader>
             <CardTitle>Candy Machine</CardTitle>
@@ -161,42 +130,61 @@ export default function ManageSolanaCollectionPage() {
               <label className="text-sm font-medium text-muted-foreground">Address</label>
               <div className="flex items-center gap-2 mt-1">
                 <code className="flex-1 px-3 py-2 bg-muted rounded-md text-sm font-mono">
-                  {candyMachineInfo.address}
+                  {candyMachineAddress}
                 </code>
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => copyToClipboard(candyMachineInfo.address)}
+                  onClick={() => copyToClipboard(candyMachineAddress)}
                 >
                   {copied ? <CheckCircle2 className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                 </Button>
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => openInExplorer(candyMachineInfo.address)}
+                  onClick={() => openInExplorer(candyMachineAddress)}
                 >
                   <ExternalLink className="h-4 w-4" />
                 </Button>
               </div>
             </div>
 
-            {/* Stats */}
-            <div className="grid grid-cols-3 gap-4">
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">Items Available</label>
-                <p className="text-2xl font-bold">{candyMachineInfo.itemsAvailable}</p>
+            {/* Config Info */}
+            {solanaData?.candy_machine_config?.[0] && (
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Items Available</label>
+                  <p className="text-2xl font-bold">
+                    {solanaData.candy_machine_config[0].items_available.toString()}
+                  </p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Price (lamports)</label>
+                  <p className="text-2xl font-bold">
+                    {solanaData.candy_machine_config[0].price.toString()}
+                  </p>
+                </div>
               </div>
+            )}
+
+            {/* Authority */}
+            {candyMachineAuthority && (
               <div>
-                <label className="text-sm font-medium text-muted-foreground">Items Minted</label>
-                <p className="text-2xl font-bold">{candyMachineInfo.itemsRedeemed}</p>
+                <label className="text-sm font-medium text-muted-foreground">Authority</label>
+                <div className="flex items-center gap-2 mt-1">
+                  <code className="flex-1 px-3 py-2 bg-muted rounded-md text-sm font-mono">
+                    {candyMachineAuthority}
+                  </code>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => openInExplorer(candyMachineAuthority)}
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">Remaining</label>
-                <p className="text-2xl font-bold">
-                  {candyMachineInfo.itemsAvailable - candyMachineInfo.itemsRedeemed}
-                </p>
-              </div>
-            </div>
+            )}
 
             {/* Actions */}
             <div className="flex gap-3 pt-4">
@@ -234,33 +222,33 @@ export default function ManageSolanaCollectionPage() {
             <label className="text-sm font-medium text-muted-foreground">Total Supply</label>
             <p className="text-sm">{collection.total_supply.toString()}</p>
           </div>
-          {collection.chain_data.Solana?.collection_mint?.[0] && (
+          {collectionMint && (
             <div>
               <label className="text-sm font-medium text-muted-foreground">Collection Mint</label>
               <div className="flex items-center gap-2 mt-1">
                 <code className="flex-1 px-3 py-2 bg-muted rounded-md text-sm font-mono">
-                  {collection.chain_data.Solana.collection_mint[0]}
+                  {collectionMint}
                 </code>
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => openInExplorer(collection.chain_data.Solana!.collection_mint![0])}
+                  onClick={() => openInExplorer(collectionMint)}
                 >
                   <ExternalLink className="h-4 w-4" />
                 </Button>
               </div>
             </div>
           )}
-          {collection.chain_data.Solana?.manifest_url?.[0] && (
+          {solanaData?.manifest_url?.[0] && (
             <div>
               <label className="text-sm font-medium text-muted-foreground">Manifest URL</label>
               <a
-                href={collection.chain_data.Solana.manifest_url[0]}
+                href={solanaData.manifest_url[0]}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-sm text-primary hover:underline flex items-center gap-1"
               >
-                {collection.chain_data.Solana.manifest_url[0]}
+                {solanaData.manifest_url[0]}
                 <ExternalLink className="h-3 w-3" />
               </a>
             </div>
