@@ -131,8 +131,8 @@ type NftMetadata = record {
   name : text;
   attributes : vec NftAttribute;
 };
-type Result = variant { Ok; Err : text };
-type Result_1 = variant { Ok : text; Err : text };
+type Result = variant { Ok : text; Err : text };
+type Result_1 = variant { Ok; Err : text };
 type Result_2 = variant { Ok : CanisterSolanaInfo; Err : text };
 type Result_3 = variant { Ok : CollectionSolanaAccounts; Err : text };
 type RpcEndpoint = record { url : text; headers : opt vec HttpHeader };
@@ -144,6 +144,7 @@ type SolanaCollectionData = record {
   collection_mint : opt text;
   candy_machine_address : opt text;
   deployment_stage : SolanaDeploymentStage;
+  candy_machine_items_uploaded : bool;
   candy_machine_authority : opt text;
 };
 type SolanaDeploymentStage = variant {
@@ -187,14 +188,21 @@ type UpdateSolanaStageArgs = record {
   candy_machine_authority : opt text;
 };
 service : (InitArgs) -> {
+  // Adds items to a candy machine from the collection manifest
+  // This is an admin/owner function that:
+  // 1. Fetches the manifest from the stored URL
+  // 2. Generates metadata for each NFT item
+  // 3. Sends transactions to add items to the candy machine
+  add_items_to_candy_machine : (text, InstructionData) -> (Result);
   associated_token_account : (opt principal, text) -> (text);
-  cancel_listing : (text, text) -> (Result);
+  cancel_listing : (text, text) -> (Result_1);
+  clear_old_collections : () -> (Result_1);
   create_associated_token_account : (opt principal, text) -> (text);
   // Creates a Candy Machine from instruction data
   // The canister will fetch the recent blockhash, build the transaction, sign, and send
-  create_candy_machine_from_instruction : (text, InstructionData) -> (Result_1);
-  create_collection : (CreateCollectionArgs) -> (Result_1);
-  create_listing : (CreateListingArgs, Blockchain) -> (Result_1);
+  create_candy_machine_from_instruction : (text, InstructionData) -> (Result);
+  create_collection : (CreateCollectionArgs) -> (Result);
+  create_listing : (CreateListingArgs, Blockchain) -> (Result);
   create_nonce_account : (opt principal) -> (text);
   get_all_collections : (nat32, nat32) -> (vec Collection) query;
   get_all_draft_collections : (nat32, nat32) -> (vec Collection) query;
@@ -213,9 +221,11 @@ service : (InitArgs) -> {
   get_listing : (text, text) -> (opt Listing) query;
   get_my_draft_collections : () -> (vec Collection) query;
   get_nonce : (opt text) -> (text);
+  get_old_collections_count : () -> (nat64) query;
   get_spl_token_balance : (opt text, text) -> (TokenAmount);
   get_user_collections : (nat32, nat32) -> (vec Collection) query;
   get_user_listings : (nat32, nat32) -> (vec Listing) query;
+  migrate_collections : () -> ();
   nonce_account : (opt principal) -> (text);
   send_sol : (opt principal, text, nat) -> (text);
   send_sol_with_durable_nonce : (opt principal, text, nat) -> (text);
@@ -225,10 +235,10 @@ service : (InitArgs) -> {
       blob,
       TransactionType,
       opt text,
-    ) -> (Result_1);
+    ) -> (Result);
   solana_account : (opt principal) -> (text);
-  update_candy_machine_address : (text, text) -> (Result);
-  update_collection_status : (UpdateCollectionStatusArgs) -> (Result);
-  update_listing : (UpdateListingArgs, text) -> (Result);
-  update_solana_stage : (UpdateSolanaStageArgs) -> (Result);
+  update_candy_machine_address : (text, text) -> (Result_1);
+  update_collection_status : (UpdateCollectionStatusArgs) -> (Result_1);
+  update_listing : (UpdateListingArgs, text) -> (Result_1);
+  update_solana_stage : (UpdateSolanaStageArgs) -> (Result_1);
 }

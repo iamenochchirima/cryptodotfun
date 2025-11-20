@@ -4,7 +4,8 @@ use std::cell::RefCell;
 
 pub type Memory = VirtualMemory<DefaultMemoryImpl>;
 
-pub const COLLECTIONS_MEMORY_ID: MemoryId = MemoryId::new(0);
+pub const COLLECTIONS_MEMORY_ID_OLD: MemoryId = MemoryId::new(0);
+pub const COLLECTIONS_MEMORY_ID: MemoryId = MemoryId::new(5);
 pub const LISTINGS_MEMORY_ID: MemoryId = MemoryId::new(1);
 pub const SALES_MEMORY_ID: MemoryId = MemoryId::new(2);
 pub const OFFERS_MEMORY_ID: MemoryId = MemoryId::new(3);

@@ -410,10 +410,20 @@ pub async fn add_items_to_candy_machine(
             found_candy_machine = true;
         }
 
+        let is_writable = account.is_writable || pubkey == candy_machine_pubkey;
+
+        ic_cdk::println!(
+            "Account meta: {} signer={} writable_in_data={} writable_final={}",
+            bs58::encode(pubkey.to_bytes()).into_string(),
+            account.is_signer,
+            account.is_writable,
+            is_writable
+        );
+
         account_metas.push(solana_instruction::AccountMeta {
             pubkey,
             is_signer: account.is_signer,
-            is_writable: account.is_writable,
+            is_writable,
         });
     }
 

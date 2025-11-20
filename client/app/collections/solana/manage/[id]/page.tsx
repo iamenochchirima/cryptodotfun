@@ -7,19 +7,38 @@ import { getMarketplaceActor } from "@/providers/actors/marketplace"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Loader2, ExternalLink, Copy, CheckCircle2 } from "lucide-react"
+import { Loader2, ExternalLink, Copy, CheckCircle2, Upload } from "lucide-react"
 import { toast } from "sonner"
 import { Collection } from "@/declarations/marketplace/marketplace.did"
+import { useConnection, useWallet } from "@solana/wallet-adapter-react"
+import { PublicKey } from "@solana/web3.js"
+import { buildAddConfigLinesInstruction } from "@/lib/solana/candyMachine"
+
+const ITEMS_PER_TRANSACTION = 5
+const SOLANA_NETWORK = (process.env.NEXT_PUBLIC_SOLANA_NETWORK === "mainnet-beta"
+  ? "mainnet-beta"
+  : "devnet") as "devnet" | "mainnet-beta"
+
+const chunkArray = <T,>(array: T[], size: number) => {
+  const chunks: T[][] = []
+  for (let i = 0; i < array.length; i += size) {
+    chunks.push(array.slice(i, i + size))
+  }
+  return chunks
+}
 
 export default function ManageSolanaCollectionPage() {
   const params = useParams()
   const router = useRouter()
   const { isAuthenticated, identity } = useAuth()
+  const { connection } = useConnection()
+  const { publicKey: walletPublicKey } = useWallet()
   const collectionId = params.id as string
 
   const [collection, setCollection] = useState<Collection | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [copied, setCopied] = useState(false)
+  const [isUploadingItems, setIsUploadingItems] = useState(false)
 
   useEffect(() => {
     if (!isAuthenticated || !collectionId || !identity) {
@@ -68,6 +87,118 @@ export default function ManageSolanaCollectionPage() {
 
   const openInExplorer = (address: string) => {
     window.open(`https://explorer.solana.com/address/${address}?cluster=devnet`, '_blank')
+  }
+
+  const handleUploadItems = async () => {
+    if (!identity || !collection) {
+      toast.error("Missing required data")
+      return
+    }
+
+    const solanaData = 'Solana' in collection.chain_data ? collection.chain_data.Solana : null
+    const manifestUrl = solanaData?.manifest_url?.[0]
+
+    if (!manifestUrl) {
+      toast.error("Manifest URL not found for this collection")
+      return
+    }
+
+    try {
+      setIsUploadingItems(true)
+      toast.info("Uploading items to your candy machine...")
+
+      const actor = await getMarketplaceActor(identity)
+      const [manifestResponse, solanaAccountsResult] = await Promise.all([
+        fetch(manifestUrl),
+        actor.get_collection_solana_accounts(collectionId)
+      ])
+
+      if (!manifestResponse.ok) {
+        throw new Error(`Failed to fetch manifest (${manifestResponse.status})`)
+      }
+
+      if ('Err' in solanaAccountsResult) {
+        throw new Error(solanaAccountsResult.Err)
+      }
+
+      const manifestJson = await manifestResponse.json()
+      const rawItems: any[] = Array.isArray(manifestJson?.items)
+        ? manifestJson.items
+        : Array.isArray(manifestJson?.properties?.files)
+          ? manifestJson.properties.files
+          : []
+
+      if (!Array.isArray(rawItems) || rawItems.length === 0) {
+        throw new Error("Manifest does not contain any items")
+      }
+
+      const totalSupply = Number(collection.total_supply)
+      const preparedItems = rawItems
+        .map((entry: any, index: number) => {
+          const uri = typeof entry === "string"
+            ? entry
+            : entry?.uri ?? entry?.link ?? ""
+
+          if (!uri) {
+            return null
+          }
+
+          const name = `${collection.name} #${index + 1}`
+          return {
+            name: name.slice(0, 32),
+            uri: uri.slice(0, 200),
+          }
+        })
+        .filter((item): item is { name: string; uri: string } => !!item?.uri)
+        .slice(0, totalSupply || rawItems.length)
+
+      if (preparedItems.length === 0) {
+        throw new Error("No valid manifest entries found")
+      }
+
+      const { payer_address: payerAddress, candy_machine_address: derivedCandyMachine } = solanaAccountsResult.Ok
+      const resolvedCandyMachine = derivedCandyMachine || candyMachineAddress
+
+      if (!payerAddress || !resolvedCandyMachine) {
+        throw new Error("Failed to resolve candy machine addresses")
+      }
+
+      let startIndex = 0
+      for (const chunk of chunkArray(preparedItems, ITEMS_PER_TRANSACTION)) {
+        const instructionData = await buildAddConfigLinesInstruction({
+          canisterPayerAddress: payerAddress,
+          candyMachineAddress: resolvedCandyMachine,
+          startIndex,
+          items: chunk,
+          network: SOLANA_NETWORK,
+        })
+
+        const result = await (actor as any).add_items_to_candy_machine(collectionId, {
+          program_id: instructionData.programId,
+          accounts: instructionData.accounts.map(acc => ({
+            pubkey: acc.pubkey,
+            is_signer: acc.isSigner,
+            is_writable: acc.isWritable,
+          })),
+          data: Array.from(instructionData.data),
+        })
+
+        if ('Err' in result) {
+          throw new Error(result.Err)
+        }
+
+        startIndex += chunk.length
+        toast.success(`Uploaded items ${startIndex - chunk.length + 1}-${startIndex}`)
+      }
+
+      toast.success("Candy machine items uploaded successfully")
+      await loadCollectionData()
+    } catch (error) {
+      console.error("Failed to upload items:", error)
+      toast.error(error instanceof Error ? error.message : "Failed to upload items to candy machine")
+    } finally {
+      setIsUploadingItems(false)
+    }
   }
 
   if (isLoading) {
@@ -188,9 +319,31 @@ export default function ManageSolanaCollectionPage() {
 
             {/* Actions */}
             <div className="flex gap-3 pt-4">
-              <Button variant="default" disabled>
-                Add Items
-              </Button>
+              {!solanaData?.candy_machine_items_uploaded && (
+                <Button
+                  variant="default"
+                  onClick={handleUploadItems}
+                  disabled={isUploadingItems}
+                >
+                  {isUploadingItems ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Uploading Items...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="h-4 w-4 mr-2" />
+                      Upload Items to Candy Machine
+                    </>
+                  )}
+                </Button>
+              )}
+              {solanaData?.candy_machine_items_uploaded && (
+                <div className="flex items-center gap-2 text-sm text-green-600">
+                  <CheckCircle2 className="h-4 w-4" />
+                  Items uploaded successfully
+                </div>
+              )}
               <Button variant="outline" disabled>
                 Update Settings
               </Button>
@@ -201,9 +354,11 @@ export default function ManageSolanaCollectionPage() {
                 Withdraw Funds
               </Button>
             </div>
-            <p className="text-sm text-muted-foreground">
-              Management features coming soon...
-            </p>
+            {!solanaData?.candy_machine_items_uploaded && (
+              <p className="text-sm text-muted-foreground">
+                Upload items from your manifest to enable minting
+              </p>
+            )}
           </CardContent>
         </Card>
       )}

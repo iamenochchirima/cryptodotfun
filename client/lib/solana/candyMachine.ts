@@ -1,4 +1,4 @@
-import { create, mplCandyMachine } from '@metaplex-foundation/mpl-core-candy-machine'
+import { addConfigLines, create, mplCandyMachine } from '@metaplex-foundation/mpl-core-candy-machine'
 import { createUmi } from '@metaplex-foundation/umi-bundle-defaults'
 import {
   publicKey as umiPublicKey,
@@ -32,6 +32,11 @@ export interface CandyMachineInstructionData {
     isWritable: boolean
   }>
   data: Uint8Array
+}
+
+export interface CandyMachineConfigLine {
+  name: string
+  uri: string
 }
 
 /**
@@ -126,9 +131,69 @@ export async function createCandyMachineInstruction(
     }
   })
 
-  if (process.env.NODE_ENV !== 'production') {
-    console.log('Candy Machine create instruction accounts:', accounts)
+  console.log('Candy Machine create instruction accounts:', accounts)
+
+  return {
+    programId: instruction.programId.toString(),
+    accounts,
+    data: instruction.data,
   }
+}
+
+export interface AddConfigLinesParams {
+  canisterPayerAddress: string
+  candyMachineAddress: string
+  startIndex: number
+  items: CandyMachineConfigLine[]
+  network?: 'devnet' | 'mainnet-beta'
+}
+
+export async function buildAddConfigLinesInstruction(
+  params: AddConfigLinesParams
+): Promise<CandyMachineInstructionData> {
+  if (!params.items.length) {
+    throw new Error('No config lines provided')
+  }
+
+  const rpcEndpoint = params.network === 'mainnet-beta'
+    ? 'https://api.mainnet-beta.solana.com'
+    : 'https://api.devnet.solana.com'
+
+  const umi = createUmi(rpcEndpoint).use(mplCandyMachine())
+
+  const canisterPayer = umiPublicKey(params.canisterPayerAddress)
+  const noopSigner = createNoopSigner(canisterPayer)
+  umi.use(signerIdentity(noopSigner))
+
+  const builder = await addConfigLines(umi, {
+    candyMachine: umiPublicKey(params.candyMachineAddress),
+    authority: umi.identity,
+    index: params.startIndex,
+    configLines: params.items.map(item => ({
+      name: item.name,
+      uri: item.uri,
+    })),
+  })
+
+  const instruction = builder.getInstructions()[0]
+
+  // Keep original ordering/writability; just ensure the two accounts we control are marked as signers
+  const accounts = instruction.keys.map((key: AccountMeta) => {
+    const pubkeyString = key.pubkey.toString()
+    const isCandyMachine = pubkeyString === params.candyMachineAddress
+    const isPayer = pubkeyString === params.canisterPayerAddress
+
+    const isSigner = key.isSigner || isCandyMachine || isPayer
+    const isWritable = key.isWritable || isCandyMachine
+
+    return {
+      pubkey: pubkeyString,
+      isSigner,
+      isWritable,
+    }
+  })
+
+  console.log('Add config lines instruction accounts (post-rewrite2):', accounts)
 
   return {
     programId: instruction.programId.toString(),
