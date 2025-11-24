@@ -73,9 +73,9 @@ pub fn get_my_draft_collections() -> Vec<Collection> {
 
 #[query]
 pub async fn get_canister_solana_info() -> Result<CanisterSolanaInfo, String> {
-    let canister_id = ic_cdk::id();
+    let canister_id = ic_cdk::api::canister_self();
 
-    let wallet = SolanaWallet::new(canister_self()).await;
+    let wallet = SolanaWallet::new(canister_id).await;
     let payer_account = wallet.solana_account();
     let main_address = payer_account.to_string();
 

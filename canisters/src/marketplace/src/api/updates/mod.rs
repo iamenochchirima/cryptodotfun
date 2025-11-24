@@ -123,8 +123,6 @@ pub async fn sign_and_send_solana_transaction(
     Ok(signature)
 }
 
-/// Creates a Candy Machine from instruction data
-/// The canister will fetch the recent blockhash, build the transaction, sign, and send
 #[update]
 pub async fn create_candy_machine_from_instruction(
     collection_id: String,
@@ -176,11 +174,6 @@ pub fn update_candy_machine_address(
     })
 }
 
-/// Adds items to a candy machine from the collection manifest
-/// This is an admin/owner function that:
-/// 1. Fetches the manifest from the stored URL
-/// 2. Generates metadata for each NFT item
-/// 3. Sends transactions to add items to the candy machine
 #[update]
 pub async fn add_items_to_candy_machine(
     collection_id: String,

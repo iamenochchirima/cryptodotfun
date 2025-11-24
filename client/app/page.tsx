@@ -17,8 +17,8 @@ import {
   TrendingUp,
   MessageSquare,
   ImageIcon,
+  Bitcoin,
 } from "lucide-react"
-import { AnimatedHeroText } from "@/components/animated-hero-text"
 
 export default function Home() {
 
@@ -29,10 +29,10 @@ export default function Home() {
         <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-crypto-purple/20 via-background to-background" />
         <div className="container mx-auto px-4 text-center">
           <h1 className="mb-6 text-5xl font-bold tracking-tight md:text-7xl">
-            Your Crypto Hub: <AnimatedHeroText />
+            One Stop for <span className="crypto-gradient-text">Everything Crypto</span>
           </h1>
           <p className="mx-auto mb-8 max-w-2xl text-xl text-muted-foreground">
-            The ultimate crypto super app for learning, earning, trading, and connecting with the blockchain community.
+            Manage NFTs, tokens, and Bitcoin across Ethereum, Solana, ICP, and more. Learn, play, trade, launch, and stay secure in one place.
           </p>
           <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
             <Button size="lg" asChild>
@@ -47,84 +47,51 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Stats Section */}
-      <section className="py-12 bg-muted/30">
+      {/* Bitcoin Management Section */}
+      <section className="py-16 bg-gradient-to-r from-crypto-yellow/5 to-crypto-orange/5">
         <div className="container mx-auto px-4">
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-            <div className="flex flex-col items-center justify-center p-4 text-center">
-              <div className="text-3xl font-bold mb-2 crypto-gradient-text">50+</div>
-              <div className="text-sm text-muted-foreground">Blockchain Courses</div>
+          <div className="grid grid-cols-1 gap-12 md:grid-cols-2 items-center">
+            <div className="order-2 md:order-1 relative h-[400px] rounded-lg overflow-hidden">
+              <Image src="/bitcoin-assets.png" alt="Bitcoin Asset Management" fill className="object-cover" />
             </div>
-            <div className="flex flex-col items-center justify-center p-4 text-center">
-              <div className="text-3xl font-bold mb-2 crypto-gradient-text">$10M+</div>
-              <div className="text-sm text-muted-foreground">Trading Volume</div>
-            </div>
-            <div className="flex flex-col items-center justify-center p-4 text-center">
-              <div className="text-3xl font-bold mb-2 crypto-gradient-text">100K+</div>
-              <div className="text-sm text-muted-foreground">Community Members</div>
-            </div>
-            <div className="flex flex-col items-center justify-center p-4 text-center">
-              <div className="text-3xl font-bold mb-2 crypto-gradient-text">25+</div>
-              <div className="text-sm text-muted-foreground">Blockchain Networks</div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Features Overview Section */}
-      <section id="features" className="py-16 md:py-24">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold mb-4 md:text-4xl">All-in-One Crypto Platform</h2>
-            <p className="mx-auto max-w-2xl text-lg text-muted-foreground">
-              CryptoDotFun combines education, trading, security, and community in one seamless platform.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4">
-            <div className="crypto-card">
-              <BookOpen className="mb-4 h-10 w-10 text-crypto-blue" />
-              <h3 className="mb-2 text-xl font-bold">Learn</h3>
-              <p className="mb-4 text-muted-foreground">
-                Comprehensive blockchain courses from beginner to advanced levels.
+            <div className="order-1 md:order-2">
+              <div className="inline-block mb-4 rounded-full bg-crypto-yellow/10 px-3 py-1 text-sm font-medium text-crypto-yellow">
+                Bitcoin Management
+              </div>
+              <h2 className="text-3xl font-bold mb-4 md:text-4xl">Bitcoin Ordinals & Runes</h2>
+              <p className="mb-6 text-muted-foreground">
+                Explore the world of Bitcoin Ordinals and Runes. Trade inscriptions, etch and manage Runes tokens,
+                discover rare sats, and participate in the growing Bitcoin digital asset ecosystem.
               </p>
-              <Button variant="link" className="p-0" asChild>
-                <Link href="/learn">
-                  Browse Courses <ArrowRight className="ml-1 h-4 w-4" />
-                </Link>
-              </Button>
-            </div>
-            <div className="crypto-card">
-              <Coins className="mb-4 h-10 w-10 text-crypto-yellow" />
-              <h3 className="mb-2 text-xl font-bold">Earn</h3>
-              <p className="mb-4 text-muted-foreground">
-                Get rewarded with tokens for completing courses and contributing.
-              </p>
-              <Button variant="link" className="p-0" asChild>
-                <Link href="/earn">
-                  View Rewards <ArrowRight className="ml-1 h-4 w-4" />
-                </Link>
-              </Button>
-            </div>
-            <div className="crypto-card">
-              <Shield className="mb-4 h-10 w-10 text-crypto-green" />
-              <h3 className="mb-2 text-xl font-bold">Secure</h3>
-              <p className="mb-4 text-muted-foreground">
-                Participate in security audits and bounties for blockchain projects.
-              </p>
-              <Button variant="link" className="p-0" asChild>
-                <Link href="/secure">
-                  Find Bounties <ArrowRight className="ml-1 h-4 w-4" />
-                </Link>
-              </Button>
-            </div>
-            <div className="crypto-card">
-              <Users className="mb-4 h-10 w-10 text-crypto-pink" />
-              <h3 className="mb-2 text-xl font-bold">Connect</h3>
-              <p className="mb-4 text-muted-foreground">Join a vibrant community with blogs, forums, and events.</p>
-              <Button variant="link" className="p-0" asChild>
-                <Link href="/connect">
-                  Join Community <ArrowRight className="ml-1 h-4 w-4" />
+              <ul className="space-y-3 mb-6">
+                <li className="flex items-center">
+                  <div className="mr-2 h-5 w-5 rounded-full bg-crypto-yellow/20 flex items-center justify-center">
+                    <Bitcoin className="h-3 w-3 text-crypto-yellow" />
+                  </div>
+                  <span>Bitcoin Ordinals marketplace</span>
+                </li>
+                <li className="flex items-center">
+                  <div className="mr-2 h-5 w-5 rounded-full bg-crypto-yellow/20 flex items-center justify-center">
+                    <Bitcoin className="h-3 w-3 text-crypto-yellow" />
+                  </div>
+                  <span>Runes etching and trading platform</span>
+                </li>
+                <li className="flex items-center">
+                  <div className="mr-2 h-5 w-5 rounded-full bg-crypto-yellow/20 flex items-center justify-center">
+                    <Bitcoin className="h-3 w-3 text-crypto-yellow" />
+                  </div>
+                  <span>Inscription creation tools</span>
+                </li>
+                <li className="flex items-center">
+                  <div className="mr-2 h-5 w-5 rounded-full bg-crypto-yellow/20 flex items-center justify-center">
+                    <Bitcoin className="h-3 w-3 text-crypto-yellow" />
+                  </div>
+                  <span>Rare sats and asset discovery</span>
+                </li>
+              </ul>
+              <Button asChild>
+                <Link href="/dashboard">
+                  Manage Bitcoin <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
               </Button>
             </div>
@@ -133,7 +100,7 @@ export default function Home() {
       </section>
 
       {/* Learn Section */}
-      <section className="py-16 bg-gradient-to-r from-crypto-blue/5 to-crypto-purple/5">
+      <section className="py-16">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 gap-12 md:grid-cols-2 items-center">
             <div>
@@ -186,7 +153,7 @@ export default function Home() {
       </section>
 
       {/* NFT Marketplace Section */}
-      <section className="py-16">
+      <section className="py-16 bg-gradient-to-r from-crypto-purple/5 to-crypto-pink/5">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 gap-12 md:grid-cols-2 items-center">
             <div className="order-2 md:order-1 relative h-[400px] rounded-lg overflow-hidden">
@@ -455,6 +422,13 @@ export default function Home() {
               <h3 className="mb-2 text-lg font-bold">Events & Webinars</h3>
               <p className="text-sm text-muted-foreground">
                 Attend virtual and in-person events with industry experts.
+              </p>
+            </div>
+            <div className="crypto-card">
+              <Bitcoin className="mb-4 h-8 w-8 text-crypto-yellow" />
+              <h3 className="mb-2 text-lg font-bold">Bitcoin Ordinals & Runes</h3>
+              <p className="text-sm text-muted-foreground">
+                Trade Ordinals inscriptions and etch Runes tokens on Bitcoin.
               </p>
             </div>
           </div>

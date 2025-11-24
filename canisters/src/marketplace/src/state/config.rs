@@ -19,7 +19,6 @@ pub struct Config {
     pub solana_network: SolanaNetwork,
     pub solana_commitment_level: CommitmentLevel,
     pub ed25519_key_name: Ed25519KeyName,
-    // Cached value, not persisted meaningfully across upgrades
     pub ed25519_public_key: Option<Ed25519ExtendedPublicKey>,
 }
 
