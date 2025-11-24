@@ -2,6 +2,7 @@ mod ed25519;
 pub mod solana_wallet;
 pub mod spl;
 pub mod interface;
+pub mod candy_machine;
 
 use crate::state::config::{
     self, Ed25519KeyName, SolanaNetwork,

@@ -80,13 +80,22 @@ impl SolanaWallet {
             root_public_key,
         }
     }
-
     pub fn derive_account(&self, derivation_path: DerivationPath) -> SolanaAccount {
         SolanaAccount::new_derived_account(&self.root_public_key, derivation_path)
     }
 
     pub fn solana_account(&self) -> SolanaAccount {
         self.derive_account(self.owner.as_slice().into())
+    }
+
+    pub fn candy_machine_account(&self, collection_id: &str) -> SolanaAccount {
+        let path: DerivationPath = (&[
+            self.owner.as_slice(),
+            b"candy-machine",
+            collection_id.as_bytes(),
+        ][..])
+            .into();
+        self.derive_account(path)
     }
 
     pub fn derived_nonce_account(&self) -> SolanaAccount {

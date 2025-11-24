@@ -23,6 +23,14 @@ pub enum ChainData {
 }
 
 #[derive(CandidType, Serialize, Deserialize, Clone, Debug)]
+pub enum ChainDataV0 {
+    Solana(SolanaCollectionDataV0),
+    ICP(ICPCollectionData),
+    Ethereum(EthereumCollectionData),
+    Bitcoin(BitcoinCollectionData),
+}
+
+#[derive(CandidType, Serialize, Deserialize, Clone, Debug)]
 pub struct SolanaCollectionData {
     pub deployment_stage: SolanaDeploymentStage,
     pub candy_machine_address: Option<String>,
@@ -30,6 +38,30 @@ pub struct SolanaCollectionData {
     pub manifest_url: Option<String>,
     pub files_uploaded: bool,
     pub metadata_created: bool,
+    pub candy_machine_items_uploaded: bool,
+    pub candy_machine_authority: Option<String>,
+    pub candy_machine_config: Option<CandyMachineConfig>,
+}
+
+#[derive(CandidType, Serialize, Deserialize, Clone, Debug)]
+pub struct SolanaCollectionDataV0 {
+    pub deployment_stage: SolanaDeploymentStage,
+    pub candy_machine_address: Option<String>,
+    pub collection_mint: Option<String>,
+    pub manifest_url: Option<String>,
+    pub files_uploaded: bool,
+    pub metadata_created: bool,
+    pub candy_machine_authority: Option<String>,
+    pub candy_machine_config: Option<CandyMachineConfig>,
+}
+
+#[derive(CandidType, Serialize, Deserialize, Clone, Debug)]
+pub struct CandyMachineConfig {
+    pub price: u64, 
+    pub go_live_date: Option<u64>, 
+    pub items_available: u64, 
+    pub seller_fee_basis_points: u16,
+    pub symbol: String,
 }
 
 #[derive(CandidType, Serialize, Deserialize, Clone, Debug, PartialEq)]
@@ -81,6 +113,29 @@ pub enum BitcoinDeploymentStage {
 }
 
 #[derive(CandidType, Serialize, Deserialize, Clone, Debug)]
+pub struct CollectionV0 {
+    pub id: String,
+    pub blockchain: Blockchain,
+    pub creator: Principal,
+    pub name: String,
+    pub symbol: String,
+    pub description: String,
+    pub image_url: String,
+    pub banner_url: Option<String>,
+    pub total_supply: u64,
+    pub floor_price: u64,
+    pub total_volume: u64,
+    pub owner_count: u32,
+    pub listed_count: u32,
+    pub royalty_bps: u16,
+    pub metadata: Vec<(String, String)>,
+    pub status: CollectionStatus,
+    pub chain_data: ChainDataV0,
+    pub created_at: u64,
+    pub updated_at: u64,
+}
+
+#[derive(CandidType, Serialize, Deserialize, Clone, Debug)]
 pub struct Collection {
     pub id: String,
     pub blockchain: Blockchain,
@@ -122,6 +177,26 @@ impl Storable for Collection {
     };
 }
 
+impl Storable for CollectionV0 {
+    fn to_bytes(&self) -> Cow<[u8]> {
+        Cow::Owned(candid::encode_one(self).unwrap())
+    }
+
+    fn from_bytes(bytes: Cow<[u8]>) -> Self {
+        candid::decode_one(&bytes).unwrap()
+    }
+
+    fn into_bytes(self) -> Vec<u8> {
+        candid::encode_one(&self).unwrap()
+    }
+
+    const BOUND: Bound = Bound::Bounded {
+        max_size: 2048,
+        is_fixed_size: false,
+    };
+}
+
+
 #[derive(CandidType, Serialize, Deserialize, Clone, Debug)]
 pub struct CreateCollectionArgs {
     pub blockchain: Blockchain,
@@ -159,4 +234,6 @@ pub struct UpdateSolanaStageArgs {
     pub manifest_url: Option<String>,
     pub files_uploaded: Option<bool>,
     pub metadata_created: Option<bool>,
+    pub candy_machine_authority: Option<String>,
+    pub candy_machine_config: Option<CandyMachineConfig>,
 }

@@ -4,11 +4,9 @@ use sol_rpc_types::{CommitmentLevel, TokenAmount};
 
 pub mod types;
 pub mod state;
-pub mod chains;
-pub mod queries;
-pub mod mutations;
+pub mod api;
 pub mod utils;
-pub mod solana;
+pub mod x_chain;
 
 use types::*;
 use state::config::{SolanaNetwork, Ed25519KeyName};
@@ -34,8 +32,7 @@ fn init(args: InitArgs) {
     ic_cdk::println!("Marketplace canister initialized with admin: {}", args.admin);
 }
 
-pub use queries::*;
-pub use mutations::*;
-pub use solana::interface::*;
+pub use api::*;
+pub use x_chain::*;
 
 ic_cdk::export_candid!();

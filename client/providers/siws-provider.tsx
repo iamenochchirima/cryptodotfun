@@ -4,6 +4,7 @@ import { SiwsIdentityProvider } from "ic-siws-js/react";
 import { useMemo, useEffect, useState } from "react";
 import type { Adapter } from "@solana/wallet-adapter-base";
 import { icSiwsProviderCanisterId } from "@/constants/canisters-config";
+import { host } from '../constants/urls';
 
 export default function SiwsProvider({
   children,
@@ -28,7 +29,7 @@ export default function SiwsProvider({
   }
 
   return (
-    <SiwsIdentityProvider canisterId={canisterId} adapter={adapter}>
+    <SiwsIdentityProvider canisterId={canisterId} adapter={adapter} httpAgentOptions={{host}}>
       {children}
     </SiwsIdentityProvider>
   );

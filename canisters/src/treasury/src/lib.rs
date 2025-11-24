@@ -38,6 +38,7 @@ fn get_platform_wallets() -> PlatformWallets {
 
 #[query]
 fn get_balances() -> Vec<ChainBalance> {
+    //TODO: 
     vec![]
 }
 
