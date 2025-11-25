@@ -13,6 +13,9 @@ import { Collection } from "@/declarations/marketplace/marketplace.did"
 import { useConnection, useWallet } from "@solana/wallet-adapter-react"
 import { PublicKey } from "@solana/web3.js"
 import { buildAddConfigLinesInstruction } from "@/lib/solana/candyMachine"
+import { createUmi } from "@metaplex-foundation/umi-bundle-defaults"
+import { mplCandyMachine, fetchCandyMachine } from "@metaplex-foundation/mpl-core-candy-machine"
+import { publicKey as umiPublicKey } from "@metaplex-foundation/umi"
 
 const ITEMS_PER_TRANSACTION = 5
 const SOLANA_NETWORK = (process.env.NEXT_PUBLIC_SOLANA_NETWORK === "mainnet-beta"
@@ -39,6 +42,15 @@ export default function ManageSolanaCollectionPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [copied, setCopied] = useState(false)
   const [isUploadingItems, setIsUploadingItems] = useState(false)
+  const [isInspecting, setIsInspecting] = useState(false)
+  const [candyMachineState, setCandyMachineState] = useState<{
+    authority: string
+    itemsAvailable: number
+    itemsLoaded: number
+    prefixUri?: string
+    nameLength?: number
+    uriLength?: number
+  } | null>(null)
 
   useEffect(() => {
     if (!isAuthenticated || !collectionId || !identity) {
@@ -152,7 +164,13 @@ export default function ManageSolanaCollectionPage() {
         .filter((item): item is { name: string; uri: string } => !!item?.uri)
         .slice(0, totalSupply || rawItems.length)
 
-      if (preparedItems.length === 0) {
+      // For devnet testing: force ultra-short URIs to avoid prefix+uri length issues
+      const testItems = preparedItems.map((item, idx) => ({
+        name: item.name.slice(0, 32),
+        uri: `u${idx + 1}`, // minimal suffix to stay well under the configured uriLength
+      }))
+
+      if (testItems.length === 0) {
         throw new Error("No valid manifest entries found")
       }
 
@@ -164,13 +182,15 @@ export default function ManageSolanaCollectionPage() {
       }
 
       let startIndex = 0
-      for (const chunk of chunkArray(preparedItems, ITEMS_PER_TRANSACTION)) {
+      for (const chunk of chunkArray(testItems, ITEMS_PER_TRANSACTION)) {
         const instructionData = await buildAddConfigLinesInstruction({
           canisterPayerAddress: payerAddress,
           candyMachineAddress: resolvedCandyMachine,
           startIndex,
           items: chunk,
           network: SOLANA_NETWORK,
+          prefixLength: manifestUrl.length,
+          uriLength: 200,
         })
 
         const result = await (actor as any).add_items_to_candy_machine(collectionId, {
@@ -198,6 +218,39 @@ export default function ManageSolanaCollectionPage() {
       toast.error(error instanceof Error ? error.message : "Failed to upload items to candy machine")
     } finally {
       setIsUploadingItems(false)
+    }
+  }
+
+  const handleInspectCandyMachine = async () => {
+    if (!candyMachineAddress) {
+      toast.error("No candy machine address found for this collection")
+      return
+    }
+
+    try {
+      setIsInspecting(true)
+      const rpcEndpoint = SOLANA_NETWORK === "mainnet-beta"
+        ? "https://api.mainnet-beta.solana.com"
+        : "https://api.devnet.solana.com"
+
+      const umi = createUmi(rpcEndpoint).use(mplCandyMachine())
+      const cm = await fetchCandyMachine(umi, umiPublicKey(candyMachineAddress))
+
+      setCandyMachineState({
+        authority: cm.authority.toString(),
+        itemsAvailable: Number(cm.data.itemsAvailable),
+        itemsLoaded: Number(cm.itemsLoaded),
+        prefixUri: cm.data.configLineSettings?.prefixUri,
+        nameLength: cm.data.configLineSettings?.nameLength,
+        uriLength: cm.data.configLineSettings?.uriLength,
+      })
+
+      toast.success("Candy machine state fetched")
+    } catch (error) {
+      console.error("Failed to fetch candy machine state:", error)
+      toast.error("Failed to fetch candy machine state")
+    } finally {
+      setIsInspecting(false)
     }
   }
 
@@ -338,6 +391,22 @@ export default function ManageSolanaCollectionPage() {
                   )}
                 </Button>
               )}
+              {candyMachineAddress && (
+                <Button
+                  variant="outline"
+                  onClick={handleInspectCandyMachine}
+                  disabled={isInspecting}
+                >
+                  {isInspecting ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Inspecting...
+                    </>
+                  ) : (
+                    "Inspect Candy Machine"
+                  )}
+                </Button>
+              )}
               {solanaData?.candy_machine_items_uploaded && (
                 <div className="flex items-center gap-2 text-sm text-green-600">
                   <CheckCircle2 className="h-4 w-4" />
@@ -358,6 +427,17 @@ export default function ManageSolanaCollectionPage() {
               <p className="text-sm text-muted-foreground">
                 Upload items from your manifest to enable minting
               </p>
+            )}
+
+            {candyMachineState && (
+              <div className="mt-4 space-y-2 text-sm">
+                <div><span className="font-medium">Authority:</span> {candyMachineState.authority}</div>
+                <div><span className="font-medium">Items Available:</span> {candyMachineState.itemsAvailable}</div>
+                <div><span className="font-medium">Items Loaded:</span> {candyMachineState.itemsLoaded}</div>
+                <div><span className="font-medium">Prefix URI:</span> {candyMachineState.prefixUri || "N/A"}</div>
+                <div><span className="font-medium">Name Length:</span> {candyMachineState.nameLength ?? "N/A"}</div>
+                <div><span className="font-medium">URI Length:</span> {candyMachineState.uriLength ?? "N/A"}</div>
+              </div>
             )}
           </CardContent>
         </Card>

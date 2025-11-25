@@ -48,7 +48,7 @@ export interface CandyMachineConfigLine {
  */
 export async function createCandyMachineInstruction(
   config: CandyMachineConfig
-): Promise<CandyMachineInstructionData> {
+): Promise<CandyMachineInstructionData[]> {
   const rpcEndpoint = config.network === 'mainnet-beta'
     ? 'https://api.mainnet-beta.solana.com'
     : 'https://api.devnet.solana.com'
@@ -98,46 +98,23 @@ export async function createCandyMachineInstruction(
     },
   })
 
-  // The createIx is a TransactionBuilder, we need to extract the instruction
-  // Build it to get the items
   const items = createIx.getInstructions()
 
-  // Get the first (and should be only) instruction
-  const instruction = items[0]
+  return items.map((instruction, ixIndex) => {
+    const accounts = instruction.keys.map((key: AccountMeta) => ({
+      pubkey: key.pubkey.toString(),
+      isSigner: key.isSigner,
+      isWritable: key.isWritable,
+    }))
 
-  // Convert accounts to serializable format
-  const forcedSignerOrder = [
-    config.canisterPayerAddress,
-    config.candyMachineAddress,
-  ]
-  let nextSignerIndex = 0
-
-  const accounts = instruction.keys.map((key: AccountMeta) => {
-    let pubkeyString = key.pubkey.toString()
-    let isSigner = key.isSigner
-
-    if (key.isSigner) {
-      const forcedPubkey =
-        forcedSignerOrder[nextSignerIndex] ?? config.canisterPayerAddress
-      pubkeyString = forcedPubkey
-      isSigner = true
-      nextSignerIndex = Math.min(nextSignerIndex + 1, forcedSignerOrder.length)
-    }
+    console.log(`Candy Machine create instruction ${ixIndex} accounts:`, accounts)
 
     return {
-      pubkey: pubkeyString,
-      isSigner,
-      isWritable: key.isWritable,
+      programId: instruction.programId.toString(),
+      accounts,
+      data: instruction.data,
     }
   })
-
-  console.log('Candy Machine create instruction accounts:', accounts)
-
-  return {
-    programId: instruction.programId.toString(),
-    accounts,
-    data: instruction.data,
-  }
 }
 
 export interface AddConfigLinesParams {
@@ -227,20 +204,20 @@ export async function createTransferAuthorityInstruction(
 export async function deployCandyMachineViaCanister(
   actor: any,
   collectionId: string,
-  instructionData: CandyMachineInstructionData
+  instructions: CandyMachineInstructionData[]
 ): Promise<string> {
   try {
     const result = await actor.create_candy_machine_from_instruction(
       collectionId,
-      {
-        program_id: instructionData.programId,
-        accounts: instructionData.accounts.map(acc => ({
+      instructions.map(ix => ({
+        program_id: ix.programId,
+        accounts: ix.accounts.map(acc => ({
           pubkey: acc.pubkey,
           is_signer: acc.isSigner,
           is_writable: acc.isWritable,
         })),
-        data: Array.from(instructionData.data),
-      }
+        data: Array.from(ix.data),
+      }))
     )
 
     if ('Err' in result) {

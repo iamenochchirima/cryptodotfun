@@ -200,7 +200,9 @@ service : (InitArgs) -> {
   create_associated_token_account : (opt principal, text) -> (text);
   // Creates a Candy Machine from instruction data
   // The canister will fetch the recent blockhash, build the transaction, sign, and send
-  create_candy_machine_from_instruction : (text, InstructionData) -> (Result);
+  create_candy_machine_from_instruction : (text, vec InstructionData) -> (
+      Result,
+    );
   create_collection : (CreateCollectionArgs) -> (Result);
   create_listing : (CreateListingArgs, Blockchain) -> (Result);
   create_nonce_account : (opt principal) -> (text);
