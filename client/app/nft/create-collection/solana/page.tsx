@@ -195,7 +195,7 @@ export default function CreateSolanaCollectionPage() {
               metadata_created: true,
               candy_machine_authority: [],
               candy_machine_config: [],
-              candy_machine_items_uploaded : false
+              candy_machine_items_uploaded: false,
             }
           }
         })
@@ -308,7 +308,7 @@ export default function CreateSolanaCollectionPage() {
       setDeploymentStep("Building Candy Machine instruction...")
 
       // Create candy machine instruction data (without blockhash)
-      const instructionData = await createCandyMachineInstruction({
+      const instructions = await createCandyMachineInstruction({
         collectionId: formData.canisterRecordId,
         name: formData.name,
         symbol: formData.symbol,
@@ -331,7 +331,7 @@ export default function CreateSolanaCollectionPage() {
       const txSignature = await deployCandyMachineViaCanister(
         actor,
         formData.canisterRecordId,
-        instructionData
+        instructions
       )
 
       setDeploymentStep("Updating collection record...")
@@ -451,7 +451,8 @@ export default function CreateSolanaCollectionPage() {
         candy_machine_address: [],
         collection_mint: [],
         candy_machine_authority: [],
-        candy_machine_config: []
+        candy_machine_config: [],
+        candy_machine_items_uploaded: false
       })
 
       setFormData(prev => ({
