@@ -195,6 +195,7 @@ export default function CreateSolanaCollectionPage() {
               metadata_created: true,
               candy_machine_authority: [],
               candy_machine_config: [],
+              candy_machine_items_uploaded : false
             }
           }
         })

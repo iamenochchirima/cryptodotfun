@@ -1,4 +1,4 @@
-use ic_stable_structures::{StableCell, Storable};
+use ic_stable_structures::{StableCell, Storable, storable::Bound};
 use std::cell::RefCell;
 use std::borrow::Cow;
 use candid::{CandidType, Decode, Encode, Principal};
@@ -72,7 +72,7 @@ impl Storable for Config {
         Encode!(&self).unwrap()
     }
 
-    const BOUND: ic_stable_structures::storable::Bound = ic_stable_structures::storable::Bound::Unbounded;
+    const BOUND: Bound = Bound::Unbounded;
 }
 
 pub fn init_config(
