@@ -128,7 +128,7 @@ pub async fn sign_and_send_solana_transaction(
 #[update]
 pub async fn create_candy_machine_from_instruction(
     collection_id: String,
-    instruction_data: InstructionData,
+    instructions_data: Vec<InstructionData>,
 ) -> Result<String, String> {
     let caller = msg_caller();
 
@@ -141,7 +141,7 @@ pub async fn create_candy_machine_from_instruction(
 
     let signature = candy_machine::create_candy_machine_from_instruction(
         collection_id.clone(),
-        instruction_data,
+        instructions_data,
     ).await?;
 
     ic_cdk::println!("Candy Machine creation transaction sent: {}", signature);

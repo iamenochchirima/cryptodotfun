@@ -134,7 +134,7 @@ fn validate_transaction(
 /// 5. Sends to Solana network
 pub async fn create_candy_machine_from_instruction(
     collection_id: String,
-    instruction_data: InstructionData,
+    instructions_data: Vec<InstructionData>,
 ) -> Result<String, String> {
     let _collection = get_collection(&collection_id)
         .ok_or("Collection not found")?;
@@ -159,67 +159,70 @@ pub async fn create_candy_machine_from_instruction(
         bs58::encode(candy_machine_account.as_ref()).into_string()
     );
 
-    // Parse program ID
-    let program_id = Pubkey::from_str(&instruction_data.program_id)
-        .map_err(|e| format!("Invalid program ID: {:?}", e))?;
+    let mut instructions: Vec<Instruction> = Vec::new();
 
-    // Parse account metas and ensure we only sign for keys we control
-    let mut account_metas = Vec::new();
-    let mut found_candy_machine = false;
-
-    for account in instruction_data.accounts {
-        let pubkey = Pubkey::from_str(&account.pubkey)
-            .map_err(|e| format!("Invalid account pubkey: {:?}", e))?;
-
+    for (idx, instruction_data) in instructions_data.into_iter().enumerate() {
         ic_cdk::println!(
-            "Account: {} - is_signer: {} - is_writable: {}",
-            bs58::encode(pubkey.to_bytes()).into_string(),
-            account.is_signer,
-            account.is_writable
+            "[create_cm] Instruction {} program_id={} data_len={}",
+            idx,
+            instruction_data.program_id,
+            instruction_data.data.len()
         );
 
-        if account.is_signer {
-            let is_payer = pubkey == payer_pubkey;
-            let is_candy_machine = pubkey == candy_machine_pubkey;
+        let program_id = Pubkey::from_str(&instruction_data.program_id)
+            .map_err(|e| format!("Invalid program ID: {:?}", e))?;
+
+        let mut account_metas = Vec::new();
+        let mut found_candy_machine = false;
+
+        for (acct_idx, account) in instruction_data.accounts.into_iter().enumerate() {
+            let pubkey = Pubkey::from_str(&account.pubkey)
+                .map_err(|e| format!("Invalid account pubkey: {:?}", e))?;
 
             ic_cdk::println!(
-                "  Signer check: is_payer={}, is_candy_machine={}",
-                is_payer,
-                is_candy_machine
+                "[create_cm]   Instruction {} Account {}: {} signer={} writable={}",
+                idx,
+                acct_idx,
+                bs58::encode(pubkey.to_bytes()).into_string(),
+                account.is_signer,
+                account.is_writable
             );
 
-            if !is_payer && !is_candy_machine {
-                return Err(format!(
-                    "Transaction requires signer {} that the canister cannot authorize. Payer={}, CandyMachine={}",
-                    bs58::encode(pubkey.to_bytes()).into_string(),
-                    bs58::encode(payer_pubkey.to_bytes()).into_string(),
-                    bs58::encode(candy_machine_pubkey.to_bytes()).into_string()
-                ));
+            if account.is_signer {
+                let is_payer = pubkey == payer_pubkey;
+                let is_candy_machine = pubkey == candy_machine_pubkey;
+
+                if !is_payer && !is_candy_machine {
+                    return Err(format!(
+                        "Transaction requires signer {} that the canister cannot authorize. Payer={}, CandyMachine={}",
+                        bs58::encode(pubkey.to_bytes()).into_string(),
+                        bs58::encode(payer_pubkey.to_bytes()).into_string(),
+                        bs58::encode(candy_machine_pubkey.to_bytes()).into_string()
+                    ));
+                }
             }
+
+            if pubkey == candy_machine_pubkey {
+                found_candy_machine = true;
+            }
+
+            account_metas.push(solana_instruction::AccountMeta {
+                pubkey,
+                is_signer: account.is_signer,
+                is_writable: account.is_writable,
+            });
         }
 
-        if pubkey == candy_machine_pubkey {
-            found_candy_machine = true;
+        if !found_candy_machine {
+            return Err("Instruction data does not reference the derived candy machine account".to_string());
         }
 
-        let final_pubkey = pubkey;
-        account_metas.push(solana_instruction::AccountMeta {
-            pubkey: final_pubkey,
-            is_signer: account.is_signer,
-            is_writable: account.is_writable,
+        instructions.push(Instruction {
+            program_id,
+            accounts: account_metas,
+            data: instruction_data.data,
         });
     }
-
-    if !found_candy_machine {
-        return Err("Instruction data does not reference the derived candy machine account".to_string());
-    }
-
-    // Create the instruction
-    let instruction = Instruction {
-        program_id,
-        accounts: account_metas,
-        data: instruction_data.data,
-    };
 
     // Fetch recent blockhash from Solana network
     let blockhash = client()
@@ -232,7 +235,7 @@ pub async fn create_candy_machine_from_instruction(
 
     // Build the message with the instruction and blockhash
     let message = Message::new_with_blockhash(
-        &[instruction],
+        instructions.as_slice(),
         Some(payer.as_ref()),
         &blockhash,
     );
@@ -352,6 +355,19 @@ pub async fn add_items_to_candy_machine(
     collection_id: String,
     instruction_data: InstructionData,
 ) -> Result<String, String> {
+    ic_cdk::println!(
+        "add_items_to_candy_machine: program_id={} data_len={}",
+        instruction_data.program_id,
+        instruction_data.data.len()
+    );
+    let preview: Vec<String> = instruction_data
+        .data
+        .iter()
+        .take(16)
+        .map(|b| format!("{:02x}", b))
+        .collect();
+    ic_cdk::println!("add_items_to_candy_machine: data preview (first 16 bytes hex): {:?}", preview);
+
     let collection = get_collection(&collection_id)
         .ok_or("Collection not found")?;
 
@@ -388,9 +404,17 @@ pub async fn add_items_to_candy_machine(
     let mut account_metas = Vec::new();
     let mut found_candy_machine = false;
 
-    for account in instruction_data.accounts {
+    for (idx, account) in instruction_data.accounts.into_iter().enumerate() {
         let pubkey = Pubkey::from_str(&account.pubkey)
             .map_err(|e| format!("Invalid account pubkey: {:?}", e))?;
+
+        ic_cdk::println!(
+            "[add_items] Account {}: {} signer={} writable_in_data={}",
+            idx,
+            bs58::encode(pubkey.to_bytes()).into_string(),
+            account.is_signer,
+            account.is_writable
+        );
 
         if account.is_signer {
             let is_payer = pubkey == payer_pubkey;
@@ -413,10 +437,9 @@ pub async fn add_items_to_candy_machine(
         let is_writable = account.is_writable || pubkey == candy_machine_pubkey;
 
         ic_cdk::println!(
-            "Account meta: {} signer={} writable_in_data={} writable_final={}",
+            "[add_items] Final meta {} signer={} writable_final={}",
             bs58::encode(pubkey.to_bytes()).into_string(),
             account.is_signer,
-            account.is_writable,
             is_writable
         );
 
