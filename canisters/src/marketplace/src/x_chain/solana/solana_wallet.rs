@@ -98,6 +98,16 @@ impl SolanaWallet {
         self.derive_account(path)
     }
 
+    pub fn collection_account(&self, collection_id: &str) -> SolanaAccount {
+        let path: DerivationPath = (&[
+            self.owner.as_slice(),
+            b"collection",
+            collection_id.as_bytes(),
+        ][..])
+            .into();
+        self.derive_account(path)
+    }
+
     pub fn derived_nonce_account(&self) -> SolanaAccount {
         self.derive_account(
             [self.owner.as_slice(), "nonce-account".as_bytes()]

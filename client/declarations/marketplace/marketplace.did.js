@@ -189,6 +189,7 @@ export const idlFactory = ({ IDL }) => {
   });
   const CollectionSolanaAccounts = IDL.Record({
     'collection_id' : IDL.Text,
+    'collection_mint' : IDL.Opt(IDL.Text),
     'candy_machine_address' : IDL.Text,
     'payer_address' : IDL.Text,
   });
@@ -246,7 +247,7 @@ export const idlFactory = ({ IDL }) => {
         [],
       ),
     'create_candy_machine_from_instruction' : IDL.Func(
-        [IDL.Text, InstructionData],
+        [IDL.Text, IDL.Vec(InstructionData)],
         [Result],
         [],
       ),

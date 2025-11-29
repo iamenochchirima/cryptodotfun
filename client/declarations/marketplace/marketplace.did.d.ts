@@ -55,6 +55,7 @@ export interface Collection {
 }
 export interface CollectionSolanaAccounts {
   'collection_id' : string,
+  'collection_mint' : [] | [string],
   'candy_machine_address' : string,
   'payer_address' : string,
 }
@@ -205,13 +206,6 @@ export interface UpdateSolanaStageArgs {
   'candy_machine_authority' : [] | [string],
 }
 export interface _SERVICE {
-  /**
-   * Adds items to a candy machine from the collection manifest
-   * This is an admin/owner function that:
-   * 1. Fetches the manifest from the stored URL
-   * 2. Generates metadata for each NFT item
-   * 3. Sends transactions to add items to the candy machine
-   */
   'add_items_to_candy_machine' : ActorMethod<[string, InstructionData], Result>,
   'associated_token_account' : ActorMethod<[[] | [Principal], string], string>,
   'cancel_listing' : ActorMethod<[string, string], Result_1>,
@@ -220,12 +214,8 @@ export interface _SERVICE {
     [[] | [Principal], string],
     string
   >,
-  /**
-   * Creates a Candy Machine from instruction data
-   * The canister will fetch the recent blockhash, build the transaction, sign, and send
-   */
   'create_candy_machine_from_instruction' : ActorMethod<
-    [string, InstructionData],
+    [string, Array<InstructionData>],
     Result
   >,
   'create_collection' : ActorMethod<[CreateCollectionArgs], Result>,

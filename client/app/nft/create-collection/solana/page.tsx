@@ -304,6 +304,11 @@ export default function CreateSolanaCollectionPage() {
       const collectionAccounts = collectionAccountsResult.Ok
       const canisterPayerAddress = collectionAccounts.payer_address
       const candyMachineAddress = collectionAccounts.candy_machine_address
+      const collectionMintAddress = collectionAccounts.collection_mint?.[0]
+
+      if (!collectionMintAddress) {
+        throw new Error("Collection mint address not available from canister")
+      }
 
       setDeploymentStep("Building Candy Machine instruction...")
 
@@ -319,6 +324,7 @@ export default function CreateSolanaCollectionPage() {
         manifestUrl: formData.manifestUrl,
         canisterPayerAddress,
         candyMachineAddress,
+        collectionMintAddress,
         network: 'devnet', // TODO: Make this configurable
       })
 

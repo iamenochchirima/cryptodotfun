@@ -21,6 +21,7 @@ export interface CandyMachineConfig {
   manifestUrl: string
   canisterPayerAddress: string // The canister's Solana address
   candyMachineAddress: string // Will be populated
+  collectionMintAddress: string // The derived collection mint address
   network?: 'devnet' | 'mainnet-beta'
 }
 
@@ -68,9 +69,8 @@ export async function createCandyMachineInstruction(
   // Use the derived candy machine address from the canister
   const candyMachineSigner = createNoopSigner(umiPublicKey(config.candyMachineAddress))
 
-  // For now, use a placeholder collection (system program)
-  // In production, this should be the actual collection mint
-  const collectionMint = umiPublicKey('11111111111111111111111111111111')
+  // Use the derived collection mint address from the canister
+  const collectionMint = umiPublicKey(config.collectionMintAddress)
 
   // Build create instruction (without blockhash)
   const createIx = await create(umi, {
@@ -101,13 +101,33 @@ export async function createCandyMachineInstruction(
   const items = createIx.getInstructions()
 
   return items.map((instruction, ixIndex) => {
-    const accounts = instruction.keys.map((key: AccountMeta) => ({
-      pubkey: key.pubkey.toString(),
-      isSigner: key.isSigner,
-      isWritable: key.isWritable,
-    }))
+    // Ensure critical accounts are marked as writable
+    const accounts = instruction.keys.map((key: AccountMeta) => {
+      const pubkeyStr = key.pubkey.toString()
+      const isCandyMachine = pubkeyStr === config.candyMachineAddress
+      const isPayer = pubkeyStr === config.canisterPayerAddress
+      const isCollection = pubkeyStr === config.collectionMintAddress
 
-    console.log(`Candy Machine create instruction ${ixIndex} accounts:`, accounts)
+      // Force candy machine, payer, and collection to be writable
+      const isWritable = key.isWritable || isCandyMachine || isPayer || isCollection
+
+      return {
+        pubkey: pubkeyStr,
+        isSigner: key.isSigner,
+        isWritable,
+      }
+    })
+
+    console.log(`Candy Machine create instruction ${ixIndex}:`, {
+      programId: instruction.programId.toString(),
+      accounts,
+      dataLength: instruction.data ? instruction.data.length : 0,
+      hasData: !!instruction.data
+    })
+
+    if (!instruction.data || instruction.data.length === 0) {
+      throw new Error(`Instruction ${ixIndex} has no data - this should not happen with Metaplex instructions`)
+    }
 
     return {
       programId: instruction.programId.toString(),
@@ -170,7 +190,16 @@ export async function buildAddConfigLinesInstruction(
     }
   })
 
-  console.log('Add config lines instruction accounts (post-rewrite2):', accounts)
+  console.log('Add config lines instruction:', {
+    programId: instruction.programId.toString(),
+    accounts,
+    dataLength: instruction.data ? instruction.data.length : 0,
+    hasData: !!instruction.data
+  })
+
+  if (!instruction.data || instruction.data.length === 0) {
+    throw new Error('addConfigLines instruction has no data - this should not happen with Metaplex instructions')
+  }
 
   return {
     programId: instruction.programId.toString(),
@@ -207,17 +236,34 @@ export async function deployCandyMachineViaCanister(
   instructions: CandyMachineInstructionData[]
 ): Promise<string> {
   try {
-    const result = await actor.create_candy_machine_from_instruction(
-      collectionId,
-      instructions.map(ix => ({
+    // Validate and prepare instructions
+    const preparedInstructions = instructions.map((ix, index) => {
+      if (!ix.data) {
+        console.error(`Instruction ${index} is missing data field:`, ix)
+        throw new Error(`Instruction ${index} is missing required 'data' field`)
+      }
+      
+      if (!ix.programId) {
+        console.error(`Instruction ${index} is missing programId field:`, ix)
+        throw new Error(`Instruction ${index} is missing required 'programId' field`)
+      }
+
+      return {
         program_id: ix.programId,
         accounts: ix.accounts.map(acc => ({
           pubkey: acc.pubkey,
           is_signer: acc.isSigner,
           is_writable: acc.isWritable,
         })),
-        data: Array.from(ix.data),
-      }))
+        data: ix.data, 
+      }
+    })
+
+    console.log('Sending instructions to canister:', preparedInstructions)
+
+    const result = await actor.create_candy_machine_from_instruction(
+      collectionId,
+      preparedInstructions
     )
 
     if ('Err' in result) {

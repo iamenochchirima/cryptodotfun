@@ -93,14 +93,16 @@ pub async fn get_collection_solana_accounts(
         return Err("Collection not found".to_string());
     }
 
-    let wallet = SolanaWallet::new(canister_self()).await;
+     let wallet = SolanaWallet::new(canister_self()).await;
     let payer = wallet.solana_account();
     let candy_machine = wallet.candy_machine_account(&collection_id);
+    let collection = wallet.collection_account(&collection_id);
 
     Ok(CollectionSolanaAccounts {
         collection_id,
         payer_address: payer.to_string(),
         candy_machine_address: candy_machine.to_string(),
+        collection_mint: Some(collection.to_string()),
     })
 }
 
@@ -115,4 +117,5 @@ pub struct CollectionSolanaAccounts {
     pub collection_id: String,
     pub payer_address: String,
     pub candy_machine_address: String,
+    pub collection_mint: Option<String>,
 }

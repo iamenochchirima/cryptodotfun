@@ -49,6 +49,7 @@ type Collection = record {
 };
 type CollectionSolanaAccounts = record {
   collection_id : text;
+  collection_mint : opt text;
   candy_machine_address : text;
   payer_address : text;
 };
@@ -188,18 +189,11 @@ type UpdateSolanaStageArgs = record {
   candy_machine_authority : opt text;
 };
 service : (InitArgs) -> {
-  // Adds items to a candy machine from the collection manifest
-  // This is an admin/owner function that:
-  // 1. Fetches the manifest from the stored URL
-  // 2. Generates metadata for each NFT item
-  // 3. Sends transactions to add items to the candy machine
   add_items_to_candy_machine : (text, InstructionData) -> (Result);
   associated_token_account : (opt principal, text) -> (text);
   cancel_listing : (text, text) -> (Result_1);
   clear_old_collections : () -> (Result_1);
   create_associated_token_account : (opt principal, text) -> (text);
-  // Creates a Candy Machine from instruction data
-  // The canister will fetch the recent blockhash, build the transaction, sign, and send
   create_candy_machine_from_instruction : (text, vec InstructionData) -> (
       Result,
     );
