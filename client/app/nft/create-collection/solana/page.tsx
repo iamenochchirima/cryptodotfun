@@ -458,7 +458,6 @@ export default function CreateSolanaCollectionPage() {
         collection_mint: [],
         candy_machine_authority: [],
         candy_machine_config: [],
-        candy_machine_items_uploaded: false
       })
 
       setFormData(prev => ({
