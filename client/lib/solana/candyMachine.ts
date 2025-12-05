@@ -1,4 +1,10 @@
-import { addConfigLines, create, mplCandyMachine } from '@metaplex-foundation/mpl-core-candy-machine'
+// Candy Machine V3 (Token Metadata) - Updated to match working implementation
+import { addConfigLines, create, mplCandyMachine } from '@metaplex-foundation/mpl-candy-machine'
+import {
+  mplTokenMetadata,
+  TokenStandard,
+  createNft,
+} from '@metaplex-foundation/mpl-token-metadata'
 import { createUmi } from '@metaplex-foundation/umi-bundle-defaults'
 import {
   publicKey as umiPublicKey,
@@ -7,8 +13,19 @@ import {
   dateTime,
   createNoopSigner,
   signerIdentity,
-  AccountMeta
+  AccountMeta,
+  percentAmount,
+  generateSigner,
 } from '@metaplex-foundation/umi'
+
+export interface CollectionNFTConfig {
+  name: string
+  uri: string // Collection metadata URI
+  royaltyBps: number
+  collectionMintAddress: string // Pre-derived from canister
+  canisterPayerAddress: string // The canister's Solana address (will be authority)
+  network?: 'devnet' | 'mainnet-beta'
+}
 
 export interface CandyMachineConfig {
   collectionId: string
@@ -41,11 +58,117 @@ export interface CandyMachineConfigLine {
 }
 
 /**
+ * Creates Collection NFT instruction data
+ * This MUST be executed BEFORE creating the Candy Machine
+ * The canister will:
+ * - Fetch recent blockhash
+ * - Build and sign the transaction
+ * - Send to Solana with 'finalized' commitment
+ */
+export async function createCollectionNFTInstruction(
+  config: CollectionNFTConfig
+): Promise<CandyMachineInstructionData[]> {
+  const rpcEndpoint = config.network === 'mainnet-beta'
+    ? 'https://api.mainnet-beta.solana.com'
+    : 'https://api.devnet.solana.com'
+
+  // Create Umi instance with Token Metadata plugin
+  const umi = createUmi(rpcEndpoint)
+    .use(mplTokenMetadata())
+
+  // Set canister as the authority (noop signer since canister will sign)
+  const canisterPayer = umiPublicKey(config.canisterPayerAddress)
+  const noopSigner = createNoopSigner(canisterPayer)
+  umi.use(signerIdentity(noopSigner))
+
+  // Use the pre-derived collection mint address from canister
+  const collectionMintSigner = createNoopSigner(umiPublicKey(config.collectionMintAddress))
+
+  console.log('Creating Collection NFT instruction:')
+  console.log('  Collection Mint:', config.collectionMintAddress)
+  console.log('  Authority (Canister):', config.canisterPayerAddress)
+  console.log('  Name:', config.name)
+  console.log('  URI:', config.uri)
+
+  // Build Collection NFT creation instruction
+  const createNftIx = createNft(umi, {
+    mint: collectionMintSigner,
+    authority: umi.identity,
+    name: config.name,
+    uri: config.uri,
+    sellerFeeBasisPoints: percentAmount(config.royaltyBps / 100, 2),
+    isCollection: true,
+    collectionDetails: {
+      __kind: 'V1',
+      size: 0,
+    },
+  })
+
+  const items = createNftIx.getInstructions()
+
+  console.log('\n=== Collection NFT Instruction Analysis ===')
+  console.log('Expected addresses:')
+  console.log('  Collection Mint:', config.collectionMintAddress)
+  console.log('  Canister Payer:', config.canisterPayerAddress)
+
+  return items.map((instruction, ixIndex) => {
+    console.log(`\nInstruction ${ixIndex} original accounts:`)
+    instruction.keys.forEach((key: AccountMeta, idx) => {
+      console.log(`  [${idx}] ${key.pubkey.toString()}`)
+      console.log(`      Original isSigner: ${key.isSigner}, isWritable: ${key.isWritable}`)
+    })
+
+    const accounts = instruction.keys.map((key: AccountMeta) => {
+      const pubkeyStr = key.pubkey.toString()
+      const isCollectionMint = pubkeyStr === config.collectionMintAddress
+      const isPayer = pubkeyStr === config.canisterPayerAddress
+
+      // IMPORTANT: Only mark canister-controlled accounts as signers
+      // The canister can only sign for the payer and collection mint
+      // Other accounts (metadata PDAs, etc.) should NOT be signers
+      const isSigner = isCollectionMint || isPayer
+
+      // Ensure collection mint and payer are writable
+      const isWritable = key.isWritable || isCollectionMint || isPayer
+
+      if (isSigner) {
+        console.log(`  ✓ Marking as signer: ${pubkeyStr} (${isCollectionMint ? 'CollectionMint' : 'Payer'})`)
+      }
+
+      return {
+        pubkey: pubkeyStr,
+        isSigner,
+        isWritable,
+      }
+    })
+
+    console.log(`\nFinal instruction ${ixIndex}:`, {
+      programId: instruction.programId.toString(),
+      accountCount: accounts.length,
+      signers: accounts.filter(a => a.isSigner).map(a => a.pubkey),
+      dataLength: instruction.data ? instruction.data.length : 0,
+    })
+
+    if (!instruction.data || instruction.data.length === 0) {
+      throw new Error(`Instruction ${ixIndex} has no data`)
+    }
+
+    return {
+      programId: instruction.programId.toString(),
+      accounts,
+      data: instruction.data,
+    }
+  })
+}
+
+/**
  * Creates Candy Machine instruction data
  * This instruction data will be sent to the canister which will:
  * - Fetch recent blockhash using estimate_recent_blockhash
  * - Build the complete transaction message
  * - Sign and send to Solana
+ *
+ * IMPORTANT: Collection NFT MUST be created first!
  */
 export async function createCandyMachineInstruction(
   config: CandyMachineConfig
@@ -54,8 +177,10 @@ export async function createCandyMachineInstruction(
     ? 'https://api.mainnet-beta.solana.com'
     : 'https://api.devnet.solana.com'
 
-  // Create Umi instance and register the Core Candy Machine program
-  const umi = createUmi(rpcEndpoint).use(mplCandyMachine())
+  // Create Umi instance with Token Metadata and Candy Machine V3 plugins
+  const umi = createUmi(rpcEndpoint)
+    .use(mplTokenMetadata())
+    .use(mplCandyMachine())
 
   // Set a noop signer as identity (canister will do the actual signing)
   const canisterPayer = umiPublicKey(config.canisterPayerAddress)
@@ -72,20 +197,30 @@ export async function createCandyMachineInstruction(
   // Use the derived collection mint address from the canister
   const collectionMint = umiPublicKey(config.collectionMintAddress)
 
-  // Build create instruction (without blockhash)
+  // Build Candy Machine V3 create instruction (without blockhash)
   const createIx = await create(umi, {
     candyMachine: candyMachineSigner,
-    collection: collectionMint,
+    collectionMint: collectionMint,
     collectionUpdateAuthority: umi.identity,
+    tokenStandard: TokenStandard.NonFungible,
+    sellerFeeBasisPoints: percentAmount(config.royaltyBps / 100, 2),
     itemsAvailable: config.supply,
-    authority: umi.identity,
+    symbol: config.symbol,
+    maxEditionSupply: 0,
     isMutable: true,
+    creators: [
+      {
+        address: umi.identity.publicKey,
+        verified: true,
+        percentageShare: 100,
+      },
+    ],
     configLineSettings: some({
-      prefixName: `${config.name} #`,
+      prefixName: '',
       nameLength: 32,
-      prefixUri: config.manifestUrl,
+      prefixUri: '',
       uriLength: 200,
-      isSequential: true,
+      isSequential: false,
     }),
     guards: {
       solPayment: some({
@@ -94,7 +229,7 @@ export async function createCandyMachineInstruction(
       }),
       startDate: config.goLiveDate ? some({
         date: dateTime(config.goLiveDate)
-      }) : undefined,
+      }) : some({ date: dateTime(new Date().toISOString()) }),
     },
   })
 
@@ -108,12 +243,17 @@ export async function createCandyMachineInstruction(
       const isPayer = pubkeyStr === config.canisterPayerAddress
       const isCollection = pubkeyStr === config.collectionMintAddress
 
+      // IMPORTANT: Only mark canister-controlled accounts as signers
+      // The canister can only sign for the payer and candy machine
+      // Collection mint should already exist (not a signer here)
+      const isSigner = isCandyMachine || isPayer
+
       // Force candy machine, payer, and collection to be writable
       const isWritable = key.isWritable || isCandyMachine || isPayer || isCollection
 
       return {
         pubkey: pubkeyStr,
-        isSigner: key.isSigner,
+        isSigner,
         isWritable,
       }
     })
@@ -156,7 +296,10 @@ export async function buildAddConfigLinesInstruction(
     ? 'https://api.mainnet-beta.solana.com'
     : 'https://api.devnet.solana.com'
 
-  const umi = createUmi(rpcEndpoint).use(mplCandyMachine())
+  // Use Token Metadata and Candy Machine V3 plugins
+  const umi = createUmi(rpcEndpoint)
+    .use(mplTokenMetadata())
+    .use(mplCandyMachine())
 
   const canisterPayer = umiPublicKey(params.canisterPayerAddress)
   const noopSigner = createNoopSigner(canisterPayer)
@@ -180,7 +323,8 @@ export async function buildAddConfigLinesInstruction(
     const isCandyMachine = pubkeyString === params.candyMachineAddress
     const isPayer = pubkeyString === params.canisterPayerAddress
 
-    const isSigner = key.isSigner || isCandyMachine || isPayer
+    // IMPORTANT: Only mark canister-controlled accounts as signers
+    const isSigner = isCandyMachine || isPayer
     const isWritable = key.isWritable || isCandyMachine
 
     return {

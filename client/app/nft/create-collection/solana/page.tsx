@@ -21,7 +21,7 @@ import { getMarketplaceActor } from "@/providers/actors/marketplace"
 import { uploadToStorage, StorageProvider } from "@/lib/storage"
 import { useWallet } from "@solana/wallet-adapter-react"
 import { toast } from "sonner"
-import { createCandyMachineInstruction, deployCandyMachineViaCanister } from "@/lib/solana/candyMachine"
+import { createCollectionNFTInstruction, createCandyMachineInstruction, deployCandyMachineViaCanister } from "@/lib/solana/candyMachine"
 
 interface CollectionFormData {
   name: string
@@ -288,13 +288,6 @@ export default function CreateSolanaCollectionPage() {
 
       const actor = await getMarketplaceActor(identity)
 
-      // Get canister's Solana address
-      const canisterInfoResult = await actor.get_canister_solana_info()
-      if ('Err' in canisterInfoResult) {
-        throw new Error(canisterInfoResult.Err)
-      }
-      const canisterInfo = canisterInfoResult.Ok
-
       setDeploymentStep("Fetching collection Solana accounts...")
 
       const collectionAccountsResult = await actor.get_collection_solana_accounts(formData.canisterRecordId)
@@ -310,10 +303,55 @@ export default function CreateSolanaCollectionPage() {
         throw new Error("Collection mint address not available from canister")
       }
 
-      setDeploymentStep("Building Candy Machine instruction...")
+      console.log("Deployment addresses:")
+      console.log("  Canister Payer:", canisterPayerAddress)
+      console.log("  Candy Machine:", candyMachineAddress)
+      console.log("  Collection Mint:", collectionMintAddress)
 
-      // Create candy machine instruction data (without blockhash)
-      const instructions = await createCandyMachineInstruction({
+      // STEP 1: Create Collection NFT (REQUIRED for Candy Machine V3)
+      setDeploymentStep("Creating Collection NFT instruction...")
+
+      const collectionNFTInstructions = await createCollectionNFTInstruction({
+        name: formData.name,
+        uri: formData.manifestUrl,
+        royaltyBps: parseInt(formData.royaltyBps),
+        collectionMintAddress,
+        canisterPayerAddress,
+        network: 'devnet',
+      })
+
+      setDeploymentStep("Creating Collection NFT via canister...")
+
+      // Send Collection NFT creation to canister
+      // IMPORTANT: This must use 'finalized' commitment
+      const collectionTxResult = await actor.create_candy_machine_from_instruction(
+        formData.canisterRecordId,
+        collectionNFTInstructions.map(ix => ({
+          program_id: ix.programId,
+          accounts: ix.accounts.map(acc => ({
+            pubkey: acc.pubkey,
+            is_signer: acc.isSigner,
+            is_writable: acc.isWritable,
+          })),
+          data: ix.data,
+        }))
+      )
+
+      if ('Err' in collectionTxResult) {
+        throw new Error(`Collection NFT creation failed: ${collectionTxResult.Err}`)
+      }
+
+      const collectionTxSignature = collectionTxResult.Ok
+      console.log("Collection NFT created:", collectionTxSignature)
+
+      // Wait a bit for the Collection NFT to be indexed
+      setDeploymentStep("Waiting for Collection NFT to be indexed...")
+      await new Promise(resolve => setTimeout(resolve, 3000))
+
+      // STEP 2: Create Candy Machine V3
+      setDeploymentStep("Building Candy Machine V3 instruction...")
+
+      const candyMachineInstructions = await createCandyMachineInstruction({
         collectionId: formData.canisterRecordId,
         name: formData.name,
         symbol: formData.symbol,
@@ -325,19 +363,16 @@ export default function CreateSolanaCollectionPage() {
         canisterPayerAddress,
         candyMachineAddress,
         collectionMintAddress,
-        network: 'devnet', // TODO: Make this configurable
+        network: 'devnet',
       })
 
-      setDeploymentStep("Sending to canister for deployment...")
+      setDeploymentStep("Creating Candy Machine via canister...")
 
-      // Send instruction to canister which will:
-      // 1. Fetch recent blockhash
-      // 2. Build complete transaction
-      // 3. Sign and send to Solana
+      // Send Candy Machine creation to canister
       const txSignature = await deployCandyMachineViaCanister(
         actor,
         formData.canisterRecordId,
-        instructions
+        candyMachineInstructions
       )
 
       setDeploymentStep("Updating collection record...")
@@ -359,9 +394,14 @@ export default function CreateSolanaCollectionPage() {
         localStorage.removeItem(`solana-collection-draft-${draftId}`)
       }
 
-      toast.success("Candy Machine deployed successfully!", {
-        description: `Transaction: ${txSignature.slice(0, 8)}...${txSignature.slice(-8)}`,
-        duration: 5000,
+      toast.success("Candy Machine V3 deployed successfully!", {
+        description: (
+          <div className="space-y-1">
+            <div>Collection NFT: {collectionTxSignature.slice(0, 8)}...{collectionTxSignature.slice(-8)}</div>
+            <div>Candy Machine: {txSignature.slice(0, 8)}...{txSignature.slice(-8)}</div>
+          </div>
+        ),
+        duration: 7000,
       })
 
       setIsDeploying(false)
