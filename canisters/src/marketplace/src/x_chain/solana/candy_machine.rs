@@ -1,12 +1,12 @@
 use super::{client, solana_wallet::SolanaWallet};
-use crate::state::{get_collection};
-use crate::types::{TransactionType, InstructionData};
+use crate::state::get_collection;
+use crate::types::{InstructionData, TransactionType};
 use bincode::deserialize;
 use ic_cdk::api::canister_self;
-use solana_message::Message;
-use solana_transaction::Transaction;
 use solana_instruction::Instruction;
+use solana_message::Message;
 use solana_pubkey::Pubkey;
+use solana_transaction::Transaction;
 use std::str::FromStr;
 
 pub async fn sign_and_send_transaction(
@@ -15,13 +15,17 @@ pub async fn sign_and_send_transaction(
     transaction_type: TransactionType,
     user_wallet_address: Option<String>,
 ) -> Result<String, String> {
-    let _collection = get_collection(&collection_id)
-        .ok_or("Collection not found")?;
+    let _collection = get_collection(&collection_id).ok_or("Collection not found")?;
 
     let message: Message = deserialize(&serialized_message)
         .map_err(|e| format!("Failed to deserialize message: {:?}", e))?;
 
-    validate_transaction(&message, &transaction_type, &collection_id, user_wallet_address.as_deref())?;
+    validate_transaction(
+        &message,
+        &transaction_type,
+        &collection_id,
+        user_wallet_address.as_deref(),
+    )?;
 
     let canister_wallet = SolanaWallet::new(ic_cdk::api::canister_self()).await;
     let payer = canister_wallet.solana_account();
@@ -49,10 +53,7 @@ pub async fn sign_and_send_transaction(
         signatures,
     };
 
-    let multi_result = client()
-        .send_transaction(transaction)
-        .send()
-        .await;
+    let multi_result = client().send_transaction(transaction).send().await;
 
     let signature = match multi_result {
         sol_rpc_types::MultiRpcResult::Consistent(result) => {
@@ -60,7 +61,9 @@ pub async fn sign_and_send_transaction(
             result.map_err(|e| format!("Failed to send transaction: {}", e))?
         }
         sol_rpc_types::MultiRpcResult::Inconsistent(results) => {
-            ic_cdk::println!("RPC providers returned inconsistent results, using majority consensus");
+            ic_cdk::println!(
+                "RPC providers returned inconsistent results, using majority consensus"
+            );
 
             let mut successes = Vec::new();
             let mut failures = Vec::new();
@@ -79,7 +82,10 @@ pub async fn sign_and_send_transaction(
             }
 
             if successes.len() >= 2 {
-                ic_cdk::println!("Majority consensus: {} providers succeeded", successes.len());
+                ic_cdk::println!(
+                    "Majority consensus: {} providers succeeded",
+                    successes.len()
+                );
                 successes[0].clone()
             } else {
                 return Err(format!(
@@ -108,16 +114,25 @@ fn validate_transaction(
 
     match transaction_type {
         TransactionType::CreateCandyMachine => {
-            ic_cdk::println!("Validating CreateCandyMachine transaction for collection {}", collection_id);
+            ic_cdk::println!(
+                "Validating CreateCandyMachine transaction for collection {}",
+                collection_id
+            );
         }
         TransactionType::TransferAuthority => {
             if user_wallet_address.is_none() {
                 return Err("User wallet address required for authority transfer".to_string());
             }
-            ic_cdk::println!("Validating TransferAuthority transaction for collection {}", collection_id);
+            ic_cdk::println!(
+                "Validating TransferAuthority transaction for collection {}",
+                collection_id
+            );
         }
         TransactionType::UpdateCandyMachine => {
-            ic_cdk::println!("Validating UpdateCandyMachine transaction for collection {}", collection_id);
+            ic_cdk::println!(
+                "Validating UpdateCandyMachine transaction for collection {}",
+                collection_id
+            );
         }
     }
 
@@ -128,8 +143,7 @@ pub async fn create_candy_machine_from_instruction(
     collection_id: String,
     instructions_data: Vec<InstructionData>,
 ) -> Result<String, String> {
-    let _collection = get_collection(&collection_id)
-        .ok_or("Collection not found")?;
+    let _collection = get_collection(&collection_id).ok_or("Collection not found")?;
 
     ic_cdk::println!(
         "Creating Candy Machine from instruction for collection {}",
@@ -139,14 +153,23 @@ pub async fn create_candy_machine_from_instruction(
     let canister_wallet = SolanaWallet::new(canister_self()).await;
     let payer = canister_wallet.solana_account();
     let candy_machine_account = canister_wallet.candy_machine_account(&collection_id);
+    let collection_mint_account = canister_wallet.collection_account(&collection_id);
 
     let payer_pubkey = *payer.as_ref();
     let candy_machine_pubkey = *candy_machine_account.as_ref();
+    let collection_mint_pubkey = *collection_mint_account.as_ref();
 
-    ic_cdk::println!("Canister payer address: {}", bs58::encode(payer.as_ref()).into_string());
+    ic_cdk::println!(
+        "Canister payer address: {}",
+        bs58::encode(payer.as_ref()).into_string()
+    );
     ic_cdk::println!(
         "Derived candy machine address: {}",
         bs58::encode(candy_machine_account.as_ref()).into_string()
+    );
+    ic_cdk::println!(
+        "Derived collection mint address: {}",
+        bs58::encode(collection_mint_account.as_ref()).into_string()
     );
 
     let mut instructions: Vec<Instruction> = Vec::new();
@@ -181,13 +204,15 @@ pub async fn create_candy_machine_from_instruction(
             if account.is_signer {
                 let is_payer = pubkey == payer_pubkey;
                 let is_candy_machine = pubkey == candy_machine_pubkey;
+                let is_collection_mint = pubkey == collection_mint_pubkey;
 
-                if !is_payer && !is_candy_machine {
+                if !is_payer && !is_candy_machine && !is_collection_mint {
                     return Err(format!(
-                        "Transaction requires signer {} that the canister cannot authorize. Payer={}, CandyMachine={}",
+                        "Transaction requires signer {} that the canister cannot authorize. Payer={}, CandyMachine={}, CollectionMint={}",
                         bs58::encode(pubkey.to_bytes()).into_string(),
                         bs58::encode(payer_pubkey.to_bytes()).into_string(),
-                        bs58::encode(candy_machine_pubkey.to_bytes()).into_string()
+                        bs58::encode(candy_machine_pubkey.to_bytes()).into_string(),
+                        bs58::encode(collection_mint_pubkey.to_bytes()).into_string()
                     ));
                 }
             }
@@ -203,9 +228,13 @@ pub async fn create_candy_machine_from_instruction(
             });
         }
 
-        if !found_candy_machine {
-            return Err("Instruction data does not reference the derived candy machine account".to_string());
-        }
+        // Note: We don't require candy_machine to be present in every instruction
+        // Collection NFT creation instructions won't have it, only Candy Machine creation will
+        ic_cdk::println!(
+            "[create_cm]   Instruction {} includes candy_machine: {}",
+            idx,
+            found_candy_machine
+        );
 
         instructions.push(Instruction {
             program_id,
@@ -222,20 +251,17 @@ pub async fn create_candy_machine_from_instruction(
 
     ic_cdk::println!("Got recent blockhash: {:?}", blockhash);
 
-    let message = Message::new_with_blockhash(
-        instructions.as_slice(),
-        Some(payer.as_ref()),
-        &blockhash,
-    );
+    let message =
+        Message::new_with_blockhash(instructions.as_slice(), Some(payer.as_ref()), &blockhash);
 
     let num_signatures = message.header.num_required_signatures as usize;
 
     ic_cdk::println!("Number of required signatures: {}", num_signatures);
-    let num_signed_writable = num_signatures
-        .saturating_sub(message.header.num_readonly_signed_accounts as usize);
+    let num_signed_writable =
+        num_signatures.saturating_sub(message.header.num_readonly_signed_accounts as usize);
     let total_unsigned = message.account_keys.len().saturating_sub(num_signatures);
-    let num_unsigned_writable = total_unsigned
-        .saturating_sub(message.header.num_readonly_unsigned_accounts as usize);
+    let num_unsigned_writable =
+        total_unsigned.saturating_sub(message.header.num_readonly_unsigned_accounts as usize);
 
     for (index, key) in message.account_keys.iter().enumerate() {
         let signer = index < num_signatures;
@@ -263,6 +289,9 @@ pub async fn create_candy_machine_from_instruction(
         } else if signer == candy_machine_account.as_ref() {
             ic_cdk::println!("Signing as candy machine at position {}", index);
             signatures.push(candy_machine_account.sign_message(&message).await);
+        } else if signer == collection_mint_account.as_ref() {
+            ic_cdk::println!("Signing as collection mint at position {}", index);
+            signatures.push(collection_mint_account.sign_message(&message).await);
         } else {
             return Err(format!(
                 "Transaction requires signer {} that the canister cannot authorize",
@@ -276,11 +305,7 @@ pub async fn create_candy_machine_from_instruction(
         signatures,
     };
 
-
-    let multi_result = client()
-        .send_transaction(transaction)
-        .send()
-        .await;
+    let multi_result = client().send_transaction(transaction).send().await;
 
     let signature = match multi_result {
         sol_rpc_types::MultiRpcResult::Consistent(result) => {
@@ -288,8 +313,9 @@ pub async fn create_candy_machine_from_instruction(
             result.map_err(|e| format!("Failed to send transaction: {}", e))?
         }
         sol_rpc_types::MultiRpcResult::Inconsistent(results) => {
-     
-            ic_cdk::println!("RPC providers returned inconsistent results, using majority consensus");
+            ic_cdk::println!(
+                "RPC providers returned inconsistent results, using majority consensus"
+            );
 
             let mut successes = Vec::new();
             let mut failures = Vec::new();
@@ -308,7 +334,10 @@ pub async fn create_candy_machine_from_instruction(
             }
 
             if successes.len() >= 2 {
-                ic_cdk::println!("Majority consensus: {} providers succeeded, using transaction", successes.len());
+                ic_cdk::println!(
+                    "Majority consensus: {} providers succeeded, using transaction",
+                    successes.len()
+                );
                 successes[0].clone()
             } else {
                 return Err(format!(
@@ -341,10 +370,12 @@ pub async fn add_items_to_candy_machine(
         .take(16)
         .map(|b| format!("{:02x}", b))
         .collect();
-    ic_cdk::println!("add_items_to_candy_machine: data preview (first 16 bytes hex): {:?}", preview);
+    ic_cdk::println!(
+        "add_items_to_candy_machine: data preview (first 16 bytes hex): {:?}",
+        preview
+    );
 
-    let collection = get_collection(&collection_id)
-        .ok_or("Collection not found")?;
+    let collection = get_collection(&collection_id).ok_or("Collection not found")?;
 
     let solana_data = match &collection.chain_data {
         crate::types::ChainData::Solana(data) => data,
@@ -363,14 +394,17 @@ pub async fn add_items_to_candy_machine(
     let canister_wallet = SolanaWallet::new(canister_self()).await;
     let payer = canister_wallet.solana_account();
     let candy_machine_account = canister_wallet.candy_machine_account(&collection_id);
+    let collection_mint_account = canister_wallet.collection_account(&collection_id);
 
     let payer_pubkey = *payer.as_ref();
     let candy_machine_pubkey = *candy_machine_account.as_ref();
+    let collection_mint_pubkey = *collection_mint_account.as_ref();
 
     ic_cdk::println!(
-        "Payer: {}, Candy Machine: {}",
+        "Payer: {}, Candy Machine: {}, Collection Mint: {}",
         bs58::encode(payer.as_ref()).into_string(),
-        bs58::encode(candy_machine_account.as_ref()).into_string()
+        bs58::encode(candy_machine_account.as_ref()).into_string(),
+        bs58::encode(collection_mint_account.as_ref()).into_string()
     );
 
     let program_id = Pubkey::from_str(&instruction_data.program_id)
@@ -394,13 +428,15 @@ pub async fn add_items_to_candy_machine(
         if account.is_signer {
             let is_payer = pubkey == payer_pubkey;
             let is_candy_machine = pubkey == candy_machine_pubkey;
+            let is_collection_mint = pubkey == collection_mint_pubkey;
 
-            if !is_payer && !is_candy_machine {
+            if !is_payer && !is_candy_machine && !is_collection_mint {
                 return Err(format!(
-                    "Transaction requires signer {} that the canister cannot authorize. Payer={}, CandyMachine={}",
+                    "Transaction requires signer {} that the canister cannot authorize. Payer={}, CandyMachine={}, CollectionMint={}",
                     bs58::encode(pubkey.to_bytes()).into_string(),
                     bs58::encode(payer_pubkey.to_bytes()).into_string(),
-                    bs58::encode(candy_machine_pubkey.to_bytes()).into_string()
+                    bs58::encode(candy_machine_pubkey.to_bytes()).into_string(),
+                    bs58::encode(collection_mint_pubkey.to_bytes()).into_string()
                 ));
             }
         }
@@ -426,7 +462,9 @@ pub async fn add_items_to_candy_machine(
     }
 
     if !found_candy_machine {
-        return Err("Instruction data does not reference the derived candy machine account".to_string());
+        return Err(
+            "Instruction data does not reference the derived candy machine account".to_string(),
+        );
     }
 
     let instruction = Instruction {
@@ -441,21 +479,17 @@ pub async fn add_items_to_candy_machine(
         .await
         .map_err(|e| format!("Failed to get recent blockhash: {:?}", e))?;
 
-    let message = Message::new_with_blockhash(
-        &[instruction],
-        Some(payer.as_ref()),
-        &blockhash,
-    );
+    let message = Message::new_with_blockhash(&[instruction], Some(payer.as_ref()), &blockhash);
 
     let num_signatures = message.header.num_required_signatures as usize;
 
     ic_cdk::println!("Number of required signatures: {}", num_signatures);
 
-    let num_signed_writable = num_signatures
-        .saturating_sub(message.header.num_readonly_signed_accounts as usize);
+    let num_signed_writable =
+        num_signatures.saturating_sub(message.header.num_readonly_signed_accounts as usize);
     let total_unsigned = message.account_keys.len().saturating_sub(num_signatures);
-    let num_unsigned_writable = total_unsigned
-        .saturating_sub(message.header.num_readonly_unsigned_accounts as usize);
+    let num_unsigned_writable =
+        total_unsigned.saturating_sub(message.header.num_readonly_unsigned_accounts as usize);
 
     for (index, key) in message.account_keys.iter().enumerate() {
         let signer = index < num_signatures;
@@ -483,6 +517,9 @@ pub async fn add_items_to_candy_machine(
         } else if signer == candy_machine_account.as_ref() {
             ic_cdk::println!("Signing as candy machine at position {}", index);
             signatures.push(candy_machine_account.sign_message(&message).await);
+        } else if signer == collection_mint_account.as_ref() {
+            ic_cdk::println!("Signing as collection mint at position {}", index);
+            signatures.push(collection_mint_account.sign_message(&message).await);
         } else {
             return Err(format!(
                 "Transaction requires signer {} that the canister cannot authorize",
@@ -496,10 +533,7 @@ pub async fn add_items_to_candy_machine(
         signatures,
     };
 
-    let multi_result = client()
-        .send_transaction(transaction)
-        .send()
-        .await;
+    let multi_result = client().send_transaction(transaction).send().await;
 
     let signature = match multi_result {
         sol_rpc_types::MultiRpcResult::Consistent(result) => {
@@ -507,7 +541,9 @@ pub async fn add_items_to_candy_machine(
             result.map_err(|e| format!("Failed to send transaction: {}", e))?
         }
         sol_rpc_types::MultiRpcResult::Inconsistent(results) => {
-            ic_cdk::println!("RPC providers returned inconsistent results, using majority consensus");
+            ic_cdk::println!(
+                "RPC providers returned inconsistent results, using majority consensus"
+            );
 
             let mut successes = Vec::new();
             let mut failures = Vec::new();

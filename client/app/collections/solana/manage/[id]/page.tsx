@@ -14,7 +14,8 @@ import { useConnection, useWallet } from "@solana/wallet-adapter-react"
 import { PublicKey } from "@solana/web3.js"
 import { buildAddConfigLinesInstruction } from "@/lib/solana/candyMachine"
 import { createUmi } from "@metaplex-foundation/umi-bundle-defaults"
-import { mplCandyMachine, fetchCandyMachine } from "@metaplex-foundation/mpl-core-candy-machine"
+import { mplCandyMachine, fetchCandyMachine } from "@metaplex-foundation/mpl-candy-machine"
+import { mplTokenMetadata } from "@metaplex-foundation/mpl-token-metadata"
 import { publicKey as umiPublicKey } from "@metaplex-foundation/umi"
 
 const ITEMS_PER_TRANSACTION = 5
@@ -189,8 +190,6 @@ export default function ManageSolanaCollectionPage() {
           startIndex,
           items: chunk,
           network: SOLANA_NETWORK,
-          prefixLength: manifestUrl.length,
-          uriLength: 200,
         })
 
         const result = await (actor as any).add_items_to_candy_machine(collectionId, {
@@ -233,7 +232,9 @@ export default function ManageSolanaCollectionPage() {
         ? "https://api.mainnet-beta.solana.com"
         : "https://api.devnet.solana.com"
 
-      const umi = createUmi(rpcEndpoint).use(mplCandyMachine())
+      const umi = createUmi(rpcEndpoint)
+        .use(mplTokenMetadata())
+        .use(mplCandyMachine())
       const cm = await fetchCandyMachine(umi, umiPublicKey(candyMachineAddress))
 
       setCandyMachineState({
