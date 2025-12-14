@@ -41,7 +41,7 @@ export function getCanisterId(key: string): string {
     if (config[key]) {
       return config[key]["ic"];
     } else {
-      console.error(
+      console.info(
         `Canister ID for key "${key}" not found in production config.`
       );
       return "";
@@ -77,7 +77,7 @@ const productionCanisters: CanisterConfig = {
   icSiwsProviderCanisterId: getCanisterId("ic_siws_provider"),
   icSiwbProviderCanisterId: getCanisterId("ic_siwb_provider"),
   identityCertifierCanisterId: getCanisterId("identity_certifier"),
-  internetIdentityCanisterId: getCanisterId("internet_identity"),
+  internetIdentityCanisterId: "internet_identity",
   marketplaceCanisterId: getCanisterId("marketplace"),
 };
 

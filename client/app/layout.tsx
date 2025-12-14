@@ -8,6 +8,7 @@ import Footer from "@/components/footer"
 import { AuthProvider } from "@/lib/auth"
 import { ReduxProvider } from "@/lib/redux/provider"
 import { Web3Providers } from "@/providers/web3Provider"
+import { WalletConnectionProvider } from "@/connect-wallet"
 import { Toaster } from "@/components/ui/sonner"
 
 const inter = Inter({ subsets: ["latin"] })
@@ -32,14 +33,16 @@ export default function RootLayout({
         <ReduxProvider>
           <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false} disableTransitionOnChange>
             <Web3Providers>
-              <AuthProvider>
-                <div className="flex min-h-screen flex-col">
-                  <Navbar />
-                  <main className="flex-1">{children}</main>
-                  <Footer />
-                </div>
-                <Toaster />
-              </AuthProvider>
+              <WalletConnectionProvider>
+                <AuthProvider>
+                  <div className="flex min-h-screen flex-col">
+                    <Navbar />
+                    <main className="flex-1">{children}</main>
+                    <Footer />
+                  </div>
+                  <Toaster />
+                </AuthProvider>
+              </WalletConnectionProvider>
             </Web3Providers>
           </ThemeProvider>
         </ReduxProvider>

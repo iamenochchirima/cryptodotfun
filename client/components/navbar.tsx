@@ -4,13 +4,14 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
-import { Menu, Search, X } from "lucide-react"
+import { Menu, Search, X, Wallet } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ModeToggle } from "@/components/mode-toggle"
 import { cn } from "@/lib/utils"
 import AuthButton from "@/components/auth-button"
 import { NotificationDropdown } from "@/components/notification-dropdown"
 import { useAuth } from "@/providers/auth-context"
+import { useWalletConnection, WalletModal } from "@/connect-wallet"
 
 // Simplified navigation links
 const navLinks = [
@@ -22,10 +23,22 @@ const navLinks = [
 
 export default function Navbar() {
   const { isAuthenticated, fetchingUser } = useAuth();
+  const { walletState, disconnectWallet } = useWalletConnection();
   const [isOpen, setIsOpen] = useState(false)
   const [isScrolled, setIsScrolled] = useState(false)
   const [mounted, setMounted] = useState(false)
+  const [walletModalOpen, setWalletModalOpen] = useState(false)
   const pathname = usePathname()
+
+  const handleWalletButtonClick = () => {
+    if (walletState.isConnected) {
+      // Disconnect the wallet
+      disconnectWallet();
+    } else {
+      // Open modal to connect
+      setWalletModalOpen(true);
+    }
+  }
 
   useEffect(() => {
     setMounted(true)
@@ -86,6 +99,21 @@ export default function Navbar() {
           </Button>
 
           <AuthButton />
+
+          {/* New Standalone Wallet Connection Button */}
+          <Button
+            variant={walletState.isConnected ? "destructive" : "default"}
+            size="sm"
+            onClick={handleWalletButtonClick}
+            className="hidden md:flex items-center gap-2"
+          >
+            <Wallet className="h-4 w-4" />
+            {walletState.isConnected
+              ? "Disconnect"
+              : "Connect Wallet"
+            }
+          </Button>
+
           {isAuthenticated && <NotificationDropdown />}
 
           <ModeToggle />
@@ -117,15 +145,40 @@ export default function Navbar() {
                 {link.name}
               </Link>
             ))}
-            <div className="pt-2">
+            <div className="pt-2 space-y-2">
               <Button variant="ghost" size="sm" className="w-full justify-start">
                 <Search className="mr-2 h-4 w-4" />
                 Search
+              </Button>
+              <Button
+                variant={walletState.isConnected ? "destructive" : "default"}
+                size="sm"
+                onClick={() => {
+                  if (walletState.isConnected) {
+                    disconnectWallet();
+                  } else {
+                    setWalletModalOpen(true);
+                  }
+                  setIsOpen(false);
+                }}
+                className="w-full justify-start"
+              >
+                <Wallet className="mr-2 h-4 w-4" />
+                {walletState.isConnected
+                  ? "Disconnect"
+                  : "Connect Wallet"
+                }
               </Button>
             </div>
           </div>
         </div>
       )}
+
+      {/* Wallet Connection Modal */}
+      <WalletModal
+        isOpen={walletModalOpen}
+        onClose={() => setWalletModalOpen(false)}
+      />
     </header>
   )
 }
