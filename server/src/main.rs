@@ -75,7 +75,7 @@ async fn main() -> std::io::Result<()> {
     })?;
     println!("✅ R2 storage client initialized successfully!");
 
-    println!("🚀 Server starting at http://localhost:{}", config.port);
+    println!("🚀 Server starting at http://0.0.0.0:{}", config.port);
     println!("🌍 Environment: {}", config.environment);
 
     HttpServer::new(move || {
@@ -97,7 +97,7 @@ async fn main() -> std::io::Result<()> {
             .wrap(Logger::default())
             .configure(configure_routes)
     })
-    .bind(format!("localhost:{}", config.port))?
+    .bind(format!("0.0.0.0:{}", config.port))?
     .run()
     .await
 }
