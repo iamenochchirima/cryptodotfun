@@ -75,7 +75,7 @@ async fn main() -> std::io::Result<()> {
     })?;
     println!("✅ R2 storage client initialized successfully!");
 
-    println!("🚀 Server starting at http://localhost:{}", config.port);
+    println!("🚀 Server starting at http://0.0.0.0:{}", config.port);
     println!("🌍 Environment: {}", config.environment);
 
     HttpServer::new(move || {
@@ -83,6 +83,8 @@ async fn main() -> std::io::Result<()> {
         let cors = Cors::default()
             .allowed_origin("http://localhost:3000")  // Allow Next.js dev server
             .allowed_origin("http://127.0.0.1:3000")  // Alternative localhost
+            .allowed_origin("https://cryptodotfun.com")  // Production frontend
+            .allowed_origin("https://www.cryptodotfun.com")  // Production frontend with www
             .allowed_methods(vec!["GET", "POST", "PUT", "DELETE", "OPTIONS"])
             .allowed_headers(vec!["Content-Type", "Authorization", "Accept"])
             .supports_credentials()  // Allow cookies/credentials
@@ -95,7 +97,7 @@ async fn main() -> std::io::Result<()> {
             .wrap(Logger::default())
             .configure(configure_routes)
     })
-    .bind(format!("localhost:{}", config.port))?
+    .bind(format!("0.0.0.0:{}", config.port))?
     .run()
     .await
 }

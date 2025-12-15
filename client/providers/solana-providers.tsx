@@ -9,8 +9,7 @@ import { WalletModalProvider } from "@solana/wallet-adapter-react-ui"
 import { clusterApiUrl } from "@solana/web3.js"
 import { WalletAdapterNetwork } from "@solana/wallet-adapter-base"
 import { PhantomWalletAdapter, SolflareWalletAdapter } from "@solana/wallet-adapter-wallets"
-
-require("@solana/wallet-adapter-react-ui/styles.css")
+import "@solana/wallet-adapter-react-ui/styles.css"
 
 export default function SolanaProviders({
   children,
