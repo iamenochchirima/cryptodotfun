@@ -12,6 +12,7 @@ import AuthButton from "@/components/auth-button"
 import { NotificationDropdown } from "@/components/notification-dropdown"
 import { useAuth } from "@/providers/auth-context"
 import { useWalletConnection, WalletModal } from "@/connect-wallet"
+import WalletInfoModal from "@/components/wallet-info-modal"
 
 // Simplified navigation links
 const navLinks = [
@@ -28,12 +29,13 @@ export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false)
   const [mounted, setMounted] = useState(false)
   const [walletModalOpen, setWalletModalOpen] = useState(false)
+  const [walletInfoModalOpen, setWalletInfoModalOpen] = useState(false)
   const pathname = usePathname()
 
   const handleWalletButtonClick = () => {
     if (walletState.isConnected) {
-      // Disconnect the wallet
-      disconnectWallet();
+      // Open wallet info modal to show details and disconnect option
+      setWalletInfoModalOpen(true);
     } else {
       // Open modal to connect
       setWalletModalOpen(true);
@@ -100,19 +102,32 @@ export default function Navbar() {
 
           <AuthButton />
 
-          {/* New Standalone Wallet Connection Button */}
-          <Button
-            variant={walletState.isConnected ? "destructive" : "default"}
-            size="sm"
-            onClick={handleWalletButtonClick}
-            className="hidden md:flex items-center gap-2"
-          >
-            <Wallet className="h-4 w-4" />
-            {walletState.isConnected
-              ? "Disconnect"
-              : "Connect Wallet"
-            }
-          </Button>
+          {/* New Standalone Wallet Connection Button - Only shown after authentication */}
+          {isAuthenticated && (
+            <>
+              {walletState.isConnected ? (
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={handleWalletButtonClick}
+                  className="hidden md:flex"
+                >
+                  <Wallet className="h-4 w-4" />
+                  <span className="sr-only">Wallet Info</span>
+                </Button>
+              ) : (
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={handleWalletButtonClick}
+                  className="hidden md:flex items-center gap-2"
+                >
+                  <Wallet className="h-4 w-4" />
+                  Connect Wallet
+                </Button>
+              )}
+            </>
+          )}
 
           {isAuthenticated && <NotificationDropdown />}
 
@@ -150,25 +165,38 @@ export default function Navbar() {
                 <Search className="mr-2 h-4 w-4" />
                 Search
               </Button>
-              <Button
-                variant={walletState.isConnected ? "destructive" : "default"}
-                size="sm"
-                onClick={() => {
-                  if (walletState.isConnected) {
-                    disconnectWallet();
-                  } else {
-                    setWalletModalOpen(true);
-                  }
-                  setIsOpen(false);
-                }}
-                className="w-full justify-start"
-              >
-                <Wallet className="mr-2 h-4 w-4" />
-                {walletState.isConnected
-                  ? "Disconnect"
-                  : "Connect Wallet"
-                }
-              </Button>
+              {/* Connect Wallet Button - Only shown after authentication */}
+              {isAuthenticated && (
+                <>
+                  {walletState.isConnected ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setWalletInfoModalOpen(true);
+                        setIsOpen(false);
+                      }}
+                      className="w-full justify-start"
+                    >
+                      <Wallet className="mr-2 h-4 w-4" />
+                      Wallet Info
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="default"
+                      size="sm"
+                      onClick={() => {
+                        setWalletModalOpen(true);
+                        setIsOpen(false);
+                      }}
+                      className="w-full justify-start"
+                    >
+                      <Wallet className="mr-2 h-4 w-4" />
+                      Connect Wallet
+                    </Button>
+                  )}
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -178,6 +206,12 @@ export default function Navbar() {
       <WalletModal
         isOpen={walletModalOpen}
         onClose={() => setWalletModalOpen(false)}
+      />
+
+      {/* Wallet Info Modal */}
+      <WalletInfoModal
+        isOpen={walletInfoModalOpen}
+        onClose={() => setWalletInfoModalOpen(false)}
       />
     </header>
   )

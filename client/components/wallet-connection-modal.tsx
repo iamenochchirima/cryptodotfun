@@ -129,7 +129,7 @@ export default function WalletConnectionModal({ isOpen, onClose }: WalletConnect
                 <span>Internet Identity</span>
               </Button>
 
-              <Button
+              {/* <Button
                 variant="outline"
                 className="w-full flex items-center justify-start h-14 px-4 hover:border-primary hover:text-primary bg-transparent"
                 onClick={() => handleWalletSelect("ethereum")}
@@ -144,9 +144,9 @@ export default function WalletConnectionModal({ isOpen, onClose }: WalletConnect
                   />
                 </div>
                 <span>Sign In with Ethereum</span>
-              </Button>
+              </Button> */}
 
-              <Button
+              {/* <Button
                 variant="outline"
                 className="w-full flex items-center justify-start h-14 px-4 hover:border-primary hover:text-primary bg-transparent"
                 onClick={() => handleWalletSelect("solana")}
@@ -161,9 +161,9 @@ export default function WalletConnectionModal({ isOpen, onClose }: WalletConnect
                   />
                 </div>
                 <span>Sign In With Solana</span>
-              </Button>
+              </Button> */}
 
-              <Button
+              {/* <Button
                 variant="outline"
                 className="w-full flex items-center justify-start h-14 px-4 hover:border-primary hover:text-primary bg-transparent"
                 onClick={() => handleWalletSelect("bitcoin")}
@@ -178,7 +178,7 @@ export default function WalletConnectionModal({ isOpen, onClose }: WalletConnect
                   />
                 </div>
                 <span>Sign In with Bitcoin</span>
-              </Button>
+              </Button> */}
 
               <Button
                 variant="outline"
@@ -200,9 +200,9 @@ export default function WalletConnectionModal({ isOpen, onClose }: WalletConnect
             </div>
             }
 
-            {selectedWallet && selectedWallet === "ethereum" && <EthConnect onBack={handleBack} />}
+            {/* {selectedWallet && selectedWallet === "ethereum" && <EthConnect onBack={handleBack} />}
             {selectedWallet && selectedWallet === "solana" && <SolConnect onBack={handleBack} />}
-            {selectedWallet && selectedWallet === "bitcoin" && <BtcConnect onBack={handleBack} />}
+            {selectedWallet && selectedWallet === "bitcoin" && <BtcConnect onBack={handleBack} />} */}
 
             {connecting && (
               <div className="mt-4 flex items-center justify-center">
