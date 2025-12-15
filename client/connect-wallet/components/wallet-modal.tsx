@@ -17,7 +17,7 @@ interface WalletModalProps {
 }
 
 export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
-  const { error, clearError } = useWalletConnection();
+  const { error, clearError, walletState } = useWalletConnection();
   const [selectedChain, setSelectedChain] = useState<Chain>(null);
   const [connecting, setConnecting] = useState(false);
 
@@ -33,6 +33,20 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
       document.body.style.overflow = "unset";
     };
   }, [isOpen]);
+
+  // Auto-close modal after successful connection
+  useEffect(() => {
+    if (isOpen && walletState.isConnected && !connecting) {
+      const timer = setTimeout(() => {
+        clearError();
+        setSelectedChain(null);
+        setConnecting(false);
+        onClose();
+      }, 1500); // Close after 1.5 seconds to show success message
+
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen, walletState.isConnected]);
 
   const handleBack = () => {
     setSelectedChain(null);
