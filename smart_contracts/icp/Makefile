@@ -17,8 +17,8 @@ deploy-provider:
 	    } \
 	)"
 	dfx generate ic_siws_provider
-	mkdir -p ../client/declarations
-	rsync -av src/declarations/ic_siws_provider/ ../client/declarations/ic_siws_provider/
+	mkdir -p ../../client/declarations
+	rsync -av src/declarations/ic_siws_provider/ ../../client/declarations/ic_siws_provider/
 	dfx deploy ic_siwe_provider --argument "( \
 	    record { \
 	        domain = \"127.0.0.1\"; \
@@ -33,8 +33,8 @@ deploy-provider:
 	    } \
 	)"
 	dfx generate ic_siwe_provider
-	mkdir -p ../client/declarations
-	rsync -av src/declarations/ic_siwe_provider/ ../client/declarations/ic_siwe_provider/
+	mkdir -p ../../client/declarations
+	rsync -av src/declarations/ic_siwe_provider/ ../../client/declarations/ic_siwe_provider/
 	dfx deploy ic_siwb_provider --argument "( \
 		record { \
 			domain = \"127.0.0.1\"; \
@@ -49,8 +49,8 @@ deploy-provider:
 		} \
 	)"
 	dfx generate ic_siwb_provider
-	mkdir -p ../client/declarations
-	rsync -av src/declarations/ic_siwb_provider/ ../client/declarations/ic_siwb_provider/
+	mkdir -p ../../client/declarations
+	rsync -av src/declarations/ic_siwb_provider/ ../../client/declarations/ic_siwb_provider/
 
 upgrade-provider:
 	dfx canister install ic_siws_provider --mode upgrade --upgrade-unchanged --argument "( \
@@ -83,14 +83,14 @@ deploy-backend:
 
 generate:
 	dfx generate
-	mkdir -p ../client/declarations
-	rsync -av --delete src/declarations/ ../client/declarations/
+	mkdir -p ../../client/declarations
+	rsync -av --delete src/declarations/ ../../client/declarations/
 
 deploy-marketplace:
 	dfx deploy marketplace --yes --argument '(record { admin = principal "o4jpg-z2hcz-bf2oe-zziee-bsw4t-jgecg-boagp-segn6-pdznr-u6bdc-zae" })'
 	dfx generate marketplace
-	mkdir -p ../client/declarations
-	rsync -av src/declarations/marketplace/ ../client/declarations/marketplace/
+	mkdir -p ../../client/declarations
+	rsync -av src/declarations/marketplace/ ../../client/declarations/marketplace/
 
 deploy-marketplace-live:
 	dfx deploy marketplace --yes --argument '(record { admin = principal "o4jpg-z2hcz-bf2oe-zziee-bsw4t-jgecg-boagp-segn6-pdznr-u6bdc-zae" })' --network ic
@@ -98,20 +98,20 @@ deploy-marketplace-live:
 deploy-users:
 	dfx deploy users
 	dfx generate users
-	mkdir -p ../client/declarations
-	rsync -av src/declarations/users/ ../client/declarations/users/
+	mkdir -p ../../client/declarations
+	rsync -av src/declarations/users/ ../../client/declarations/users/
 
 deploy-treasury:
 	dfx deploy treasury
 	dfx generate treasury
-	mkdir -p ../client/declarations
-	rsync -av src/declarations/treasury/ ../client/declarations/treasury/
+	mkdir -p ../../client/declarations
+	rsync -av src/declarations/treasury/ ../../client/declarations/treasury/
 
 deploy-identity-certifier:
 	dfx deploy identity_certifier --argument '(principal "o4jpg-z2hcz-bf2oe-zziee-bsw4t-jgecg-boagp-segn6-pdznr-u6bdc-zae")'
 	dfx generate identity_certifier
-	mkdir -p ../client/declarations
-	rsync -av src/declarations/identity_certifier/ ../client/declarations/identity_certifier/
+	mkdir -p ../../client/declarations
+	rsync -av src/declarations/identity_certifier/ ../../client/declarations/identity_certifier/
 
 deploy-all: create-canisters deploy-provider deploy-backend deploy-frontend generate
 
@@ -190,8 +190,8 @@ reinstall-providers:
 	    } \
 	)"
 	dfx generate ic_siws_provider
-	mkdir -p ../client/declarations
-	rsync -av src/declarations/ic_siws_provider/ ../client/declarations/ic_siws_provider/
+	mkdir -p ../../client/declarations
+	rsync -av src/declarations/ic_siws_provider/ ../../client/declarations/ic_siws_provider/
 	dfx canister install ic_siwe_provider --mode reinstall --argument "( \
 	    record { \
 	        domain = \"127.0.0.1\"; \
@@ -206,8 +206,8 @@ reinstall-providers:
 	    } \
 	)"
 	dfx generate ic_siwe_provider
-	mkdir -p ../client/declarations
-	rsync -av src/declarations/ic_siwe_provider/ ../client/declarations/ic_siwe_provider/
+	mkdir -p ../../client/declarations
+	rsync -av src/declarations/ic_siwe_provider/ ../../client/declarations/ic_siwe_provider/
 	dfx canister install ic_siwb_provider --mode reinstall --argument "( \
 		record { \
 			domain = \"127.0.0.1\"; \
@@ -222,8 +222,8 @@ reinstall-providers:
 		} \
 	)"
 	dfx generate ic_siwb_provider
-	mkdir -p ../client/declarations
-	rsync -av src/declarations/ic_siwb_provider/ ../client/declarations/ic_siwb_provider/
+	mkdir -p ../../client/declarations
+	rsync -av src/declarations/ic_siwb_provider/ ../../client/declarations/ic_siwb_provider/
 
 reinstall-providers-live:
 	dfx canister install ic_siws_provider --mode reinstall --argument "( \
