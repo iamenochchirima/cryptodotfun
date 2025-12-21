@@ -255,6 +255,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           identity,
           host: host,
         });
+
         if (network === "local") {
           agent.fetchRootKey().catch((err) => {
             console.log("Error fetching root key: ", err);

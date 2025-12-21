@@ -8,10 +8,10 @@ export const host =
 export const getIIURL = (): string => {
 
   const { internetIdentityCanisterId } = require("./canisters-config");
-  
+
   return network === "local"
-    ? `http://${internetIdentityCanisterId}.localhost:4943/#authorize`
-    : "https://identity.ic0.app/#authorize";
+    ? `http://${internetIdentityCanisterId}.localhost:4943`
+    : "https://id.ai";
 };
 
 

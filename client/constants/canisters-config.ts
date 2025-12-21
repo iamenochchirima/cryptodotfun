@@ -22,14 +22,14 @@ let prodConfig: CanisterConfigType = {};
 let localConfig: CanisterConfigType = {};
 
 try {
-  prodConfig = require("../../canisters/canister_ids.json");
+  prodConfig = require("../../smart_contracts/icp/canister_ids.json");
 } catch (error) {
   console.warn("Production canister config not found, using fallback");
 }
 
 try {
   if (network === "local") {
-    localConfig = require("../../canisters/.dfx/local/canister_ids.json");
+    localConfig = require("../../smart_contracts/icp/.dfx/local/canister_ids.json");
   }
 } catch (error) {
   console.warn("Local canister config not found, using fallback");
