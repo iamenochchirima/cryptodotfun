@@ -121,6 +121,20 @@ export default function SelectBlockchainPage() {
       ],
       href: "/nft/create-collection/icp",
     },
+    {
+      id: "movement",
+      name: "Movement",
+      description: "Move-based NFTs with Aptos Digital Asset standard",
+      icon: "⚡",
+      color: "from-emerald-500 to-green-600",
+      features: [
+        "Move smart contract language",
+        "Low fees on testnet",
+        "Aptos Digital Asset standard",
+        "Fast transaction finality",
+      ],
+      href: "/nft/create-collection/movement",
+    },
   ]
 
   return (
