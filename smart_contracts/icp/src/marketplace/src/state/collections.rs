@@ -3,7 +3,7 @@ use ic_stable_structures::StableBTreeMap;
 use canister_uuid::get_uuid;
 use std::cell::RefCell;
 use crate::types::{
-    Blockchain, ChainData, ChainDataV0, Collection, CollectionStatus, CollectionV0, CreateCollectionArgs, SolanaCollectionData, UpdateCollectionStatusArgs, UpdateSolanaStageArgs
+    Blockchain, ChainData, ChainDataV0, Collection, CollectionStatus, CollectionV0, CreateCollectionArgs, SolanaCollectionData, UpdateCollectionStatusArgs, UpdateSolanaStageArgs, UpdateMovementStageArgs, UpdateCasperStageArgs
 };
 use super::memory::{ get_memory, COLLECTIONS_MEMORY_ID, COLLECTIONS_MEMORY_ID_OLD };
 use super::config::get_admin;
@@ -45,6 +45,8 @@ pub async fn migrate_collections() {
                     ChainDataV0::ICP(data) => ChainData::ICP(data.clone()),
                     ChainDataV0::Ethereum(data) => ChainData::Ethereum(data.clone()),
                     ChainDataV0::Bitcoin(data) => ChainData::Bitcoin(data.clone()),
+                    ChainDataV0::Movement(data) => ChainData::Movement(data.clone()),
+                    ChainDataV0::Casper(data) => ChainData::Casper(data.clone()),
                 };
                 let new_collection = Collection {
                     id: old_collection.id.clone(),
@@ -248,6 +250,103 @@ pub fn update_solana_stage(args: UpdateSolanaStageArgs) -> Result<(), String> {
                 Ok(())
             } else {
                 Err("Collection is not a Solana collection".to_string())
+            }
+        } else {
+            Err("Collection not found".to_string())
+        }
+    })
+}
+
+pub fn update_movement_stage(args: UpdateMovementStageArgs) -> Result<(), String> {
+    COLLECTIONS.with(|c| {
+        let mut collections = c.borrow_mut();
+
+        if let Some(mut collection) = collections.get(&args.collection_id) {
+            if let ChainData::Movement(ref mut data) = collection.chain_data {
+                data.deployment_stage = args.stage;
+                if let Some(addr) = args.collection_address {
+                    data.collection_address = Some(addr);
+                }
+                if let Some(url) = args.manifest_url {
+                    data.manifest_url = Some(url);
+                }
+                if let Some(created) = args.collection_created {
+                    data.collection_created = created;
+                }
+                collection.updated_at = ic_cdk::api::time();
+                collections.insert(args.collection_id, collection);
+                Ok(())
+            } else {
+                Err("Collection is not a Movement collection".to_string())
+            }
+        } else {
+            Err("Collection not found".to_string())
+        }
+    })
+}
+
+pub fn update_casper_stage(args: UpdateCasperStageArgs) -> Result<(), String> {
+    COLLECTIONS.with(|c| {
+        let mut collections = c.borrow_mut();
+
+        if let Some(mut collection) = collections.get(&args.collection_id) {
+            if let ChainData::Casper(ref mut data) = collection.chain_data {
+                data.deployment_stage = args.stage;
+                if let Some(hash) = args.contract_hash {
+                    data.contract_hash = Some(hash);
+                }
+                if let Some(pkg_hash) = args.contract_package_hash {
+                    data.contract_package_hash = Some(pkg_hash);
+                }
+                // Required CEP-78 parameters
+                if let Some(supply) = args.total_token_supply {
+                    data.total_token_supply = supply;
+                }
+                if let Some(mode) = args.ownership_mode {
+                    data.ownership_mode = mode;
+                }
+                if let Some(kind) = args.nft_metadata_kind {
+                    data.nft_metadata_kind = kind;
+                }
+                if let Some(schema) = args.json_schema {
+                    data.json_schema = schema;
+                }
+                if let Some(id_mode) = args.identifier_mode {
+                    data.identifier_mode = id_mode;
+                }
+                if let Some(mutability) = args.metadata_mutability {
+                    data.metadata_mutability = mutability;
+                }
+                // Optional configuration
+                if let Some(mint_mode) = args.minting_mode {
+                    data.minting_mode = Some(mint_mode);
+                }
+                if let Some(allow) = args.allow_minting {
+                    data.allow_minting = Some(allow);
+                }
+                if let Some(kind) = args.nft_kind {
+                    data.nft_kind = Some(kind);
+                }
+                if let Some(wl_mode) = args.whitelist_mode {
+                    data.whitelist_mode = Some(wl_mode);
+                }
+                if let Some(h_mode) = args.holder_mode {
+                    data.holder_mode = Some(h_mode);
+                }
+                if let Some(b_mode) = args.burn_mode {
+                    data.burn_mode = Some(b_mode);
+                }
+                if let Some(lookup) = args.owner_reverse_lookup_mode {
+                    data.owner_reverse_lookup_mode = Some(lookup);
+                }
+                if let Some(events) = args.events_mode {
+                    data.events_mode = Some(events);
+                }
+                collection.updated_at = ic_cdk::api::time();
+                collections.insert(args.collection_id, collection);
+                Ok(())
+            } else {
+                Err("Collection is not a Casper collection".to_string())
             }
         } else {
             Err("Collection not found".to_string())

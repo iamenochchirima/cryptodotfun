@@ -72,6 +72,34 @@ pub fn update_solana_stage(args: UpdateSolanaStageArgs) -> Result<(), String> {
 }
 
 #[update]
+pub fn update_movement_stage(args: UpdateMovementStageArgs) -> Result<(), String> {
+    let caller = msg_caller();
+
+    if let Some(collection) = state::get_collection(&args.collection_id) {
+        if collection.creator != caller {
+            return Err("Not authorized".to_string());
+        }
+        state::update_movement_stage(args)
+    } else {
+        Err("Collection not found".to_string())
+    }
+}
+
+#[update]
+pub fn update_casper_stage(args: UpdateCasperStageArgs) -> Result<(), String> {
+    let caller = msg_caller();
+
+    if let Some(collection) = state::get_collection(&args.collection_id) {
+        if collection.creator != caller {
+            return Err("Not authorized".to_string());
+        }
+        state::update_casper_stage(args)
+    } else {
+        Err("Collection not found".to_string())
+    }
+}
+
+#[update]
 pub async fn sign_and_send_solana_transaction(
     collection_id: String,
     serialized_message: Vec<u8>,

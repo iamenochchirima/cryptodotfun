@@ -21,7 +21,7 @@ export interface MintTokenParams {
   network?: "testnet" | "mainnet";
 }
 
-const MODULE_ADDRESS = "0xYOUR_DEPLOYED_MODULE_ADDRESS_HERE"; // TODO: Replace with actual deployed module address
+const MODULE_ADDRESS = "0x445516c4b4caba7ff0e233b029d57f65b63309b46cb4cd468e55353e52090fb1";
 const MODULE_NAME = "nft_collection";
 
 function getAptosConfig(network: "testnet" | "mainnet" = "testnet"): AptosConfig {

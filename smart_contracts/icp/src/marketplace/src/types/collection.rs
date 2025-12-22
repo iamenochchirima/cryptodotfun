@@ -20,6 +20,8 @@ pub enum ChainData {
     ICP(ICPCollectionData),
     Ethereum(EthereumCollectionData),
     Bitcoin(BitcoinCollectionData),
+    Movement(MovementCollectionData),
+    Casper(CasperCollectionData),
 }
 
 #[derive(CandidType, Serialize, Deserialize, Clone, Debug)]
@@ -28,6 +30,8 @@ pub enum ChainDataV0 {
     ICP(ICPCollectionData),
     Ethereum(EthereumCollectionData),
     Bitcoin(BitcoinCollectionData),
+    Movement(MovementCollectionData),
+    Casper(CasperCollectionData),
 }
 
 #[derive(CandidType, Serialize, Deserialize, Clone, Debug)]
@@ -109,6 +113,52 @@ pub struct BitcoinCollectionData {
 #[derive(CandidType, Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub enum BitcoinDeploymentStage {
     InscriptionsCreating,
+    Deployed,
+}
+
+#[derive(CandidType, Serialize, Deserialize, Clone, Debug)]
+pub struct MovementCollectionData {
+    pub deployment_stage: MovementDeploymentStage,
+    pub collection_address: Option<String>,
+    pub manifest_url: Option<String>,
+    pub collection_created: bool,
+}
+
+#[derive(CandidType, Serialize, Deserialize, Clone, Debug, PartialEq)]
+pub enum MovementDeploymentStage {
+    FilesUploading,
+    FilesUploaded,
+    CollectionDeploying,
+    Deployed,
+}
+
+#[derive(CandidType, Serialize, Deserialize, Clone, Debug)]
+pub struct CasperCollectionData {
+    pub deployment_stage: CasperDeploymentStage,
+    pub contract_hash: Option<String>,
+    pub contract_package_hash: Option<String>,
+    pub total_token_supply: u64,
+    pub ownership_mode: u8,
+    pub nft_metadata_kind: u8,
+    pub json_schema: String,
+    pub identifier_mode: u8,
+    pub metadata_mutability: u8,
+    pub minting_mode: Option<u8>,
+    pub allow_minting: Option<bool>,
+    pub nft_kind: Option<u8>,
+    pub whitelist_mode: Option<u8>,
+    pub holder_mode: Option<u8>,
+    pub burn_mode: Option<u8>,
+    pub owner_reverse_lookup_mode: Option<u8>,
+    pub events_mode: Option<u8>,
+}
+
+#[derive(CandidType, Serialize, Deserialize, Clone, Debug, PartialEq)]
+pub enum CasperDeploymentStage {
+    ContractPreparing,
+    ContractDeploying,
+    ContractDeployed,
+    Minting,
     Deployed,
 }
 
@@ -236,4 +286,37 @@ pub struct UpdateSolanaStageArgs {
     pub metadata_created: Option<bool>,
     pub candy_machine_authority: Option<String>,
     pub candy_machine_config: Option<CandyMachineConfig>,
+}
+
+#[derive(CandidType, Serialize, Deserialize, Clone, Debug)]
+pub struct UpdateMovementStageArgs {
+    pub collection_id: String,
+    pub stage: MovementDeploymentStage,
+    pub collection_address: Option<String>,
+    pub manifest_url: Option<String>,
+    pub collection_created: Option<bool>,
+}
+
+#[derive(CandidType, Serialize, Deserialize, Clone, Debug)]
+pub struct UpdateCasperStageArgs {
+    pub collection_id: String,
+    pub stage: CasperDeploymentStage,
+    pub contract_hash: Option<String>,
+    pub contract_package_hash: Option<String>,
+    // Required CEP-78 parameters
+    pub total_token_supply: Option<u64>,
+    pub ownership_mode: Option<u8>,
+    pub nft_metadata_kind: Option<u8>,
+    pub json_schema: Option<String>,
+    pub identifier_mode: Option<u8>,
+    pub metadata_mutability: Option<u8>,
+    // Optional configuration
+    pub minting_mode: Option<u8>,
+    pub allow_minting: Option<bool>,
+    pub nft_kind: Option<u8>,
+    pub whitelist_mode: Option<u8>,
+    pub holder_mode: Option<u8>,
+    pub burn_mode: Option<u8>,
+    pub owner_reverse_lookup_mode: Option<u8>,
+    pub events_mode: Option<u8>,
 }

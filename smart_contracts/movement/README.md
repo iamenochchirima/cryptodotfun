@@ -91,7 +91,7 @@ rm -rf build/
 
 ```bash
 # Initialize a new Movement project (if needed)
-movement init --name nft_launchpad
+movement init --network custom --rest-url https://testnet.movementnetwork.xyz/v1 --faucet-url https://faucet.testnet.movementnetwork.xyz/
 
 # Or just create a new account
 movement account create

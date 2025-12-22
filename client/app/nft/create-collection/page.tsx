@@ -38,6 +38,20 @@ export default function SelectBlockchainPage() {
   }
   const blockchains = [
     {
+      id: "movement",
+      name: "Movement",
+      description: "Move-based NFTs with Aptos Digital Asset standard",
+      icon: "⚡",
+      color: "from-emerald-500 to-green-600",
+      features: [
+        "Move smart contract language",
+        "Low fees on testnet",
+        "Aptos Digital Asset standard",
+        "Fast transaction finality",
+      ],
+      href: "/nft/create-collection/movement",
+    },
+    {
       id: "solana",
       name: "Solana",
       description: "Fast, low-cost NFTs with Metaplex standard",
@@ -66,48 +80,6 @@ export default function SelectBlockchainPage() {
       href: "/nft/create-collection/ethereum",
     },
     {
-      id: "bnb",
-      name: "BNB Chain",
-      description: "Low-cost EVM with high throughput",
-      icon: "🟡",
-      color: "from-yellow-500 to-orange-500",
-      features: [
-        "Low gas fees (~$0.20)",
-        "EVM compatible (Solidity)",
-        "Fast block times (~3 seconds)",
-        "Growing NFT ecosystem",
-      ],
-      href: "/nft/create-collection/bnb",
-    },
-    {
-      id: "polygon",
-      name: "Polygon",
-      description: "Ethereum Layer 2 with low fees",
-      icon: "🟪",
-      color: "from-purple-600 to-violet-600",
-      features: [
-        "Near-zero gas fees",
-        "Ethereum compatibility",
-        "Fast transaction finality",
-        "Carbon neutral network",
-      ],
-      href: "/nft/create-collection/polygon",
-    },
-    {
-      id: "arbitrum",
-      name: "Arbitrum",
-      description: "Optimistic rollup on Ethereum",
-      icon: "🔵",
-      color: "from-blue-500 to-cyan-500",
-      features: [
-        "Low fees, Ethereum security",
-        "Full EVM compatibility",
-        "Growing DeFi integration",
-        "Optimistic rollup technology",
-      ],
-      href: "/nft/create-collection/arbitrum",
-    },
-    {
       id: "icp",
       name: "ICP (Internet Computer)",
       description: "Fully on-chain NFTs with canister storage",
@@ -122,18 +94,18 @@ export default function SelectBlockchainPage() {
       href: "/nft/create-collection/icp",
     },
     {
-      id: "movement",
-      name: "Movement",
-      description: "Move-based NFTs with Aptos Digital Asset standard",
-      icon: "⚡",
-      color: "from-emerald-500 to-green-600",
+      id: "bitcoin",
+      name: "Bitcoin",
+      description: "Ordinals & Inscriptions on the Bitcoin blockchain",
+      icon: "₿",
+      color: "from-orange-500 to-amber-600",
       features: [
-        "Move smart contract language",
-        "Low fees on testnet",
-        "Aptos Digital Asset standard",
-        "Fast transaction finality",
+        "Bitcoin Ordinals protocol",
+        "Permanent inscription storage",
+        "Native Bitcoin security",
+        "Digital artifacts on-chain",
       ],
-      href: "/nft/create-collection/movement",
+      href: "/nft/create-collection/bitcoin",
     },
   ]
 
@@ -244,27 +216,27 @@ export default function SelectBlockchainPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <h3 className="font-semibold mb-2">Lowest Fees:</h3>
-                <p className="text-sm text-muted-foreground">Solana, Polygon, BNB Chain</p>
+                <p className="text-sm text-muted-foreground">Solana, Movement</p>
               </div>
               <div>
                 <h3 className="font-semibold mb-2">Maximum Liquidity:</h3>
-                <p className="text-sm text-muted-foreground">Ethereum, Polygon</p>
+                <p className="text-sm text-muted-foreground">Ethereum, Bitcoin</p>
               </div>
               <div>
                 <h3 className="font-semibold mb-2">Fastest Deployment:</h3>
-                <p className="text-sm text-muted-foreground">Solana, Polygon, BNB Chain</p>
+                <p className="text-sm text-muted-foreground">Solana, Movement</p>
               </div>
               <div>
                 <h3 className="font-semibold mb-2">Fully On-Chain:</h3>
-                <p className="text-sm text-muted-foreground">ICP (Internet Computer)</p>
+                <p className="text-sm text-muted-foreground">ICP, Bitcoin (Ordinals)</p>
               </div>
               <div>
-                <h3 className="font-semibold mb-2">EVM Compatible:</h3>
-                <p className="text-sm text-muted-foreground">Ethereum, BNB, Polygon, Arbitrum</p>
+                <h3 className="font-semibold mb-2">Move Language:</h3>
+                <p className="text-sm text-muted-foreground">Movement (Aptos-based)</p>
               </div>
               <div>
-                <h3 className="font-semibold mb-2">Layer 2 Solutions:</h3>
-                <p className="text-sm text-muted-foreground">Polygon, Arbitrum</p>
+                <h3 className="font-semibold mb-2">Most Secure:</h3>
+                <p className="text-sm text-muted-foreground">Bitcoin, Ethereum</p>
               </div>
             </div>
           </CardContent>
