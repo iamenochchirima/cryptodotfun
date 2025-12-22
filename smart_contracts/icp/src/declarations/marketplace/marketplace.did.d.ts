@@ -16,7 +16,9 @@ export type BitcoinDeploymentStage = { 'InscriptionsCreating' : null } |
 export type Blockchain = { 'ICP' : null } |
   { 'Ethereum' : null } |
   { 'Solana' : null } |
-  { 'Bitcoin' : null };
+  { 'Bitcoin' : null } |
+  { 'Movement' : null } |
+  { 'Casper' : null };
 export interface CandyMachineConfig {
   'seller_fee_basis_points' : number,
   'items_available' : bigint,
@@ -28,10 +30,36 @@ export interface CanisterSolanaInfo {
   'canister_id' : string,
   'main_solana_address' : string,
 }
+export interface CasperCollectionData {
+  'contract_hash' : [] | [string],
+  'holder_mode' : [] | [number],
+  'events_mode' : [] | [number],
+  'owner_reverse_lookup_mode' : [] | [number],
+  'ownership_mode' : number,
+  'burn_mode' : [] | [number],
+  'metadata_mutability' : number,
+  'json_schema' : string,
+  'contract_package_hash' : [] | [string],
+  'nft_kind' : [] | [number],
+  'allow_minting' : [] | [boolean],
+  'whitelist_mode' : [] | [number],
+  'minting_mode' : [] | [number],
+  'deployment_stage' : CasperDeploymentStage,
+  'identifier_mode' : number,
+  'total_token_supply' : bigint,
+  'nft_metadata_kind' : number,
+}
+export type CasperDeploymentStage = { 'ContractDeploying' : null } |
+  { 'Minting' : null } |
+  { 'ContractPreparing' : null } |
+  { 'Deployed' : null } |
+  { 'ContractDeployed' : null };
 export type ChainData = { 'ICP' : ICPCollectionData } |
   { 'Ethereum' : EthereumCollectionData } |
   { 'Solana' : SolanaCollectionData } |
-  { 'Bitcoin' : BitcoinCollectionData };
+  { 'Bitcoin' : BitcoinCollectionData } |
+  { 'Movement' : MovementCollectionData } |
+  { 'Casper' : CasperCollectionData };
 export interface Collection {
   'id' : string,
   'floor_price' : bigint,
@@ -138,6 +166,16 @@ export type ListingStatus = { 'Sold' : null } |
   { 'Active' : null } |
   { 'Cancelled' : null } |
   { 'Expired' : null };
+export interface MovementCollectionData {
+  'collection_address' : [] | [string],
+  'manifest_url' : [] | [string],
+  'collection_created' : boolean,
+  'deployment_stage' : MovementDeploymentStage,
+}
+export type MovementDeploymentStage = { 'FilesUploaded' : null } |
+  { 'Deployed' : null } |
+  { 'FilesUploading' : null } |
+  { 'CollectionDeploying' : null };
 export interface NftAttribute { 'trait_type' : string, 'value' : string }
 export interface NftMetadata {
   'image_url' : string,
@@ -185,6 +223,26 @@ export interface TokenAmount {
 export type TransactionType = { 'UpdateCandyMachine' : null } |
   { 'TransferAuthority' : null } |
   { 'CreateCandyMachine' : null };
+export interface UpdateCasperStageArgs {
+  'contract_hash' : [] | [string],
+  'holder_mode' : [] | [number],
+  'events_mode' : [] | [number],
+  'owner_reverse_lookup_mode' : [] | [number],
+  'collection_id' : string,
+  'ownership_mode' : [] | [number],
+  'burn_mode' : [] | [number],
+  'metadata_mutability' : [] | [number],
+  'json_schema' : [] | [string],
+  'contract_package_hash' : [] | [string],
+  'nft_kind' : [] | [number],
+  'allow_minting' : [] | [boolean],
+  'stage' : CasperDeploymentStage,
+  'whitelist_mode' : [] | [number],
+  'minting_mode' : [] | [number],
+  'identifier_mode' : [] | [number],
+  'total_token_supply' : [] | [bigint],
+  'nft_metadata_kind' : [] | [number],
+}
 export interface UpdateCollectionStatusArgs {
   'status' : CollectionStatus,
   'collection_id' : string,
@@ -193,6 +251,13 @@ export interface UpdateListingArgs {
   'status' : [] | [ListingStatus],
   'listing_id' : string,
   'price' : [] | [bigint],
+}
+export interface UpdateMovementStageArgs {
+  'collection_address' : [] | [string],
+  'manifest_url' : [] | [string],
+  'collection_id' : string,
+  'collection_created' : [] | [boolean],
+  'stage' : MovementDeploymentStage,
 }
 export interface UpdateSolanaStageArgs {
   'files_uploaded' : [] | [boolean],
@@ -264,11 +329,13 @@ export interface _SERVICE {
   >,
   'solana_account' : ActorMethod<[[] | [Principal]], string>,
   'update_candy_machine_address' : ActorMethod<[string, string], Result_1>,
+  'update_casper_stage' : ActorMethod<[UpdateCasperStageArgs], Result_1>,
   'update_collection_status' : ActorMethod<
     [UpdateCollectionStatusArgs],
     Result_1
   >,
   'update_listing' : ActorMethod<[UpdateListingArgs, string], Result_1>,
+  'update_movement_stage' : ActorMethod<[UpdateMovementStageArgs], Result_1>,
   'update_solana_stage' : ActorMethod<[UpdateSolanaStageArgs], Result_1>,
 }
 export declare const idlFactory: IDL.InterfaceFactory;
