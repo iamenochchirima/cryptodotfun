@@ -88,7 +88,7 @@ const features = [
     color: "text-crypto-purple",
     bgColor: "bg-crypto-purple/10",
     image: "/nft-marketplace-digital-art.png",
-    link: "/nft/marketplace",
+    link: "/collections",
     highlights: [
       "Multi-chain NFT marketplace (ETH, SOL, ICP)",
       "No-code NFT collection creation",

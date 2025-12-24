@@ -195,7 +195,7 @@ export default function Home() {
                 </li>
               </ul>
               <Button asChild>
-                <Link href="/nft/marketplace">
+                <Link href="/collections">
                   Explore NFTs <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
               </Button>

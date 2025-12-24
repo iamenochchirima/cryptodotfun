@@ -1,17 +1,23 @@
 [package]
-name = "collection"
+name = "marketplace"
 version = "1.0.0"
 authors = []
 
 [addresses]
-nft_launchpad = "_"
+marketplace_addr = "_"
 
 [dev-addresses]
+marketplace_addr = "0xcafe"
 
 [dependencies.AptosFramework]
 git = "https://github.com/movementlabsxyz/aptos-core.git"
 rev = "movement"
 subdir = "aptos-move/framework/aptos-framework"
+
+[dependencies.AptosStdlib]
+git = "https://github.com/movementlabsxyz/aptos-core.git"
+rev = "movement"
+subdir = "aptos-move/framework/aptos-stdlib"
 
 [dependencies.AptosTokenObjects]
 git = "https://github.com/movementlabsxyz/aptos-core.git"

@@ -1,4 +1,4 @@
-module nft_launchpad::nft_collection {
+module nft_launchpad::launchpad {
     use std::error;
     use std::option::{Self, Option};
     use std::signer;

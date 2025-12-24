@@ -114,9 +114,9 @@ export default function SelectBlockchainPage() {
       {/* Header */}
       <div className="mb-12">
         <Button variant="ghost" asChild className="mb-4">
-          <Link href="/nft/marketplace">
+          <Link href="/collections">
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Marketplace
+            Back to Collections
           </Link>
         </Button>
         <h1 className="text-4xl font-bold mb-4">Create NFT Collection</h1>

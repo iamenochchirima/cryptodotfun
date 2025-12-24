@@ -1,14 +1,15 @@
 import { Aptos, AptosConfig, Network } from "@aptos-labs/ts-sdk";
+import { MOVEMENT_CONTRACTS, MOVEMENT_NETWORK, type MovementNetwork } from "@/constants/movement";
 
 export interface CreateCollectionParams {
-  creatorAddress: any; // AccountAddress or string
+  creatorAddress: any;
   name: string;
   symbol: string;
   description: string;
   uri: string;
-  maxSupply?: number; // undefined = unlimited
-  royaltyPercentage: number; // e.g., 5 for 5%
-  network?: "testnet" | "mainnet";
+  maxSupply?: number;
+  royaltyPercentage: number;
+  network?: MovementNetwork;
 }
 
 export interface MintTokenParams {
@@ -18,29 +19,14 @@ export interface MintTokenParams {
   name: string;
   uri: string;
   recipient: string;
-  network?: "testnet" | "mainnet";
+  network?: MovementNetwork;
 }
 
-const MODULE_ADDRESS = "0x445516c4b4caba7ff0e233b029d57f65b63309b46cb4cd468e55353e52090fb1";
-const MODULE_NAME = "nft_collection";
-
-// Movement network configurations
-const MOVEMENT_CONFIGS = {
-  mainnet: {
-    chainId: 126,
-    fullnode: "https://mainnet.movementnetwork.xyz/v1",
-  },
-  testnet: {
-    chainId: 250,
-    fullnode: "https://testnet.movementnetwork.xyz/v1",
-  }
-};
-
-function getAptosConfig(network: "testnet" | "mainnet" = "testnet"): AptosConfig {
-  const config = MOVEMENT_CONFIGS[network];
+function getAptosConfig(network: MovementNetwork = "testnet"): AptosConfig {
+  const config = MOVEMENT_NETWORK[network];
   return new AptosConfig({
     network: Network.CUSTOM,
-    fullnode: config.fullnode,
+    fullnode: config.rpcUrl,
   });
 }
 
@@ -52,32 +38,22 @@ export function buildCreateCollectionPayload(params: CreateCollectionParams) {
     uri,
     maxSupply,
     royaltyPercentage,
+    network = "testnet",
   } = params;
 
-  // Convert royalty percentage to numerator/denominator (e.g., 5% = 5/100)
   const royaltyNumerator = Math.floor(royaltyPercentage);
   const royaltyDenominator = 100;
 
-  // For Option<u64> in Move with TS SDK:
-  // - Pass the value directly for Some
-  // - Pass undefined/null for None (SDK will encode as empty option)
   const maxSupplyArg = maxSupply !== undefined && maxSupply !== null
     ? maxSupply
     : undefined;
 
-  console.log("Building payload with:", {
-    description,
-    name,
-    uri,
-    maxSupply: maxSupplyArg,
-    royaltyNumerator,
-    royaltyDenominator,
-  });
+  const contract = MOVEMENT_CONTRACTS[network].launchpad;
 
   return {
     sender: creatorAddress,
     data: {
-      function: `${MODULE_ADDRESS}::${MODULE_NAME}::create_collection`,
+      function: `${contract.address}::${contract.module}::create_collection`,
       functionArguments: [
         description,
         name,
@@ -98,12 +74,15 @@ export function buildMintTokenPayload(params: MintTokenParams) {
     name,
     uri,
     recipient,
+    network = "testnet",
   } = params;
+
+  const contract = MOVEMENT_CONTRACTS[network].launchpad;
 
   return {
     sender: creatorAddress,
     data: {
-      function: `${MODULE_ADDRESS}::${MODULE_NAME}::mint_token`,
+      function: `${contract.address}::${contract.module}::mint_token`,
       functionArguments: [
         collectionName,
         description,
@@ -118,15 +97,16 @@ export function buildMintTokenPayload(params: MintTokenParams) {
 export async function getCollectionAddress(
   creatorAddress: string,
   collectionName: string,
-  network: "testnet" | "mainnet" = "testnet"
+  network: MovementNetwork = "testnet"
 ): Promise<string> {
   const config = getAptosConfig(network);
   const aptos = new Aptos(config);
+  const contract = MOVEMENT_CONTRACTS[network].launchpad;
 
   try {
     const result = await aptos.view({
       payload: {
-        function: `${MODULE_ADDRESS}::${MODULE_NAME}::get_collection_address`,
+        function: `${contract.address}::${contract.module}::get_collection_address`,
         typeArguments: [],
         functionArguments: [creatorAddress, collectionName],
       },
@@ -142,15 +122,16 @@ export async function getCollectionAddress(
 export async function collectionExists(
   creatorAddress: string,
   collectionName: string,
-  network: "testnet" | "mainnet" = "testnet"
+  network: MovementNetwork = "testnet"
 ): Promise<boolean> {
   const config = getAptosConfig(network);
   const aptos = new Aptos(config);
+  const contract = MOVEMENT_CONTRACTS[network].launchpad;
 
   try {
     const result = await aptos.view({
       payload: {
-        function: `${MODULE_ADDRESS}::${MODULE_NAME}::collection_exists`,
+        function: `${contract.address}::${contract.module}::collection_exists`,
         typeArguments: [],
         functionArguments: [creatorAddress, collectionName],
       },

@@ -58,7 +58,7 @@ export default function NotFound() {
                 <Link href="/earn">💰 Earn</Link>
               </Button>
               <Button size="sm" variant="ghost" asChild>
-                <Link href="/nft/marketplace">🎨 NFT Marketplace</Link>
+                <Link href="/collections">🎨 Collections</Link>
               </Button>
               <Button size="sm" variant="ghost" asChild>
                 <Link href="/secure">🛡️ Security</Link>
