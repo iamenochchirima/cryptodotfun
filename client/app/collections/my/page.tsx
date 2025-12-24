@@ -13,7 +13,7 @@ import { toast } from "sonner"
 import Link from "next/link"
 import { Collection } from "@/declarations/marketplace/marketplace.did"
 
-type Blockchain = "ICP" | "Solana" | "Ethereum" | "Bitcoin"
+type Blockchain = "ICP" | "Solana" | "Ethereum" | "Bitcoin" | "Movement"
 
 export default function MyCollectionsPage() {
   const router = useRouter()
@@ -57,6 +57,7 @@ export default function MyCollectionsPage() {
     if ('Solana' in blockchain) return 'Solana'
     if ('Ethereum' in blockchain) return 'Ethereum'
     if ('Bitcoin' in blockchain) return 'Bitcoin'
+    if ('Movement' in blockchain) return 'Movement'
     return 'ICP'
   }
 
@@ -90,17 +91,24 @@ export default function MyCollectionsPage() {
     const hasCandyMachine = 'Solana' in collection.chain_data &&
                            collection.chain_data.Solana.candy_machine_address?.[0]
 
-    if (status === 'Draft' && !hasCandyMachine) {
+    const isMovementDeployed = 'Movement' in collection.chain_data &&
+                              collection.chain_data.Movement.collection_created
+
+    if (status === 'Draft' && !hasCandyMachine && !isMovementDeployed) {
       if (blockchain === 'Solana') {
         router.push('/nft/create-collection/solana')
       } else if (blockchain === 'ICP') {
         router.push('/nft/create-collection/icp')
+      } else if (blockchain === 'Movement') {
+        router.push('/nft/create-collection/movement')
       }
     } else {
       if (blockchain === 'Solana') {
         router.push(`/collections/solana/manage/${collection.id}`)
       } else if (blockchain === 'ICP') {
         router.push(`/collections/icp/manage/${collection.id}`)
+      } else if (blockchain === 'Movement') {
+        router.push(`/collections/movement/manage/${collection.id}`)
       }
     }
   }
@@ -201,6 +209,23 @@ export default function MyCollectionsPage() {
                 <ExternalLink className="h-4 w-4" />
               </Button>
             )}
+            {!isDraft && blockchain === 'Movement' && 'Movement' in collection.chain_data && collection.chain_data.Movement.collection_address?.[0] && (
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => {
+                  if ('Movement' in collection.chain_data) {
+                    const address = collection.chain_data.Movement.collection_address?.[0]
+                    if (address) {
+                      const network = process.env.NEXT_PUBLIC_MOVEMENT_NETWORK === "mainnet" ? "mainnet" : "testnet"
+                      window.open(`https://explorer.movementnetwork.xyz/account/${address}?network=${network}`, '_blank')
+                    }
+                  }
+                }}
+              >
+                <ExternalLink className="h-4 w-4" />
+              </Button>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -226,8 +251,14 @@ export default function MyCollectionsPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Link href="/nft/create-collection/solana">
+          <Link href="/nft/create-collection/movement">
             <Button>
+              <Plus className="h-4 w-4 mr-2" />
+              Create Movement Collection
+            </Button>
+          </Link>
+          <Link href="/nft/create-collection/solana">
+            <Button variant="outline">
               <Plus className="h-4 w-4 mr-2" />
               Create Solana Collection
             </Button>
@@ -253,6 +284,12 @@ export default function MyCollectionsPage() {
               onClick={() => setSelectedChain("All")}
             >
               All
+            </Button>
+            <Button
+              variant={selectedChain === "Movement" ? "default" : "outline"}
+              onClick={() => setSelectedChain("Movement")}
+            >
+              Movement
             </Button>
             <Button
               variant={selectedChain === "Solana" ? "default" : "outline"}

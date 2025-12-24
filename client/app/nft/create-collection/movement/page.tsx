@@ -20,7 +20,7 @@ import { getMarketplaceActor } from "@/providers/actors/marketplace"
 import { uploadToStorage, StorageProvider } from "@/lib/storage"
 import { toast } from "sonner"
 import { useMovementWallet } from "@/connect-wallet/hooks/useMovementWallet"
-import { buildCreateCollectionPayload, collectionExists } from "@/lib/movement/collection"
+import { buildCreateCollectionPayload, getCollectionAddress } from "@/lib/movement/collection"
 import { Aptos, AptosConfig, Network } from "@aptos-labs/ts-sdk"
 
 interface CollectionFormData {
@@ -41,7 +41,7 @@ type SaveStatus = "saving" | "saved" | "idle"
 export default function CreateMovementCollectionPage() {
   const router = useRouter()
   const { identity } = useAuth()
-  const { account, connected, connect, wallet } = useMovementWallet()
+  const { account, connected, connect, wallet, signAndSubmitTransaction } = useMovementWallet()
 
   const draftId = "movement-draft"
   const [currentStep, setCurrentStep] = useState(1)
@@ -160,6 +160,7 @@ export default function CreateMovementCollectionPage() {
           ],
           chain_data: {
             Movement: {
+              deployment_stage: { FilesUploaded: null },
               collection_address: [],
               collection_created: false,
               manifest_url: [formData.manifestUrl],
@@ -243,58 +244,104 @@ export default function CreateMovementCollectionPage() {
 
     try {
       setIsDeploying(true)
-      setDeploymentStep("Checking if collection already exists...")
+      setDeploymentStep("Building transaction payload...")
 
-      // Check if collection name is already taken
-      const exists = await collectionExists(account.address.toString(), formData.name)
-      if (exists) {
-        throw new Error(`Collection "${formData.name}" already exists for this account`)
+      // Validate and prepare parameters
+      const maxSupply = formData.unlimitedSupply
+        ? undefined
+        : parseInt(formData.maxSupply) || 0;
+
+      const royaltyBps = parseInt(formData.royaltyBps) || 0;
+      const royaltyPercentage = royaltyBps / 100; // Convert basis points to percentage
+
+      // Validate required fields
+      if (!formData.name || !formData.manifestUrl) {
+        throw new Error("Missing required fields: name and manifest URL");
       }
 
-      setDeploymentStep("Building transaction payload...")
+      // Use default description if empty (Move contract requires a value)
+      const description = formData.description || `${formData.name} NFT Collection`;
+
+      console.log("Form data:", {
+        name: formData.name,
+        description,
+        manifestUrl: formData.manifestUrl,
+        maxSupply,
+        royaltyPercentage,
+        unlimitedSupply: formData.unlimitedSupply,
+      });
 
       // Build the create_collection transaction payload
       const payload = buildCreateCollectionPayload({
-        creatorAddress: account.address.toString(),
+        creatorAddress: account.address, // Pass address object, not string
         name: formData.name,
         symbol: formData.symbol,
-        description: formData.description,
+        description,
         uri: formData.manifestUrl,
-        maxSupply: formData.unlimitedSupply ? undefined : parseInt(formData.maxSupply),
-        royaltyPercentage: parseInt(formData.royaltyBps) / 100,
+        maxSupply,
+        royaltyPercentage,
         network: "testnet",
       })
 
-      setDeploymentStep("Sending transaction to Movement...")
+      console.log("Built payload:", JSON.stringify(payload, null, 2));
 
-      // Initialize Aptos client
+      setDeploymentStep("Waiting for wallet approval...")
+
+      // Sign and submit transaction
+      const response = await signAndSubmitTransaction(payload)
+
+      setDeploymentStep("Transaction submitted. Waiting for confirmation...")
+
+      // Initialize Aptos client for waiting on transaction
       const aptosConfig = new AptosConfig({
-        network: Network.TESTNET,
-        fullnode: "https://aptos.testnet.porto.movementlabs.xyz/v1",
+        network: Network.CUSTOM,
+        fullnode: "https://testnet.movementnetwork.xyz/v1",
       })
       const aptos = new Aptos(aptosConfig)
 
-      // Sign and submit transaction using wallet
-      // @ts-ignore - wallet adapter types
-      const response = await wallet.signAndSubmitTransaction({
-        data: payload,
-      })
-
-      setDeploymentStep("Waiting for transaction confirmation...")
-
-      // Wait for transaction to be confirmed
-      const txResult = await aptos.waitForTransaction({
-        transactionHash: response.hash,
-      })
-
-      console.log("Transaction confirmed:", txResult)
+      // Try to wait for transaction confirmation (optional - don't fail if this errors)
+      try {
+        const txResult = await aptos.waitForTransaction({
+          transactionHash: response.hash,
+        })
+        console.log("Transaction confirmed:", txResult)
+      } catch (waitError) {
+        console.warn("Could not wait for transaction confirmation:", waitError)
+        console.log("Transaction was submitted with hash:", response.hash)
+        // Continue anyway - the transaction was submitted successfully
+      }
 
       setDeploymentStep("Updating collection record...")
 
-      // Update the canister record if we created one
+      // Update the canister record to mark as deployed
       if (formData.canisterRecordId) {
-        const actor = await getMarketplaceActor(identity)
-        // TODO: Add update function to mark collection as deployed
+        try {
+          const actor = await getMarketplaceActor(identity)
+
+          // Get the collection address
+          const collectionAddr = await getCollectionAddress(
+            account.address.toString(),
+            formData.name,
+            "testnet"
+          )
+
+          const updateResult = await actor.update_movement_stage({
+            collection_id: formData.canisterRecordId,
+            stage: { Deployed: null },
+            collection_created: [true],
+            collection_address: [collectionAddr],
+            manifest_url: [],
+          })
+
+          if ('Err' in updateResult) {
+            console.error("Failed to update collection status:", updateResult.Err)
+          } else {
+            console.log("Collection status updated successfully")
+          }
+        } catch (error) {
+          console.error("Failed to update collection record:", error)
+          // Don't fail the whole deployment if backend update fails
+        }
       }
 
       setDeploymentStep("Finalizing deployment...")
@@ -304,22 +351,34 @@ export default function CreateMovementCollectionPage() {
         localStorage.removeItem(`movement-collection-draft-${draftId}`)
       }
 
-      toast.success("Collection deployed successfully!", {
-        description: (
-          <div className="space-y-1">
-            <div>Collection: {formData.name}</div>
-            <div>Transaction: {response.hash.slice(0, 8)}...{response.hash.slice(-8)}</div>
-          </div>
-        ),
-        duration: 7000,
-      })
+      toast.success(
+        <div className="flex flex-col gap-2">
+          <p>Collection deployed successfully!</p>
+          <p className="text-sm">Collection: {formData.name}</p>
+          <a
+            href={`https://explorer.movementnetwork.xyz/txn/${response.hash}?network=testnet`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs underline hover:no-underline"
+          >
+            View on Explorer →
+          </a>
+        </div>,
+        {
+          duration: 10000,
+        }
+      )
 
       setIsDeploying(false)
       setDeploymentStep("")
 
-      // Navigate to collection management page (if exists)
+      // Navigate to collection management page
       setTimeout(() => {
-        router.push(`/nft/marketplace`)
+        if (formData.canisterRecordId) {
+          router.push(`/collections/movement/manage/${formData.canisterRecordId}`)
+        } else {
+          router.push(`/collections/my`)
+        }
       }, 1000)
     } catch (error) {
       console.error("Deployment failed:", error)

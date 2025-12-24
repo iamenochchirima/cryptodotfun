@@ -270,5 +270,14 @@ reinstall-providers-live:
 reinstall-all-live: reinstall-providers-live
 
 reinstall-marketplace:
+	dfx canister install marketplace --mode reinstall --yes --argument '(record { admin = principal "o4jpg-z2hcz-bf2oe-zziee-bsw4t-jgecg-boagp-segn6-pdznr-u6bdc-zae" })'
+	dfx generate marketplace
+	mkdir -p ../../client/declarations
+	rsync -av src/declarations/marketplace/ ../../client/declarations/marketplace/
+
+reinstall-marketplace-live:
 	dfx canister install marketplace --mode reinstall --yes --network ic --argument '(record { admin = principal "o4jpg-z2hcz-bf2oe-zziee-bsw4t-jgecg-boagp-segn6-pdznr-u6bdc-zae"; ed25519_key_name = opt variant { MainnetTestKey1 } })'
+
+build:
+	cargo build --target wasm32-unknown-unknown --release --package marketplace
 

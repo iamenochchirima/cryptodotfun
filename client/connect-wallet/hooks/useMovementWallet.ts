@@ -10,7 +10,7 @@ import { MovementWalletType } from '../types';
  * Bridges Aptos/Movement wallet adapter with the wallet connection context
  */
 export function useMovementWallet() {
-  const { account, connected, wallet, connect, disconnect, wallets } = useWallet();
+  const { account, connected, wallet, connect, disconnect, wallets, signAndSubmitTransaction } = useWallet();
   const { updateWalletState, disconnectRequested } = useWalletConnectionContext();
 
   // Determine wallet type from wallet name
@@ -65,6 +65,7 @@ export function useMovementWallet() {
     wallets,
     connect,
     disconnect,
+    signAndSubmitTransaction,
     address: account?.address?.toString() || null,
   };
 }
