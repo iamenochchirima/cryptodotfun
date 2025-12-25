@@ -2,12 +2,8 @@ export type { _SERVICE as USERS_SERVICE } from "../declarations/users/users.did"
 export type { _SERVICE as IDENTITY_CERTIFIER_SERVICE } from "../declarations/identity_certifier/identity_certifier.did";
 export  type { _SERVICE as MARKETPLACE_SERVICE } from "../declarations/marketplace/marketplace.did";
 
-export { idlFactory as icSiwsIDL } from "../declarations/ic_siws_provider/ic_siws_provider.did.js";
-export { idlFactory as icSiweIDL } from "../declarations/ic_siwe_provider/ic_siwe_provider.did.js";
-export { idlFactory as icSiwbIDL } from "../declarations/ic_siwb_provider/ic_siwb_provider.did.js";
 export { idlFactory as usersIDL } from "../declarations/users/users.did.js";
 export { idlFactory as marketplaceIDL } from "../declarations/marketplace/marketplace.did.js";
-
 export { idlFactory as identityCertifierIDL } from "../declarations/identity_certifier/identity_certifier.did.js";
 
 const network = process.env.NEXT_PUBLIC_ENVIRONMENT || "local";
@@ -63,9 +59,6 @@ type Env = "ic" | "local";
 
 interface CanisterConfig {
   usersCanisterId: string;
-  icSiweProviderCanisterId: string;
-  icSiwsProviderCanisterId: string;
-  icSiwbProviderCanisterId: string;
   identityCertifierCanisterId: string;
   internetIdentityCanisterId: string;
   marketplaceCanisterId: string;
@@ -73,9 +66,6 @@ interface CanisterConfig {
 
 const productionCanisters: CanisterConfig = {
   usersCanisterId: getCanisterId("users"),
-  icSiweProviderCanisterId: getCanisterId("ic_siwe_provider"),
-  icSiwsProviderCanisterId: getCanisterId("ic_siws_provider"),
-  icSiwbProviderCanisterId: getCanisterId("ic_siwb_provider"),
   identityCertifierCanisterId: getCanisterId("identity_certifier"),
   internetIdentityCanisterId: "internet_identity",
   marketplaceCanisterId: getCanisterId("marketplace"),
@@ -83,9 +73,6 @@ const productionCanisters: CanisterConfig = {
 
 const localCanisters: CanisterConfig = {
   usersCanisterId: getCanisterId("users"),
-  icSiweProviderCanisterId: getCanisterId("ic_siwe_provider"),
-  icSiwsProviderCanisterId: getCanisterId("ic_siws_provider"),
-  icSiwbProviderCanisterId: getCanisterId("ic_siwb_provider"),
   identityCertifierCanisterId: getCanisterId("identity_certifier"),
   internetIdentityCanisterId: getCanisterId("internet_identity"),
   marketplaceCanisterId: getCanisterId("marketplace"),
@@ -98,9 +85,6 @@ const canisterConfigs: Record<Env, CanisterConfig> = {
 
 export const {
   usersCanisterId,
-  icSiweProviderCanisterId,
-  icSiwsProviderCanisterId,
-  icSiwbProviderCanisterId,
   internetIdentityCanisterId,
   identityCertifierCanisterId,
   marketplaceCanisterId,

@@ -4,8 +4,6 @@
   "private": true,
   "scripts": {
     "build": "next build",
-    "prepare:deps": "cd packages/ic-use-siwb-identity && pnpm install && pnpm run build && cd ../.. && pnpm install",
-    "predev": "npm run prepare:deps",
     "dev": "next dev",
     "lint": "next lint",
     "start": "next start"
@@ -75,10 +73,7 @@
     "date-fns": "4.1.0",
     "embla-carousel-react": "latest",
     "encoding": "^0.1.13",
-    "ic-siwe-js": "^0.2.1",
-    "ic-siws-js": "^0.1.0",
     "ic-use-actor": "^0.1.0",
-    "ic-use-siwb-identity": "file:./packages/ic-use-siwb-identity",
     "idb": "^8.0.3",
     "input-otp": "latest",
     "lucide-react": "^0.454.0",

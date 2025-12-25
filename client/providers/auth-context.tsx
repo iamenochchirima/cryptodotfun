@@ -6,11 +6,6 @@ import { WalletType } from "./types";
 import { AuthClient } from "@dfinity/auth-client";
 import { getAuthClient } from "./nfid";
 import { aidFromPrincipal } from "./util";
-import { useSiws } from "ic-siws-js/react";
-import { useSiwe } from "ic-siwe-js/react";
-import { useSiwbIdentity } from 'ic-use-siwb-identity';
-import { useAccount, useDisconnect } from "wagmi";
-import { useWallet } from "@solana/wallet-adapter-react";
 import { host, network } from "@/constants/urls";
 import { identityCertifierCanisterId, usersCanisterId, usersIDL, identityCertifierIDL, USERS_SERVICE, IDENTITY_CERTIFIER_SERVICE } from "@/constants/canisters-config";
 import { apiLogout } from "@/services/AuthService";
@@ -36,39 +31,8 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-const useSafeSiws = () => {
-  try {
-    return useSiws();
-  } catch (error) {
-    return { identity: null, clear: () => { } };
-  }
-};
-
-const useSafeSiwe = () => {
-  try {
-    return useSiwe();
-  } catch (error) {
-    return { identity: null, clear: () => { } };
-  }
-};
-
-const useSafeSiwb = () => {
-  try {
-    return useSiwbIdentity();
-  } catch (error) {
-    return { identity: null, clear: () => { }, identityAddress: null };
-  }
-};
-
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [authClient, setAuthClient] = useState<AuthClient | null>(null);
-  const { identity: siwsIdentity, clear: siwsClear } = useSafeSiws();
-  const { identity: siweIdentity, clear: siweClear } = useSafeSiwe();
-  const { identity: siwbIdentity, clear: siwbClear, identityAddress } = useSafeSiwb();
-
-  const { publicKey, disconnect: solanaDisconnect } = useWallet();
-  const { disconnect: wagmiDisconnect } = useDisconnect();
-  const { address: ethAddress } = useAccount();
   const [identity, setIdentity] = useState<any>(null);
   const { sessionData, updateSessionData, deleteSessionData, syncSessionData } =
     useSessionData();
@@ -109,13 +73,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       authenticateWithServer();
     }
   }, [
-    isAuthenticated, 
-    !!identityCertifierActor, 
-    !!usersActor, 
-    sessionData?.isBackendAuthenticated,
-    isServerAuthenticating,
-    isServerAuthenticated,
-    !!serverAuthError 
+    isAuthenticated 
   ]);
 
 
@@ -127,21 +85,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         case WalletType.InternetIdentity:
           updateInternetIdentityClient();
           break;
-        case WalletType.SIWB:
-          updateSIWBClient();
-          break;
-        case WalletType.SIWS:
-          updateSIWSClient();
-          break;
-        case WalletType.SIWE:
-          updateSIWEClient();
-          break;
         case WalletType.NFID:
           updateNFIDClient();
           break;
       }
     }
-  }, [siwsIdentity, siweIdentity, siwbIdentity]);
+  }, []);
 
   const login = async (walletType: WalletType) => {
     const result = await getPrincipalAddress(walletType);
@@ -161,63 +110,30 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     updateClient(walletType);
   };
 
-  const logout = () => {
+  const logout = async () => {
     const session = localStorage.getItem("session-data");
     if (session) {
       const sessionData = JSON.parse(session);
       switch (sessionData.connectedWalletType) {
         case WalletType.InternetIdentity:
-          logoutInternetIdentity();
-          break;
-        case WalletType.SIWB:
-          logoutSIWB();
-          break;
-        case WalletType.SIWS:
-          logoutSIWS();
-          break;
-        case WalletType.SIWE:
-          logoutSIWE();
+          const iiClient = await AuthClient.create();
+          iiClient.logout();
           break;
         case WalletType.NFID:
-          logoutNFID();
+          const nfidClient = await getAuthClient();
+          nfidClient.logout();
           break;
       }
     }
-    
+
     resetServerAuth();
     deleteSessionData();
     setIsAuthenticated(false);
-    apiLogout();
-  };
-
-  const logoutInternetIdentity = async () => {
-    const authClient = await AuthClient.create();
-    authClient.logout();
-  };
-
-  const logoutNFID = async () => {
-    const authClient = await getAuthClient();
-    authClient.logout();
-  };
-
-  const logoutSIWB = async () => {
-    siwbClear();
     setIdentity(null);
     setPrincipalId(null);
-    setIsAuthenticated(false);
     setUsersActor(null);
-    setUser(null);
-    deleteSessionData();
-  };
-
-  const logoutSIWE = async () => {
-    siweClear();
-    wagmiDisconnect();
-  };
-
-  const logoutSIWS = async () => {
-    siwsClear();
-    solanaDisconnect();
+    setIdentityCertifierActor(null);
+    apiLogout();
   };
 
   const autoLogin = () => {
@@ -228,15 +144,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     switch (walletType) {
       case WalletType.InternetIdentity:
         await updateInternetIdentityClient();
-        break;
-      case WalletType.SIWB:
-        await updateSIWBClient();
-        break;
-      case WalletType.SIWS:
-        await updateSIWSClient();
-        break;
-      case WalletType.SIWE:
-        await updateSIWEClient();
         break;
       case WalletType.NFID:
         await updateNFIDClient();
@@ -281,107 +188,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  const updateSIWBClient = async () => {
-    if (!siwbIdentity) {
-      console.error("SIWB identity is not available.");
-      throw new Error("SIWB identity is not available.");
-    }
-
-    try {
-      const principalId = siwbIdentity.getPrincipal().toText();
-      setPrincipalId(principalId);
-      setIdentity(siwbIdentity);
-
-      const agent = await HttpAgent.create({
-        identity: siwbIdentity,
-        host: host,
-      });
-
-      if (network === "local") {
-        agent.fetchRootKey().catch((err) => {
-          console.log("Error fetching root key: ", err);
-        });
-      }
-
-      const _backendActor = Actor.createActor<USERS_SERVICE>(usersIDL, {
-        agent,
-        canisterId: usersCanisterId,
-      });
-      setUsersActor(_backendActor);
-      const _identityCertifierActor = Actor.createActor<IDENTITY_CERTIFIER_SERVICE>(identityCertifierIDL, {
-        agent,
-        canisterId: identityCertifierCanisterId,
-      });
-      setIdentityCertifierActor(_identityCertifierActor);
-      setIsAuthenticated(true);
-
-      syncSessionData();
-    } catch (error) {
-      console.error("Error updating SIWB client:", error);
-      throw error;
-    }
-  };
-
-  const updateSIWSClient = async () => {
-    if (!siwsIdentity) {
-      throw new Error("SIWS identity is not available.");
-    }
-    const principalId = siwsIdentity.getPrincipal().toText();
-    setPrincipalId(principalId);
-    setIdentity(siwsIdentity);
-    const agent = await HttpAgent.create({
-      identity: siwsIdentity,
-      host: host,
-    });
-    if (network === "local") {
-      agent.fetchRootKey().catch((err) => {
-        console.log("Error fetching root key: ", err);
-      });
-    }
-    const _backendActor = Actor.createActor<USERS_SERVICE>(usersIDL, {
-      agent,
-      canisterId: usersCanisterId,
-    });
-    setUsersActor(_backendActor);
-    const _identityCertifierActor = Actor.createActor<IDENTITY_CERTIFIER_SERVICE>(identityCertifierIDL, {
-      agent,
-      canisterId: identityCertifierCanisterId,
-    });
-    setIdentityCertifierActor(_identityCertifierActor);
-    setIsAuthenticated(true);
-    syncSessionData();
-  };
-
-  const updateSIWEClient = async () => {
-    if (!siweIdentity) {
-      throw new Error("SIWE identity is not available.");
-    }
-    const principalId = siweIdentity.getPrincipal().toText();
-    setPrincipalId(principalId);
-    setIdentity(siweIdentity);
-    const agent = await HttpAgent.create({
-      identity: siweIdentity,
-      host: host,
-    });
-    if (network === "local") {
-      agent.fetchRootKey().catch((err) => {
-        console.log("Error fetching root key: ", err);
-      });
-    }
-    const _backendActor = Actor.createActor<USERS_SERVICE>(usersIDL, {
-      agent,
-      canisterId: usersCanisterId,
-    });
-    setUsersActor(_backendActor);
-    const _identityCertifierActor = Actor.createActor<IDENTITY_CERTIFIER_SERVICE>(identityCertifierIDL, {
-      agent,
-      canisterId: identityCertifierCanisterId,
-    });
-    setIdentityCertifierActor(_identityCertifierActor);
-    setIsAuthenticated(true);
-    syncSessionData();
-  };
-
   const updateNFIDClient = async () => {
     const authClient = await getAuthClient();
     const isAuthenticated = await authClient.isAuthenticated();
@@ -419,12 +225,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         return getInternetIdentityPrincipalAddress();
       case WalletType.NFID:
         return getNFIDPrincipalAddress();
-      case WalletType.SIWB:
-        return getSIWBPrincipalAddress();
-      case WalletType.SIWS:
-        return getSIWSPrincipalAddress();
-      case WalletType.SIWE:
-        return getSIWEPrincipalAddress();
     }
   };
 
@@ -442,36 +242,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const principalAddress = identity.getPrincipal().toText();
     const aid = aidFromPrincipal(identity.getPrincipal());
     return { principalAddress, aid, chainAddress: principalAddress };
-  };
-
-  const getSIWBPrincipalAddress = async () => {
-    if (!siwbIdentity || !identityAddress) {
-      throw new Error("SIWB identity is not available.");
-    }
-    const principalAddress = siwbIdentity.getPrincipal().toText();
-    const aid = aidFromPrincipal(siwbIdentity.getPrincipal() as any);
-    const chainAddress = identityAddress || principalAddress;
-    return { principalAddress, aid, chainAddress };
-  };
-
-  const getSIWEPrincipalAddress = async () => {
-    if (!siweIdentity) {
-      throw new Error("SIWE identity is not available.");
-    }
-    const principalAddress = siweIdentity.getPrincipal().toText();
-    const aid = aidFromPrincipal(siweIdentity.getPrincipal());
-    const chainAddress = ethAddress || principalAddress;
-    return { principalAddress, aid, chainAddress };
-  };
-
-  const getSIWSPrincipalAddress = async () => {
-    if (!siwsIdentity || !publicKey) {
-      throw new Error("SIWS identity is not available.");
-    }
-    const principalAddress = siwsIdentity.getPrincipal().toText();
-    const aid = aidFromPrincipal(siwsIdentity.getPrincipal());
-    const chainAddress = publicKey.toString() || principalAddress;
-    return { principalAddress, aid, chainAddress };
   };
 
   const value: AuthContextType = {

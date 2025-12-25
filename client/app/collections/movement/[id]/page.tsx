@@ -30,10 +30,12 @@ import { getCollectionAddress } from "@/lib/movement/collection"
 import { getCollectionByAddress, getNFTsByCollection } from "@/lib/movement/graphql"
 import type { Collection as CanisterCollection } from "@/declarations/marketplace/marketplace.did"
 import { toast } from "sonner"
+import { useAuth } from "@/providers/auth-context"
 
 export default function MovementCollectionPage() {
   const params = useParams()
   const collectionId = params?.id as string
+  const { sessionData } = useAuth()
 
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
   const [searchQuery, setSearchQuery] = useState("")
@@ -149,15 +151,25 @@ export default function MovementCollectionPage() {
   }
 
   const filteredNFTs = useMemo(() => {
+    let filtered = nfts
+
+    // Filter by ownership
+    if (statusFilter === "owned" && sessionData?.chainAddress) {
+      filtered = filtered.filter(nft =>
+        nft.owner_address?.toLowerCase() === sessionData.chainAddress.toLowerCase()
+      )
+    }
+
+    // Filter by search query
     if (searchQuery) {
       const query = searchQuery.toLowerCase()
-      return nfts.filter(nft =>
+      filtered = filtered.filter(nft =>
         nft.current_token_data?.token_name?.toLowerCase().includes(query)
       )
     }
 
-    return nfts
-  }, [nfts, searchQuery])
+    return filtered
+  }, [nfts, searchQuery, statusFilter, sessionData?.chainAddress])
 
   if (isLoading) {
     return (
@@ -317,6 +329,7 @@ export default function MovementCollectionPage() {
                   <SelectItem value="all">All Items</SelectItem>
                   <SelectItem value="listed">Listed</SelectItem>
                   <SelectItem value="unlisted">Not Listed</SelectItem>
+                  <SelectItem value="owned">Owned by Me</SelectItem>
                 </SelectContent>
               </Select>
 

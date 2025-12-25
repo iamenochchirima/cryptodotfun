@@ -9,9 +9,6 @@ import { WalletType } from "@/providers/types"
 import { connectInternetIdentityWallet } from "@/providers/internetidentity"
 import { connectNFIDWallet } from "@/providers/nfid"
 import { useAuth } from "@/providers/auth-context"
-import EthConnect from "./chains/eth/eth-connect"
-import SolConnect from "./chains/sol/sol-connect"
-import BtcConnect from "./chains/btc/btc-connect"
 
 interface WalletConnectionModalProps {
   isOpen: boolean
